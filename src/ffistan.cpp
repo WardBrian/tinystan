@@ -17,7 +17,7 @@
 #include <vector>
 
 // #include "err.h"
-// #include "cstan.h"
+// #include "ffistan.h"
 
 // globals for Stan model output
 std::streambuf *buf = nullptr;
@@ -35,9 +35,11 @@ class stan_error {
 };
 
 extern "C" {
-const char *cstan_get_error_message(const stan_error *err) { return err->msg; }
+const char *ffistan_get_error_message(const stan_error *err) {
+  return err->msg;
+}
 
-void cstan_free_stan_error(stan_error *err) { delete (err); }
+void ffistan_free_stan_error(stan_error *err) { delete (err); }
 }
 
 /**
@@ -87,11 +89,11 @@ std::unique_ptr<stan::io::var_context> load_data(const char *data_char) {
 }
 extern "C" {
 
-int cstan_sample(const char *data, const char *inits, unsigned int seed,
-                 unsigned int chain_id, double init_radius, int num_warmup,
-                 int num_samples, bool save_warmup, int refresh,
-                 double stepsize, double stepsize_jitter, int max_depth,
-                 double *out, stan_error **err) {
+int ffistan_sample(const char *data, const char *inits, unsigned int seed,
+                   unsigned int chain_id, double init_radius, int num_warmup,
+                   int num_samples, bool save_warmup, int refresh,
+                   double stepsize, double stepsize_jitter, int max_depth,
+                   double *out, stan_error **err) {
   auto json_data = load_data(data);
   auto json_inits = load_data(inits);
   try {

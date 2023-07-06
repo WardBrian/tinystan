@@ -1,8 +1,8 @@
 ## include paths
-CSTAN_ROOT ?= .
-SRC ?= $(CSTAN_ROOT)/src/
-STAN ?= $(CSTAN_ROOT)/stan/
-STANC ?= $(CSTAN_ROOT)/bin/stanc$(EXE)
+FFISTAN_ROOT ?= .
+SRC ?= $(FFISTAN_ROOT)/src/
+STAN ?= $(FFISTAN_ROOT)/stan/
+STANC ?= $(FFISTAN_ROOT)/bin/stanc$(EXE)
 MATH ?= $(STAN)lib/stan_math/
 RAPIDJSON ?= $(STAN)lib/rapidjson_1.1.0/
 
@@ -10,7 +10,7 @@ RAPIDJSON ?= $(STAN)lib/rapidjson_1.1.0/
 INC_FIRST ?= -I $(STAN)src -I $(RAPIDJSON)
 
 ## makefiles needed for math library
--include $(CSTAN_ROOT)/make/local
+-include $(FFISTAN_ROOT)/make/local
 -include $(MATH)make/compiler_flags
 -include $(MATH)make/libraries
 
@@ -37,10 +37,10 @@ else
 endif
 STAN_FLAGS=$(STAN_FLAG_THREADS)$(STAN_FLAG_OPENCL)$(STAN_FLAG_HESS)
 
-CSTAN_DEPS = $(SRC)cstan.cpp 
-CSTAN_O = $(patsubst %.cpp,%$(STAN_FLAGS).o,$(SRC)cstan.cpp)
+FFISTAN_DEPS = $(SRC)ffistan.cpp
+FFISTAN_O = $(patsubst %.cpp,%$(STAN_FLAGS).o,$(SRC)ffistan.cpp)
 
-$(CSTAN_O) : $(CSTAN_DEPS)
+$(FFISTAN_O) : $(FFISTAN_DEPS)
 	@echo ''
 	@echo '--- Compiling Stan C++ code ---'
 	@mkdir -p $(dir $@)
@@ -56,12 +56,12 @@ $(CSTAN_O) : $(CSTAN_DEPS)
 .PRECIOUS: %.hpp
 
 ## builds executable (suffix depends on platform)
-%_model.so : %.hpp $(CSTAN_O) $(LIBSUNDIALS) $(MPI_TARGETS) $(TBB_TARGETS)
+%_model.so : %.hpp $(FFISTAN_O) $(LIBSUNDIALS) $(MPI_TARGETS) $(TBB_TARGETS)
 	@echo ''
 	@echo '--- Compiling C++ code ---'
 	$(COMPILE.cpp) -x c++ -o $(subst  \,/,$*).o $(subst \,/,$<)
 	@echo '--- Linking C++ code ---'
-	$(LINK.cpp) -shared -lm -o $(patsubst %.hpp, %_model.so, $(subst \,/,$<)) $(subst \,/,$*.o) $(CSTAN_O) $(LDLIBS) $(LIBSUNDIALS) $(MPI_TARGETS) $(TBB_TARGETS)
+	$(LINK.cpp) -shared -lm -o $(patsubst %.hpp, %_model.so, $(subst \,/,$<)) $(subst \,/,$*.o) $(FFISTAN_O) $(LDLIBS) $(LIBSUNDIALS) $(MPI_TARGETS) $(TBB_TARGETS)
 	$(RM) $(subst  \,/,$*).o
 
 .PHONY: docs
@@ -77,7 +77,7 @@ clean:
 
 
 # build all test models at once
-TEST_MODEL_NAMES = $(patsubst $(CSTAN_ROOT)/test_models/%/, %, $(sort $(dir $(wildcard $(CSTAN_ROOT)/test_models/*/))))
+TEST_MODEL_NAMES = $(patsubst $(FFISTAN_ROOT)/test_models/%/, %, $(sort $(dir $(wildcard $(FFISTAN_ROOT)/test_models/*/))))
 TEST_MODEL_NAMES := $(filter-out syntax_error, $(TEST_MODEL_NAMES))
 TEST_MODEL_LIBS = $(join $(addprefix test_models/, $(TEST_MODEL_NAMES)), $(addsuffix _model.so, $(addprefix /, $(TEST_MODEL_NAMES))))
 
