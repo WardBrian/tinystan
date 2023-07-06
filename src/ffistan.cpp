@@ -89,6 +89,11 @@ std::unique_ptr<stan::io::var_context> load_data(const char *data_char) {
 }
 extern "C" {
 
+// TODOs:
+// - other algorithms (e.g. dense)
+// - figure out size of `out` ahead of time
+// - other logging?
+//   - question: can I get the metric out?
 int ffistan_sample(const char *data, const char *inits, unsigned int seed,
                    unsigned int chain_id, double init_radius, int num_warmup,
                    int num_samples, bool save_warmup, int refresh,

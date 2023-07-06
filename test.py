@@ -48,6 +48,7 @@ err = ctypes.pointer(ctypes.c_void_p())
 
 # need some way of determining the number 8 - could use param_unc_num from BS, but requires data?
 
+# 8 = 7 (sampler parameters) + 1 constrained parameter from bernoulli model
 # 8 * num_samples + 8 * num_warmup * save_warmup
 x = np.zeros((100, 8), dtype=np.float64)
 data = "bernoulli.data.json".encode()
