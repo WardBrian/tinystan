@@ -7,6 +7,11 @@
 #include <stan/model/model_base.hpp>
 #include <stan/services/util/create_rng.hpp>
 #include <stan/services/sample/hmc_nuts_diag_e.hpp>
+#include <stan/services/sample/hmc_nuts_diag_e_adapt.hpp>
+#include <stan/services/sample/hmc_nuts_dense_e.hpp>
+#include <stan/services/sample/hmc_nuts_dense_e_adapt.hpp>
+#include <stan/services/sample/hmc_nuts_unit_e.hpp>
+#include <stan/services/sample/hmc_nuts_unit_e_adapt.hpp>
 #include <fstream>
 #include <iostream>
 #include <ostream>
@@ -87,16 +92,23 @@ std::unique_ptr<stan::io::var_context> load_data(const char *data_char) {
   return std::unique_ptr<stan::io::var_context>(
       new stan::json::json_data(data_stream));
 }
+
 extern "C" {
 
+enum Metric { unit = 0, dense = 1, diagonal = 2 };
+
 // TODOs:
-// - other algorithms (e.g. dense)
+// - multi-chain (requires https://github.com/stan-dev/stan/issues/3204)
 // - figure out size of `out` ahead of time
 // - other logging?
 //   - question: can I get the metric out?
 int ffistan_sample(const char *data, const char *inits, unsigned int seed,
                    unsigned int chain_id, double init_radius, int num_warmup,
-                   int num_samples, bool save_warmup, int refresh,
+                   int num_samples, Metric metric_choice,
+                   /* adaptation params */ bool adapt, double delta,
+                   double gamma, double kappa, double t0,
+                   unsigned int init_buffer, unsigned int term_buffer,
+                   unsigned int window, bool save_warmup, int refresh,
                    double stepsize, double stepsize_jitter, int max_depth,
                    double *out, stan_error **err) {
   auto json_data = load_data(data);
@@ -108,11 +120,55 @@ int ffistan_sample(const char *data, const char *inits, unsigned int seed,
     stan::callbacks::logger logger;
     stan::callbacks::writer null_writer;
 
-    return stan::services::sample::hmc_nuts_diag_e(
-        model, *json_inits, seed, chain_id, init_radius, num_warmup,
-        num_samples, /*no thinning*/ 1, save_warmup, refresh, stepsize,
-        stepsize_jitter, max_depth, interrupt, logger, null_writer,
-        sample_writer, null_writer);
+    switch (metric_choice) {
+      case unit:
+        if (adapt) {
+          return stan::services::sample::hmc_nuts_unit_e_adapt(
+              model, *json_inits, seed, chain_id, init_radius, num_warmup,
+              num_samples, /* no thinning */ 1, save_warmup, refresh, stepsize,
+              stepsize_jitter, max_depth, delta, gamma, kappa, t0, interrupt, logger, null_writer,
+              sample_writer, null_writer);
+        } else {
+          return stan::services::sample::hmc_nuts_unit_e(
+              model, *json_inits, seed, chain_id, init_radius, num_warmup,
+              num_samples, /* no thinning */ 1, save_warmup, refresh, stepsize,
+              stepsize_jitter, max_depth, interrupt, logger, null_writer,
+              sample_writer, null_writer);
+        }
+        break;
+      case dense:
+        if (adapt) {
+          return stan::services::sample::hmc_nuts_dense_e_adapt(
+              model, *json_inits, seed, chain_id, init_radius, num_warmup,
+              num_samples, /* no thinning */ 1, save_warmup, refresh, stepsize,
+              stepsize_jitter, max_depth, delta, gamma, kappa, t0, init_buffer,
+              term_buffer, window, interrupt, logger, null_writer,
+              sample_writer, null_writer);
+        } else {
+          return stan::services::sample::hmc_nuts_dense_e(
+              model, *json_inits, seed, chain_id, init_radius, num_warmup,
+              num_samples, /* no thinning */ 1, save_warmup, refresh, stepsize,
+              stepsize_jitter, max_depth, interrupt, logger, null_writer,
+              sample_writer, null_writer);
+        }
+        break;
+      case diagonal:
+        if (adapt) {
+          return stan::services::sample::hmc_nuts_diag_e_adapt(
+              model, *json_inits, seed, chain_id, init_radius, num_warmup,
+              num_samples, /* no thinning */ 1, save_warmup, refresh, stepsize,
+              stepsize_jitter, max_depth, delta, gamma, kappa, t0, init_buffer,
+              term_buffer, window, interrupt, logger, null_writer,
+              sample_writer, null_writer);
+        } else {
+          return stan::services::sample::hmc_nuts_diag_e(
+              model, *json_inits, seed, chain_id, init_radius, num_warmup,
+              num_samples, /* no thinning */ 1, save_warmup, refresh, stepsize,
+              stepsize_jitter, max_depth, interrupt, logger, null_writer,
+              sample_writer, null_writer);
+        }
+        break;
+    }
 
   } catch (const std::exception &e) {
     if (err != nullptr) {
