@@ -49,7 +49,6 @@ const char *ffistan_model_param_names(const FFIStanModel *model) {
   return model->param_names;
 }
 
-
 int ffistan_sample(const FFIStanModel *ffimodel, const char *inits,
                    unsigned int seed, unsigned int chain_id, double init_radius,
                    int num_warmup, int num_samples, FFIStanMetric metric_choice,

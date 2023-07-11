@@ -1,8 +1,8 @@
 #ifndef FFISTAN_H
 #define FFISTAN_H
 #ifdef __cplusplus
-#include "errors.hpp"
-#include "model.hpp"
+struct stan_error;
+struct FFIStanModel;
 extern "C" {
 #else
 typedef struct stan_error stan_error;      // opaque type
