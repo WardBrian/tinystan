@@ -7,10 +7,6 @@ from numpy.ctypeslib import ndpointer
 
 double_array = ndpointer(dtype=ctypes.c_double, flags=("C_CONTIGUOUS"))
 err_ptr = ctypes.POINTER(ctypes.c_void_p)
-c_print_callback = ctypes.CFUNCTYPE(None, ctypes.POINTER(ctypes.c_char), ctypes.c_int)
-
-
-# TODO: intercept handling (Ctrl+C)?
 
 SAMPLER_VARIABLES = [
     "lp__",

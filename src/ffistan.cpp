@@ -20,6 +20,11 @@
 #include "util.hpp"
 #include "model.hpp"
 
+// TODOs:
+// - multi-chain (requires https://github.com/stan-dev/stan/issues/3204)
+// - other logging?
+//   - question: can I get the metric out?
+
 extern "C" {
 
 FFIStanModel *ffistan_create_model(const char *data, unsigned int seed,
@@ -44,11 +49,7 @@ const char *ffistan_model_param_names(const FFIStanModel *model) {
   return model->param_names;
 }
 
-// TODOs:
-// - multi-chain (requires https://github.com/stan-dev/stan/issues/3204)
-// - figure out size of `out` ahead of time
-// - other logging?
-//   - question: can I get the metric out?
+
 int ffistan_sample(const FFIStanModel *ffimodel, const char *inits,
                    unsigned int seed, unsigned int chain_id, double init_radius,
                    int num_warmup, int num_samples, FFIStanMetric metric_choice,
