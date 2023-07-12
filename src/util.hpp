@@ -25,7 +25,7 @@ class buffer_writer : public stan::callbacks::writer {
 
  private:
   double *buf;
-  int pos;
+  unsigned long int pos;
 };
 
 std::unique_ptr<stan::io::var_context> load_data(const char *data_char) {
