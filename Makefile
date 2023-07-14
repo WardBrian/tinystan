@@ -53,7 +53,6 @@ $(FFISTAN_O) : $(FFISTAN_DEPS)
 	$(STANC) $(STANCFLAGS) --o=$(subst  \,/,$@) $(subst  \,/,$<)
 
 ## declares we want to keep .hpp even though it's an intermediate
-.PRECIOUS: %.hpp
 
 ## builds executable (suffix depends on platform)
 %_model.so : %.hpp $(FFISTAN_O) $(LIBSUNDIALS) $(MPI_TARGETS) $(TBB_TARGETS)
@@ -71,8 +70,6 @@ docs:
 .PHONY: clean
 clean:
 	$(RM) $(SRC)/*.o
-	$(RM) test_models/**/*.so
-	$(RM) test_models/**/*.hpp
 	$(RM) bin/stanc$(EXE)
 
 
