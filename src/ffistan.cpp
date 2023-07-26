@@ -21,9 +21,11 @@
 #include "model.hpp"
 
 // TODOs:
-// - multi-chain (requires https://github.com/stan-dev/stan/issues/3204)
+// - multi-chain
 // - other logging?
 //   - question: can I get the metric out?
+// - fixed param
+//   - need to know if model is 0-param excluding tp, gq
 
 extern "C" {
 
@@ -49,8 +51,6 @@ const char *ffistan_model_param_names(const FFIStanModel *model) {
   return model->param_names;
 }
 
-
-// TODO: fixed param?
 int ffistan_sample(const FFIStanModel *ffimodel, const char *inits,
                    unsigned int seed, unsigned int chain_id, double init_radius,
                    int num_warmup, int num_samples, FFIStanMetric metric_choice,
@@ -64,20 +64,22 @@ int ffistan_sample(const FFIStanModel *ffimodel, const char *inits,
   try {
     auto &model = *ffimodel->model;
     buffer_writer sample_writer(out);
+    error_logger logger;
     stan::callbacks::interrupt interrupt;
-    stan::callbacks::logger logger;
     stan::callbacks::writer null_writer;
+
+    int ec = 0;
 
     switch (metric_choice) {
       case unit:
         if (adapt) {
-          return stan::services::sample::hmc_nuts_unit_e_adapt(
+          ec = stan::services::sample::hmc_nuts_unit_e_adapt(
               model, *json_inits, seed, chain_id, init_radius, num_warmup,
               num_samples, /* no thinning */ 1, save_warmup, refresh, stepsize,
               stepsize_jitter, max_depth, delta, gamma, kappa, t0, interrupt,
               logger, null_writer, sample_writer, null_writer);
         } else {
-          return stan::services::sample::hmc_nuts_unit_e(
+          ec = stan::services::sample::hmc_nuts_unit_e(
               model, *json_inits, seed, chain_id, init_radius, num_warmup,
               num_samples, /* no thinning */ 1, save_warmup, refresh, stepsize,
               stepsize_jitter, max_depth, interrupt, logger, null_writer,
@@ -86,14 +88,14 @@ int ffistan_sample(const FFIStanModel *ffimodel, const char *inits,
         break;
       case dense:
         if (adapt) {
-          return stan::services::sample::hmc_nuts_dense_e_adapt(
+          ec = stan::services::sample::hmc_nuts_dense_e_adapt(
               model, *json_inits, seed, chain_id, init_radius, num_warmup,
               num_samples, /* no thinning */ 1, save_warmup, refresh, stepsize,
               stepsize_jitter, max_depth, delta, gamma, kappa, t0, init_buffer,
               term_buffer, window, interrupt, logger, null_writer,
               sample_writer, null_writer);
         } else {
-          return stan::services::sample::hmc_nuts_dense_e(
+          ec = stan::services::sample::hmc_nuts_dense_e(
               model, *json_inits, seed, chain_id, init_radius, num_warmup,
               num_samples, /* no thinning */ 1, save_warmup, refresh, stepsize,
               stepsize_jitter, max_depth, interrupt, logger, null_writer,
@@ -102,14 +104,14 @@ int ffistan_sample(const FFIStanModel *ffimodel, const char *inits,
         break;
       case diagonal:
         if (adapt) {
-          return stan::services::sample::hmc_nuts_diag_e_adapt(
+          ec = stan::services::sample::hmc_nuts_diag_e_adapt(
               model, *json_inits, seed, chain_id, init_radius, num_warmup,
               num_samples, /* no thinning */ 1, save_warmup, refresh, stepsize,
               stepsize_jitter, max_depth, delta, gamma, kappa, t0, init_buffer,
               term_buffer, window, interrupt, logger, null_writer,
               sample_writer, null_writer);
         } else {
-          return stan::services::sample::hmc_nuts_diag_e(
+          ec = stan::services::sample::hmc_nuts_diag_e(
               model, *json_inits, seed, chain_id, init_radius, num_warmup,
               num_samples, /* no thinning */ 1, save_warmup, refresh, stepsize,
               stepsize_jitter, max_depth, interrupt, logger, null_writer,
@@ -117,6 +119,13 @@ int ffistan_sample(const FFIStanModel *ffimodel, const char *inits,
         }
         break;
     }
+    if (ec != 0) {
+      if (err != nullptr) {
+        *err = logger.get_error();
+      }
+    }
+
+    return ec;
 
   } catch (const std::exception &e) {
     if (err != nullptr) {

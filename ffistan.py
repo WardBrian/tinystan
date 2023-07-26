@@ -8,7 +8,7 @@ from numpy.ctypeslib import ndpointer
 double_array = ndpointer(dtype=ctypes.c_double, flags=("C_CONTIGUOUS"))
 err_ptr = ctypes.POINTER(ctypes.c_void_p)
 
-SAMPLER_VARIABLES = [
+HMC_SAMPLER_VARIABLES = [
     "lp__",
     "accept_stat__",
     "stepsize__",
@@ -16,6 +16,11 @@ SAMPLER_VARIABLES = [
     "n_leapfrog__",
     "divergent__",
     "energy__",
+]
+
+FIXED_SAMPLER_VARIABLES = [
+    "lp__",
+    "accept_stat__",
 ]
 
 
@@ -124,9 +129,10 @@ class FFIStanModel:
         model = self._create_model(data.encode(), seed, err)
         self._raise_for_error(err)
 
-        param_names = SAMPLER_VARIABLES + list(
+        param_names = HMC_SAMPLER_VARIABLES + list(
             self._get_names(model).decode("utf-8").split(",")
         )
+        
         num_params = len(param_names)
         num_draws = num_samples + num_warmup * save_warmup
         out = np.zeros((num_draws, num_params), dtype=np.float64)
