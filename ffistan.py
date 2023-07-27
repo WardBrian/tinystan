@@ -36,7 +36,7 @@ class FFIStanModel:
     def __init__(self, model):
         if model.endswith(".stan"):
             libname = model[:-5] + "_model.so"
-            subprocess.run(["make", libname])
+            subprocess.run(["make", "STAN_THREADS=true", libname])
             self._lib = ctypes.CDLL(libname)
         else:
             self._lib = ctypes.CDLL(model)
@@ -56,28 +56,29 @@ class FFIStanModel:
         self._ffi_sample = self._lib.ffistan_sample
         self._ffi_sample.restype = ctypes.c_int
         self._ffi_sample.argtypes = [
-            ctypes.c_void_p,
-            ctypes.c_char_p,
-            ctypes.c_uint,
-            ctypes.c_uint,
-            ctypes.c_double,
-            ctypes.c_int,
-            ctypes.c_int,
+            ctypes.c_void_p,  # model
+            ctypes.c_size_t,  # num_chains
+            ctypes.c_char_p,  # inits
+            ctypes.c_uint,  # seed
+            ctypes.c_uint,  # chain_id
+            ctypes.c_double,  # init_radius
+            ctypes.c_int,  # num_warmup
+            ctypes.c_int,  # num_samples
             ctypes.c_int,  # really enum for metric
             # adaptation
-            ctypes.c_bool,
-            ctypes.c_double,
-            ctypes.c_double,
-            ctypes.c_double,
-            ctypes.c_double,
-            ctypes.c_uint,
-            ctypes.c_uint,
-            ctypes.c_uint,
-            ctypes.c_bool,
-            ctypes.c_int,
-            ctypes.c_double,
-            ctypes.c_double,
-            ctypes.c_int,
+            ctypes.c_bool, # adapt
+            ctypes.c_double, # delta
+            ctypes.c_double, # gamma
+            ctypes.c_double, # kappa
+            ctypes.c_double, # t0
+            ctypes.c_uint, # init_buffer
+            ctypes.c_uint, # term_buffer
+            ctypes.c_uint, # window
+            ctypes.c_bool, # save_warmup
+            ctypes.c_int, # refresh
+            ctypes.c_double, # stepsize
+            ctypes.c_double, # stepsize_jitter
+            ctypes.c_int, # max_depth
             double_array,
             err_ptr,
         ]
@@ -89,7 +90,7 @@ class FFIStanModel:
         self._free_error.restype = None
         self._free_error.argtypes = [ctypes.c_void_p]
 
-    def _raise_for_error(self, rc:int, err: ctypes.pointer):
+    def _raise_for_error(self, rc: int, err: ctypes.pointer):
         if rc != 0:
             if err.contents:
                 msg = self._get_error(err.contents).decode("utf-8")
@@ -102,6 +103,7 @@ class FFIStanModel:
         self,
         data,
         *,
+        num_chains=4,
         inits=None,
         seed=None,
         chain_id=1,
@@ -123,6 +125,7 @@ class FFIStanModel:
         stepsize_jitter=0.0,
         max_depth=10,
     ):
+        assert num_chains > 0, "num_chains must be positive"
         assert num_warmup >= 0, "num_warmup must be non-negative"
         assert num_samples > 0, "num_samples must be positive"
 
@@ -138,10 +141,11 @@ class FFIStanModel:
 
         num_params = len(param_names)
         num_draws = num_samples + num_warmup * save_warmup
-        out = np.zeros((num_draws, num_params), dtype=np.float64)
+        out = np.zeros((num_chains, num_draws, num_params), dtype=np.float64)
 
         rc = self._ffi_sample(
             model,
+            num_chains,
             inits.encode() if inits else None,
             seed,
             chain_id,
@@ -173,10 +177,14 @@ class FFIStanModel:
 
 
 if __name__ == "__main__":
+    import os
+
+    os.environ["STAN_NUM_THREADS"] = "-1"
+
     model = FFIStanModel("./bernoulli.stan")
     data = "bernoulli.data.json"
-    fit = model.sample(data, num_samples=100)
+    fit = model.sample(data, num_samples=10000, num_chains=10)
 
     print(fit[0])
-    print(fit[1][:, 7].mean())
+    print(fit[1].mean(axis=(0, 1))[7])
     print(fit[1].shape)

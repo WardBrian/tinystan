@@ -33,6 +33,7 @@ class FFIStanModel {
     std::vector<std::string> names;
     model->constrained_param_names(names, true, true);
     param_names = to_csv(names);
+    num_params = names.size();
   }
 
   ~FFIStanModel() {
@@ -43,6 +44,7 @@ class FFIStanModel {
   stan::model::model_base *model;
   unsigned int seed;
   char *param_names;
+  size_t num_params;
 };
 
 #endif
