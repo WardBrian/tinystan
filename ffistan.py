@@ -89,11 +89,14 @@ class FFIStanModel:
         self._free_error.restype = None
         self._free_error.argtypes = [ctypes.c_void_p]
 
-    def _raise_for_error(self, err: ctypes.pointer):
-        if err.contents:
-            msg = self._get_error(err.contents).decode("utf-8")
-            self._free_error(err.contents)
-            raise RuntimeError(msg)
+    def _raise_for_error(self, rc:int, err: ctypes.pointer):
+        if rc != 0:
+            if err.contents:
+                msg = self._get_error(err.contents).decode("utf-8")
+                self._free_error(err.contents)
+                raise RuntimeError(msg)
+            else:
+                raise RuntimeError(f"Unknown error, function returned code {rc}")
 
     def sample(
         self,
@@ -127,17 +130,17 @@ class FFIStanModel:
         err = ctypes.pointer(ctypes.c_void_p())
 
         model = self._create_model(data.encode(), seed, err)
-        self._raise_for_error(err)
+        self._raise_for_error(not model, err)
 
         param_names = HMC_SAMPLER_VARIABLES + list(
             self._get_names(model).decode("utf-8").split(",")
         )
-        
+
         num_params = len(param_names)
         num_draws = num_samples + num_warmup * save_warmup
         out = np.zeros((num_draws, num_params), dtype=np.float64)
 
-        self._ffi_sample(
+        rc = self._ffi_sample(
             model,
             inits.encode() if inits else None,
             seed,
@@ -164,7 +167,7 @@ class FFIStanModel:
         )
 
         self._delete_model(model)
-        self._raise_for_error(err)
+        self._raise_for_error(rc, err)
 
         return (param_names, out)
 

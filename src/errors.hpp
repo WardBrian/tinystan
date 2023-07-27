@@ -16,33 +16,37 @@ class stan_error {
   char *msg;
 };
 
-// TODO consider keeping more than just the last message
 class error_logger : public stan::callbacks::logger {
  public:
-  error_logger() : last_error("Unknown Error"){};
+  error_logger(){};
   ~error_logger(){};
 
   void error(const std::string &s) override {
     if (!s.empty())
-      last_error = s;
+      last_error += s + "\n";
   }
 
   void error(const std::stringstream &s) override {
     if (!s.str().empty())
-      last_error = s.str();
+      last_error += s.str() + "\n";
   }
 
   void fatal(const std::string &s) override {
     if (!s.empty())
-      last_error = s;
+      last_error += s + "\n";
   }
 
   void fatal(const std::stringstream &s) override {
     if (!s.str().empty())
-      last_error = s.str();
+      last_error += s.str() + "\n";
   }
 
-  stan_error *get_error() { return new stan_error(strdup(last_error.c_str())); }
+  stan_error *get_error() {
+    if (last_error.empty())
+      return new stan_error(strdup("Unknown error"));
+    last_error.pop_back();
+    return new stan_error(strdup(last_error.c_str()));
+  }
 
  private:
   std::string last_error;
