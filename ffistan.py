@@ -66,19 +66,19 @@ class FFIStanModel:
             ctypes.c_int,  # num_samples
             ctypes.c_int,  # really enum for metric
             # adaptation
-            ctypes.c_bool, # adapt
-            ctypes.c_double, # delta
-            ctypes.c_double, # gamma
-            ctypes.c_double, # kappa
-            ctypes.c_double, # t0
-            ctypes.c_uint, # init_buffer
-            ctypes.c_uint, # term_buffer
-            ctypes.c_uint, # window
-            ctypes.c_bool, # save_warmup
-            ctypes.c_int, # refresh
-            ctypes.c_double, # stepsize
-            ctypes.c_double, # stepsize_jitter
-            ctypes.c_int, # max_depth
+            ctypes.c_bool,  # adapt
+            ctypes.c_double,  # delta
+            ctypes.c_double,  # gamma
+            ctypes.c_double,  # kappa
+            ctypes.c_double,  # t0
+            ctypes.c_uint,  # init_buffer
+            ctypes.c_uint,  # term_buffer
+            ctypes.c_uint,  # window
+            ctypes.c_bool,  # save_warmup
+            ctypes.c_int,  # refresh
+            ctypes.c_double,  # stepsize
+            ctypes.c_double,  # stepsize_jitter
+            ctypes.c_int,  # max_depth
             double_array,
             err_ptr,
         ]
