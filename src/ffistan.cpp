@@ -57,9 +57,10 @@ int ffistan_sample(const FFIStanModel *ffimodel, const char *inits,
                    /* adaptation params */ bool adapt, double delta,
                    double gamma, double kappa, double t0,
                    unsigned int init_buffer, unsigned int term_buffer,
-                   unsigned int window, bool save_warmup, int refresh,
-                   double stepsize, double stepsize_jitter, int max_depth,
-                   double *out, stan_error **err) {
+                   unsigned int window, bool save_warmup,
+                   /* currently has no effect */ int refresh, double stepsize,
+                   double stepsize_jitter, int max_depth, double *out,
+                   stan_error **err) {
   auto json_inits = load_data(inits);
   try {
     auto &model = *ffimodel->model;
