@@ -1,6 +1,7 @@
 #ifndef FFISTAN_UTIL_HPP
 #define FFISTAN_UTIL_HPP
 
+#include <stan/math/prim/fun/Eigen.hpp>
 #include <stan/callbacks/writer.hpp>
 #include <stan/io/ends_with.hpp>
 #include <stan/io/json/json_data.hpp>
@@ -17,9 +18,19 @@ class buffer_writer : public stan::callbacks::writer {
   buffer_writer(double *buf) : buf(buf), pos(0){};
   ~buffer_writer(){};
 
+  // primary way of writing draws
   void operator()(const std::vector<double> &v) override {
     for (auto d : v) {
       buf[pos++] = d;
+    }
+  }
+
+  // needed for pathfinder - transposed order per spec
+  void operator()(const Eigen::MatrixXd &m) override {
+    for (int j = 0; j < m.cols(); ++j) {
+      for (int i = 0; i < m.rows(); ++i) {
+        buf[pos++] = m(i, j);
+      }
     }
   }
 

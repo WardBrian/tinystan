@@ -40,6 +40,16 @@ int ffistan_sample(const FFIStanModel *model, size_t num_chains,
                    double stepsize, double stepsize_jitter, int max_depth,
                    double *out, stan_error **err);
 
+int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
+                       const char *inits, unsigned int seed, unsigned int id,
+                       double init_radius, int num_draws,
+                       /* tuning params */ int max_history_size,
+                       double init_alpha, double tol_obj, double tol_rel_obj,
+                       double tol_grad, double tol_rel_grad, double tol_param,
+                       int num_iterations, int num_elbo_draws,
+                       int num_multi_draws, int refresh, double *out,
+                       stan_error **err);
+
 const char *ffistan_get_error_message(const stan_error *err);
 void ffistan_free_stan_error(stan_error *err);
 

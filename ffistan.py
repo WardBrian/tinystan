@@ -18,6 +18,11 @@ HMC_SAMPLER_VARIABLES = [
     "energy__",
 ]
 
+PATHFINDER_VARIABLES = [
+    "lp_approx__",
+    "lp__",
+]
+
 FIXED_SAMPLER_VARIABLES = [
     "lp__",
     "accept_stat__",
@@ -36,7 +41,7 @@ class FFIStanModel:
     def __init__(self, model):
         if model.endswith(".stan"):
             libname = model[:-5] + "_model.so"
-            subprocess.run(["make", "STAN_THREADS=true", libname])
+            subprocess.run(["make", libname])
             self._lib = ctypes.CDLL(libname)
         else:
             self._lib = ctypes.CDLL(model)
@@ -60,7 +65,7 @@ class FFIStanModel:
             ctypes.c_size_t,  # num_chains
             ctypes.c_char_p,  # inits
             ctypes.c_uint,  # seed
-            ctypes.c_uint,  # chain_id
+            ctypes.c_uint,  # id
             ctypes.c_double,  # init_radius
             ctypes.c_int,  # num_warmup
             ctypes.c_int,  # num_samples
@@ -79,6 +84,31 @@ class FFIStanModel:
             ctypes.c_double,  # stepsize
             ctypes.c_double,  # stepsize_jitter
             ctypes.c_int,  # max_depth
+            double_array,
+            err_ptr,
+        ]
+
+        self._ffi_pathfinder = self._lib.ffistan_pathfinder
+        self._ffi_pathfinder.restype = ctypes.c_int
+        self._ffi_pathfinder.argtypes = [
+            ctypes.c_void_p,  # model
+            ctypes.c_size_t,  # num_paths
+            ctypes.c_char_p,  # inits
+            ctypes.c_uint,  # seed
+            ctypes.c_uint,  # id
+            ctypes.c_double,  # init_radius
+            ctypes.c_int,  # num_draws
+            ctypes.c_int,  # max_history_size
+            ctypes.c_double,  # init_alpha
+            ctypes.c_double,  # tol_obj
+            ctypes.c_double,  # tol_rel_obj
+            ctypes.c_double,  # tol_grad
+            ctypes.c_double,  # tol_rel_grad
+            ctypes.c_double,  # tol_param
+            ctypes.c_int,  # num_iterations
+            ctypes.c_int,  # num_elbo_draws
+            ctypes.c_int,  # num_multi_draws
+            ctypes.c_int,  # refresh
             double_array,
             err_ptr,
         ]
@@ -110,7 +140,7 @@ class FFIStanModel:
         num_chains=4,
         inits=None,
         seed=None,
-        chain_id=1,
+        id=1,
         init_radius=2.0,
         num_warmup=1000,
         num_samples=1000,
@@ -159,7 +189,7 @@ class FFIStanModel:
             num_chains,
             inits_encoded,
             seed,
-            chain_id,
+            id,
             init_radius,
             num_warmup,
             num_samples,
@@ -186,6 +216,79 @@ class FFIStanModel:
 
         return (param_names, out)
 
+    def pathfinder(
+        self,
+        data,
+        *,
+        num_paths=4,
+        inits=None,
+        seed=None,
+        id=1,
+        init_radius=2.0,
+        num_draws=1000,
+        max_history_size=5,
+        init_alpha=0.001,
+        tol_obj=1e-12,
+        tol_rel_obj=1e4,
+        tol_grad=1e-8,
+        tol_rel_grad=1e7,
+        tol_param=1e-8,
+        num_iterations=1000,
+        num_elbo_draws=100,
+        num_multi_draws=1000,
+        refresh=0,
+    ):
+        assert num_paths > 0, "num_paths must be positive"
+        assert num_draws > 0, "num_draws must be positive"
+
+        seed = seed or np.random.randint(2**32 - 1)
+        err = ctypes.pointer(ctypes.c_void_p())
+
+        model = self._create_model(data.encode(), seed, err)
+        self._raise_for_error(not model, err)
+
+        param_names = PATHFINDER_VARIABLES + list(
+            self._get_names(model).decode("utf-8").split(",")
+        )
+
+        num_params = len(param_names)
+        out = np.zeros((num_draws, num_params), dtype=np.float64)
+
+        inits_encoded = None
+        if inits is not None:
+            if isinstance(inits, list):
+                inits_encoded = self.sep.join(inits).encode()
+            else:
+                inits_encoded = inits.encode()
+
+        rc = self._ffi_pathfinder(
+            model,
+            num_paths,
+            inits_encoded,
+            seed,
+            id,
+            init_radius,
+            num_draws,
+            max_history_size,
+            init_alpha,
+            tol_obj,
+            tol_rel_obj,
+            tol_grad,
+            tol_rel_grad,
+            tol_param,
+            num_iterations,
+            num_elbo_draws,
+            num_multi_draws,
+            refresh,
+            out,
+            err,
+        )
+
+        self._delete_model(model)
+        self._raise_for_error(rc, err)
+
+        return (param_names, out)
+
 
 if __name__ == "__main__":
     import os
@@ -199,3 +302,8 @@ if __name__ == "__main__":
     print(fit[0])
     print(fit[1].mean(axis=(0, 1))[7])
     print(fit[1].shape)
+
+    pf = model.pathfinder(data)
+    print(pf[0])
+    print(pf[1][:, 2].mean())
+    print(pf[1].shape)

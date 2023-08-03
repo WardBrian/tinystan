@@ -1,8 +1,11 @@
 #include <stan/callbacks/logger.hpp>
 #include <stan/callbacks/interrupt.hpp>
 #include <stan/callbacks/writer.hpp>
+#include <stan/callbacks/structured_writer.hpp>
 #include <stan/model/model_base.hpp>
 #include <stan/services/util/create_rng.hpp>
+#include <stan/services/pathfinder/multi.hpp>
+#include <stan/services/pathfinder/single.hpp>
 #include <stan/services/sample/hmc_nuts_diag_e.hpp>
 #include <stan/services/sample/hmc_nuts_diag_e_adapt.hpp>
 #include <stan/services/sample/hmc_nuts_dense_e.hpp>
@@ -54,7 +57,7 @@ const char *ffistan_model_param_names(const FFIStanModel *model) {
 }
 
 int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
-                   const char *inits, unsigned int seed, unsigned int chain_id,
+                   const char *inits, unsigned int seed, unsigned int id,
                    double init_radius, int num_warmup, int num_samples,
                    FFIStanMetric metric_choice,
                    /* adaptation params */ bool adapt, double delta,
@@ -88,67 +91,144 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
     stan::callbacks::interrupt interrupt;
 
     std::vector<stan::callbacks::writer> null_writers(num_chains);
-    std::vector<stan::callbacks::writer> null_writers2(num_chains);
 
-    int ec = 0;
+    int return_code = 0;
+
+    int thin = 1;  // no thinning
 
     switch (metric_choice) {
       case unit:
         if (adapt) {
-          ec = stan::services::sample::hmc_nuts_unit_e_adapt(
-              model, num_chains, json_inits, seed, chain_id, init_radius,
-              num_warmup, num_samples, /* no thinning */ 1, save_warmup,
-              refresh, stepsize, stepsize_jitter, max_depth, delta, gamma,
-              kappa, t0, interrupt, logger, null_writers, sample_writers,
-              null_writers2);
+          return_code = stan::services::sample::hmc_nuts_unit_e_adapt(
+              model, num_chains, json_inits, seed, id, init_radius, num_warmup,
+              num_samples, thin, save_warmup, refresh, stepsize,
+              stepsize_jitter, max_depth, delta, gamma, kappa, t0, interrupt,
+              logger, null_writers, sample_writers, null_writers);
         } else {
-          ec = stan::services::sample::hmc_nuts_unit_e(
-              model, num_chains, json_inits, seed, chain_id, init_radius,
-              num_warmup, num_samples, /* no thinning */ 1, save_warmup,
-              refresh, stepsize, stepsize_jitter, max_depth, interrupt, logger,
-              null_writers, sample_writers, null_writers2);
+          return_code = stan::services::sample::hmc_nuts_unit_e(
+              model, num_chains, json_inits, seed, id, init_radius, num_warmup,
+              num_samples, thin, save_warmup, refresh, stepsize,
+              stepsize_jitter, max_depth, interrupt, logger, null_writers,
+              sample_writers, null_writers);
         }
         break;
       case dense:
         if (adapt) {
-          ec = stan::services::sample::hmc_nuts_dense_e_adapt(
-              model, num_chains, json_inits, seed, chain_id, init_radius,
-              num_warmup, num_samples, /* no thinning */ 1, save_warmup,
-              refresh, stepsize, stepsize_jitter, max_depth, delta, gamma,
-              kappa, t0, init_buffer, term_buffer, window, interrupt, logger,
-              null_writers, sample_writers, null_writers2);
+          return_code = stan::services::sample::hmc_nuts_dense_e_adapt(
+              model, num_chains, json_inits, seed, id, init_radius, num_warmup,
+              num_samples, thin, save_warmup, refresh, stepsize,
+              stepsize_jitter, max_depth, delta, gamma, kappa, t0, init_buffer,
+              term_buffer, window, interrupt, logger, null_writers,
+              sample_writers, null_writers);
         } else {
-          ec = stan::services::sample::hmc_nuts_dense_e(
-              model, num_chains, json_inits, seed, chain_id, init_radius,
-              num_warmup, num_samples, /* no thinning */ 1, save_warmup,
-              refresh, stepsize, stepsize_jitter, max_depth, interrupt, logger,
-              null_writers, sample_writers, null_writers2);
+          return_code = stan::services::sample::hmc_nuts_dense_e(
+              model, num_chains, json_inits, seed, id, init_radius, num_warmup,
+              num_samples, thin, save_warmup, refresh, stepsize,
+              stepsize_jitter, max_depth, interrupt, logger, null_writers,
+              sample_writers, null_writers);
         }
         break;
       case diagonal:
         if (adapt) {
-          ec = stan::services::sample::hmc_nuts_diag_e_adapt(
-              model, num_chains, json_inits, seed, chain_id, init_radius,
-              num_warmup, num_samples, /* no thinning */ 1, save_warmup,
-              refresh, stepsize, stepsize_jitter, max_depth, delta, gamma,
-              kappa, t0, init_buffer, term_buffer, window, interrupt, logger,
-              null_writers, sample_writers, null_writers2);
+          return_code = stan::services::sample::hmc_nuts_diag_e_adapt(
+              model, num_chains, json_inits, seed, id, init_radius, num_warmup,
+              num_samples, thin, save_warmup, refresh, stepsize,
+              stepsize_jitter, max_depth, delta, gamma, kappa, t0, init_buffer,
+              term_buffer, window, interrupt, logger, null_writers,
+              sample_writers, null_writers);
         } else {
-          ec = stan::services::sample::hmc_nuts_diag_e(
-              model, num_chains, json_inits, seed, chain_id, init_radius,
-              num_warmup, num_samples, /* no thinning */ 1, save_warmup,
-              refresh, stepsize, stepsize_jitter, max_depth, interrupt, logger,
-              null_writers, sample_writers, null_writers2);
+          return_code = stan::services::sample::hmc_nuts_diag_e(
+              model, num_chains, json_inits, seed, id, init_radius, num_warmup,
+              num_samples, thin, save_warmup, refresh, stepsize,
+              stepsize_jitter, max_depth, interrupt, logger, null_writers,
+              sample_writers, null_writers);
         }
         break;
     }
-    if (ec != 0) {
+    if (return_code != 0) {
       if (err != nullptr) {
         *err = logger.get_error();
       }
     }
 
-    return ec;
+    return return_code;
+
+  } catch (const std::exception &e) {
+    if (err != nullptr) {
+      *err = new stan_error(strdup(e.what()));
+    }
+  } catch (...) {
+    if (err != nullptr) {
+      *err = new stan_error(strdup("Unknown error"));
+    }
+  }
+  return -1;
+}
+
+int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
+                       const char *inits, unsigned int seed, unsigned int id,
+                       double init_radius, int num_draws,
+                       /* tuning params */ int max_history_size,
+                       double init_alpha, double tol_obj, double tol_rel_obj,
+                       double tol_grad, double tol_rel_grad, double tol_param,
+                       int num_iterations, int num_elbo_draws,
+                       int num_multi_draws, int refresh, double *out,
+                       stan_error **err) {
+  try {
+    int num_threads = stan::math::internal::get_num_threads();
+    stan::math::init_threadpool_tbb(num_threads);
+
+    std::vector<std::unique_ptr<stan::io::var_context>> json_inits
+        = load_inits(num_paths, inits);
+
+    auto &model = *ffimodel->model;
+
+    buffer_writer pathfinder_writer(out);
+    error_logger logger;
+
+    stan::callbacks::interrupt interrupt;
+    stan::callbacks::structured_writer dummy_json_writer;
+    std::vector<stan::callbacks::writer> null_writers(num_paths);
+    std::vector<stan::callbacks::structured_writer> null_structured_writers(
+        num_paths);
+
+    bool save_iterations = false;
+
+    int return_code = 0;
+
+    if (num_paths == 1) {
+      return_code = stan::services::pathfinder::pathfinder_lbfgs_single<
+          false, stan::model::model_base,
+          // need to manually instantiate so that we can use our buffer_writer
+          stan::callbacks::structured_writer, stan::callbacks::writer>(
+          model, *(json_inits[0]), seed, id, init_radius, max_history_size,
+          init_alpha, tol_obj, tol_rel_obj, tol_grad, tol_rel_grad, tol_param,
+          num_iterations, num_elbo_draws, num_draws, save_iterations, refresh,
+          interrupt, logger, null_writers[0], pathfinder_writer,
+          null_structured_writers[0]);
+    } else {
+      return_code = stan::services::pathfinder::pathfinder_lbfgs_multi<
+          stan::model::model_base,
+          // same -- annoying to have to manually instantiate
+          std::vector<std::unique_ptr<stan::io::var_context>> &,
+          std::vector<stan::callbacks::writer> &,
+          stan::callbacks::structured_writer, stan::callbacks::writer,
+          stan::callbacks::writer, stan::callbacks::structured_writer>(
+          model, json_inits, seed, id, init_radius, max_history_size,
+          init_alpha, tol_obj, tol_rel_obj, tol_grad, tol_rel_grad, tol_param,
+          num_iterations, num_elbo_draws, num_draws, num_multi_draws, num_paths,
+          save_iterations, refresh, interrupt, logger, null_writers,
+          null_writers, null_structured_writers, pathfinder_writer,
+          dummy_json_writer);
+    }
+
+    if (return_code != 0) {
+      if (err != nullptr) {
+        *err = logger.get_error();
+      }
+    }
+
+    return return_code;
 
   } catch (const std::exception &e) {
     if (err != nullptr) {
