@@ -24,7 +24,6 @@
 #include "model.hpp"
 
 // TODOs:
-// - multi-chain
 // - other logging?
 //   - question: can I get the metric out?
 // - fixed param
@@ -70,15 +69,8 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
     int num_threads = stan::math::internal::get_num_threads();
     stan::math::init_threadpool_tbb(num_threads);
 
-    // TODO (num_chains): allow multiple inits.
-    // A char**?
-    // Several files with the same naming structure, a-la cmdstan?
-    // A char* with a separator?
-    std::vector<std::unique_ptr<stan::io::var_context>> json_inits;
-    json_inits.reserve(num_chains);
-    for (size_t i = 0; i < num_chains; ++i) {
-      json_inits.push_back(load_data(inits));
-    }
+    std::vector<std::unique_ptr<stan::io::var_context>> json_inits
+        = load_inits(num_chains, inits);
 
     auto &model = *ffimodel->model;
 
@@ -175,4 +167,6 @@ const char *ffistan_get_error_message(const stan_error *err) {
 }
 
 void ffistan_free_stan_error(stan_error *err) { delete (err); }
+
+char ffistan_separator_char() { return SEPARATOR; }
 }

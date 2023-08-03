@@ -1,11 +1,15 @@
 #ifndef FFISTAN_H
 #define FFISTAN_H
+
+/// \file ffistan.h
+
 #ifdef __cplusplus
 struct stan_error;
 struct FFIStanModel;
 extern "C" {
 #else
 #include <stddef.h>
+#include <stdbool.h>
 typedef struct stan_error stan_error;      // opaque type
 typedef struct FFIStanModel FFIStanModel;  // opaque type
 #endif
@@ -15,6 +19,14 @@ FFIStanModel *ffistan_create_model(const char *data, unsigned int seed,
 
 void ffistan_destroy_model(FFIStanModel *model);
 const char *ffistan_model_param_names(const FFIStanModel *model);
+
+/**
+ * Returns the separator character which must be used
+ * to provide multiple initialization files or json strings.
+ *
+ * Currently, this is ASCII 0x1C, the file separator character.
+ */
+char ffistan_separator_char();
 
 enum FFIStanMetric { unit = 0, dense = 1, diagonal = 2 };
 

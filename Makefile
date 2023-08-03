@@ -9,6 +9,9 @@ RAPIDJSON ?= $(STAN)lib/rapidjson_1.1.0/
 ## required C++ includes
 INC_FIRST ?= -I $(STAN)src -I $(RAPIDJSON)
 
+# FFIStan always wants multithreading support
+STAN_THREADS=1
+
 ## makefiles needed for math library
 -include $(FFISTAN_ROOT)/make/local
 -include $(MATH)make/compiler_flags
@@ -25,18 +28,7 @@ ifdef STAN_OPENCL
 else
 	STAN_FLAG_OPENCL=
 endif
-ifdef STAN_THREADS
-	STAN_FLAG_THREADS=_threads
-else
-	STAN_FLAG_THREADS=
-endif
-ifdef BRIDGESTAN_AD_HESSIAN
-	CXXFLAGS+=-DSTAN_MODEL_FVAR_VAR -DBRIDGESTAN_AD_HESSIAN
-	STAN_FLAG_HESS=_adhessian
-else
-	STAN_FLAG_HESS=
-endif
-STAN_FLAGS=$(STAN_FLAG_THREADS)$(STAN_FLAG_OPENCL)$(STAN_FLAG_HESS)
+STAN_FLAGS=$(STAN_FLAG_OPENCL)
 
 FFISTAN_DEPS = $(SRC)ffistan.cpp $(SRC)ffistan.h $(SRC)model.hpp $(SRC)util.hpp $(SRC)errors.hpp
 FFISTAN_O = $(patsubst %.cpp,%$(STAN_FLAGS).o,$(SRC)ffistan.cpp)

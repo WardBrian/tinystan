@@ -89,6 +89,10 @@ class FFIStanModel:
         self._free_error = self._lib.ffistan_free_stan_error
         self._free_error.restype = None
         self._free_error.argtypes = [ctypes.c_void_p]
+        get_separator = self._lib.ffistan_separator_char
+        get_separator.restype = ctypes.c_char
+        get_separator.argtypes = []
+        self.sep = get_separator().decode("utf-8")
 
     def _raise_for_error(self, rc: int, err: ctypes.pointer):
         if rc != 0:
@@ -143,10 +147,17 @@ class FFIStanModel:
         num_draws = num_samples + num_warmup * save_warmup
         out = np.zeros((num_chains, num_draws, num_params), dtype=np.float64)
 
+        inits_encoded = None
+        if inits is not None:
+            if isinstance(inits, list):
+                inits_encoded = self.sep.join(inits).encode()
+            else:
+                inits_encoded = inits.encode()
+
         rc = self._ffi_sample(
             model,
             num_chains,
-            inits.encode() if inits else None,
+            inits_encoded,
             seed,
             chain_id,
             init_radius,
