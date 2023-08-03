@@ -1,6 +1,7 @@
 import ctypes
 import subprocess
 from enum import Enum
+import contextlib
 
 import numpy as np
 from numpy.ctypeslib import ndpointer
@@ -124,7 +125,7 @@ class FFIStanModel:
         get_separator.argtypes = []
         self.sep = get_separator().decode("utf-8")
 
-    def _raise_for_error(self, rc: int, err: ctypes.pointer):
+    def _raise_for_error(self, rc: int, err):
         if rc != 0:
             if err.contents:
                 msg = self._get_error(err.contents).decode("utf-8")
@@ -133,9 +134,28 @@ class FFIStanModel:
             else:
                 raise RuntimeError(f"Unknown error, function returned code {rc}")
 
+    @contextlib.contextmanager
+    def _get_model(self, data, seed):
+        err = ctypes.pointer(ctypes.c_void_p())
+        model = self._create_model(data.encode(), seed, err)
+        self._raise_for_error(not model, err)
+        try:
+            yield model
+        finally:
+            self._delete_model(model)
+
+    def _encode_inits(self, inits):
+        inits_encoded = None
+        if inits is not None:
+            if isinstance(inits, list):
+                inits_encoded = self.sep.join(inits).encode()
+            else:
+                inits_encoded = inits.encode()
+        return inits_encoded
+
     def sample(
         self,
-        data,
+        data="",
         *,
         num_chains=4,
         inits=None,
@@ -164,61 +184,50 @@ class FFIStanModel:
         assert num_samples > 0, "num_samples must be positive"
 
         seed = seed or np.random.randint(2**32 - 1)
-        err = ctypes.pointer(ctypes.c_void_p())
 
-        model = self._create_model(data.encode(), seed, err)
-        self._raise_for_error(not model, err)
+        with self._get_model(data, seed) as model:
+            param_names = HMC_SAMPLER_VARIABLES + list(
+                self._get_names(model).decode("utf-8").split(",")
+            )
 
-        param_names = HMC_SAMPLER_VARIABLES + list(
-            self._get_names(model).decode("utf-8").split(",")
-        )
+            num_params = len(param_names)
+            num_draws = num_samples + num_warmup * save_warmup
+            out = np.zeros((num_chains, num_draws, num_params), dtype=np.float64)
 
-        num_params = len(param_names)
-        num_draws = num_samples + num_warmup * save_warmup
-        out = np.zeros((num_chains, num_draws, num_params), dtype=np.float64)
-
-        inits_encoded = None
-        if inits is not None:
-            if isinstance(inits, list):
-                inits_encoded = self.sep.join(inits).encode()
-            else:
-                inits_encoded = inits.encode()
-
-        rc = self._ffi_sample(
-            model,
-            num_chains,
-            inits_encoded,
-            seed,
-            id,
-            init_radius,
-            num_warmup,
-            num_samples,
-            metric.value,
-            adapt,
-            delta,
-            gamma,
-            kappa,
-            t0,
-            init_buffer,
-            term_buffer,
-            window,
-            save_warmup,
-            refresh,
-            stepsize,
-            stepsize_jitter,
-            max_depth,
-            out,
-            err,
-        )
-
-        self._delete_model(model)
-        self._raise_for_error(rc, err)
+            err = ctypes.pointer(ctypes.c_void_p())
+            rc = self._ffi_sample(
+                model,
+                num_chains,
+                self._encode_inits(inits),
+                seed,
+                id,
+                init_radius,
+                num_warmup,
+                num_samples,
+                metric.value,
+                adapt,
+                delta,
+                gamma,
+                kappa,
+                t0,
+                init_buffer,
+                term_buffer,
+                window,
+                save_warmup,
+                refresh,
+                stepsize,
+                stepsize_jitter,
+                max_depth,
+                out,
+                err,
+            )
+            self._raise_for_error(rc, err)
 
         return (param_names, out)
 
     def pathfinder(
         self,
-        data,
+        data="",
         *,
         num_paths=4,
         inits=None,
@@ -242,50 +251,39 @@ class FFIStanModel:
         assert num_draws > 0, "num_draws must be positive"
 
         seed = seed or np.random.randint(2**32 - 1)
-        err = ctypes.pointer(ctypes.c_void_p())
 
-        model = self._create_model(data.encode(), seed, err)
-        self._raise_for_error(not model, err)
+        with self._get_model(data, seed) as model:
+            param_names = PATHFINDER_VARIABLES + list(
+                self._get_names(model).decode("utf-8").split(",")
+            )
 
-        param_names = PATHFINDER_VARIABLES + list(
-            self._get_names(model).decode("utf-8").split(",")
-        )
+            num_params = len(param_names)
+            out = np.zeros((num_draws, num_params), dtype=np.float64)
 
-        num_params = len(param_names)
-        out = np.zeros((num_draws, num_params), dtype=np.float64)
-
-        inits_encoded = None
-        if inits is not None:
-            if isinstance(inits, list):
-                inits_encoded = self.sep.join(inits).encode()
-            else:
-                inits_encoded = inits.encode()
-
-        rc = self._ffi_pathfinder(
-            model,
-            num_paths,
-            inits_encoded,
-            seed,
-            id,
-            init_radius,
-            num_draws,
-            max_history_size,
-            init_alpha,
-            tol_obj,
-            tol_rel_obj,
-            tol_grad,
-            tol_rel_grad,
-            tol_param,
-            num_iterations,
-            num_elbo_draws,
-            num_multi_draws,
-            refresh,
-            out,
-            err,
-        )
-
-        self._delete_model(model)
-        self._raise_for_error(rc, err)
+            err = ctypes.pointer(ctypes.c_void_p())
+            rc = self._ffi_pathfinder(
+                model,
+                num_paths,
+                self._encode_inits(inits),
+                seed,
+                id,
+                init_radius,
+                num_draws,
+                max_history_size,
+                init_alpha,
+                tol_obj,
+                tol_rel_obj,
+                tol_grad,
+                tol_rel_grad,
+                tol_param,
+                num_iterations,
+                num_elbo_draws,
+                num_multi_draws,
+                refresh,
+                out,
+                err,
+            )
+            self._raise_for_error(rc, err)
 
         return (param_names, out)
 
