@@ -28,9 +28,12 @@
 
 // TODOs:
 // - other logging?
-//   - question: can I get the metric out?
+//   - needs something like BridgeStan's print callback in general case
+// - ability to output metric, hessian, etc?
+//   - use diagnostic_writer, might need new service functions
 // - fixed param
 //   - need to know if model is 0-param excluding tp, gq
+// - optimization 
 
 extern "C" {
 
@@ -197,23 +200,14 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
     int return_code = 0;
 
     if (num_paths == 1) {
-      return_code = stan::services::pathfinder::pathfinder_lbfgs_single<
-          false, stan::model::model_base,
-          // need to manually instantiate so that we can use our buffer_writer
-          stan::callbacks::structured_writer, stan::callbacks::writer>(
+      return_code = stan::services::pathfinder::pathfinder_lbfgs_single(
           model, *(json_inits[0]), seed, id, init_radius, max_history_size,
           init_alpha, tol_obj, tol_rel_obj, tol_grad, tol_rel_grad, tol_param,
           num_iterations, num_elbo_draws, num_draws, save_iterations, refresh,
           interrupt, logger, null_writers[0], pathfinder_writer,
           null_structured_writers[0]);
     } else {
-      return_code = stan::services::pathfinder::pathfinder_lbfgs_multi<
-          stan::model::model_base,
-          // same -- annoying to have to manually instantiate
-          std::vector<std::unique_ptr<stan::io::var_context>> &,
-          std::vector<stan::callbacks::writer> &,
-          stan::callbacks::structured_writer, stan::callbacks::writer,
-          stan::callbacks::writer, stan::callbacks::structured_writer>(
+      return_code = stan::services::pathfinder::pathfinder_lbfgs_multi(
           model, json_inits, seed, id, init_radius, max_history_size,
           init_alpha, tol_obj, tol_rel_obj, tol_grad, tol_rel_grad, tol_param,
           num_iterations, num_elbo_draws, num_draws, num_multi_draws, num_paths,

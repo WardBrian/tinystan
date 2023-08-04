@@ -16,7 +16,7 @@
 class buffer_writer : public stan::callbacks::writer {
  public:
   buffer_writer(double *buf) : buf(buf), pos(0){};
-  ~buffer_writer(){};
+  virtual ~buffer_writer(){};
 
   // primary way of writing draws
   void operator()(const std::vector<double> &v) override {
@@ -33,6 +33,8 @@ class buffer_writer : public stan::callbacks::writer {
       }
     }
   }
+
+  using stan::callbacks::writer::operator();
 
  private:
   double *buf;
