@@ -109,27 +109,133 @@ end
 
 # algorithms
 
+function sample(
+    model::FFIStanModel,
+    data = "",
+    ;
+    num_chains = 4,
+    inits = nothing,
+    seed = nothing,
+    id = 1,
+    init_radius = 2.0,
+    num_warmup = 1000,
+    num_samples = 1000,
+    metric = DIAG,
+    adapt = true,
+    delta = 0.8,
+    gamma = 0.05,
+    kappa = 0.75,
+    t0 = 10,
+    init_buffer = 75,
+    term_buffer = 50,
+    window = 25,
+    save_warmup = false,
+    refresh = 0,
+    stepsize = 1.0,
+    stepsize_jitter = 0.0,
+    max_depth = 10,
+)
+    if num_chains < 1
+        error("num_chains must be at least 1")
+    end
+    if num_warmup < 0
+        error("num_warmup must be non-negative")
+    end
+    if num_samples < 1
+        error("num_samples must be at least 1")
+    end
+
+    if seed === nothing
+        seed = rand(UInt32)
+    end
+
+    with_model(model, data, seed) do model_ptr
+        param_names = cat(HMC_SAMPLER_VARIABLES, get_names(model, model_ptr), dims = 1)
+        num_params = length(param_names)
+        num_draws = num_samples + num_warmup * Int(save_warmup)
+        out = zeros(Float64, num_params, num_draws, num_chains)
+
+        err = Ref{Ptr{Cvoid}}()
+        return_code = ccall(
+            Libc.Libdl.dlsym(model.lib, :ffistan_sample),
+            Cint,
+            (
+                Ptr{Cvoid},
+                Csize_t,
+                Cstring,
+                Cuint,
+                Cuint,
+                Cdouble,
+                Cint,
+                Cint,
+                HMCMetric,
+                Cint, # really bool
+                Cdouble,
+                Cdouble,
+                Cdouble,
+                Cdouble,
+                Cuint,
+                Cuint,
+                Cuint,
+                Cint, # really bool
+                Cint,
+                Cdouble,
+                Cdouble,
+                Cint,
+                Ref{Cdouble},
+                Ref{Ptr{Cvoid}},
+            ),
+            model_ptr,
+            num_chains,
+            encode_inits(model.sep, inits),
+            seed,
+            id,
+            init_radius,
+            num_warmup,
+            num_samples,
+            metric,
+            Int32(adapt),
+            delta,
+            gamma,
+            kappa,
+            t0,
+            init_buffer,
+            term_buffer,
+            window,
+            Int32(save_warmup),
+            refresh,
+            stepsize,
+            stepsize_jitter,
+            max_depth,
+            out,
+            err,
+        )
+        raise_for_error(model.lib, return_code, err)
+        return (param_names, permutedims(out, (3, 2, 1)))
+    end
+end
+
 function pathfinder(
     model::FFIStanModel,
-    data::String="",
+    data::String = "",
     ;
-    num_paths::Int=4,
-    inits::Union{String,Vector{String},Nothing}=nothing,
-    seed::Union{Int,Nothing}=nothing,
-    id::Int=1,
-    init_radius=2.0,
-    num_draws=1000,
-    max_history_size::Int=5,
-    init_alpha=0.001,
-    tol_obj=1e-12,
-    tol_rel_obj=1e4,
-    tol_grad=1e-8,
-    tol_rel_grad=1e7,
-    tol_param=1e-8,
-    num_iterations::Int=1000,
-    num_elbo_draws::Int=100,
-    num_multi_draws::Int=1000,
-    refresh::Int=0
+    num_paths::Int = 4,
+    inits::Union{String,Vector{String},Nothing} = nothing,
+    seed::Union{Int,Nothing} = nothing,
+    id::Int = 1,
+    init_radius = 2.0,
+    num_draws = 1000,
+    max_history_size::Int = 5,
+    init_alpha = 0.001,
+    tol_obj = 1e-12,
+    tol_rel_obj = 1e4,
+    tol_grad = 1e-8,
+    tol_rel_grad = 1e7,
+    tol_param = 1e-8,
+    num_iterations::Int = 1000,
+    num_elbo_draws::Int = 100,
+    num_multi_draws::Int = 1000,
+    refresh::Int = 0,
 )
     if num_paths < 1
         error("num_paths must be at least 1")
@@ -143,9 +249,9 @@ function pathfinder(
     end
 
     with_model(model, data, seed) do model_ptr
-        param_names = cat(PATHFINDER_VARIABLES, get_names(model, model_ptr), dims=1)
+        param_names = cat(PATHFINDER_VARIABLES, get_names(model, model_ptr), dims = 1)
         num_params = length(param_names)
-        out = zeros(Float64, num_draws * num_params)
+        out = zeros(Float64, num_params, num_draws)
 
         err = Ref{Ptr{Cvoid}}()
         return_code = ccall(
@@ -195,23 +301,29 @@ function pathfinder(
             err,
         )
         raise_for_error(model.lib, return_code, err)
-        return (param_names, transpose(reshape(out, num_params, num_draws)))
+        return (param_names, transpose(out))
 
     end
 end
 
 
 if abspath(PROGRAM_FILE) == @__FILE__
+    using Statistics
+
     ENV["STAN_NUM_THREADS"] = "-1"
     model = FFIStanModel("./bernoulli.stan")
     data = "bernoulli.data.json"
 
+
+    param_names, draws = sample(model, data)
+    println(param_names)
+    println(size(draws))
+    println(mean(draws, dims = (1, 2))[8])
+
     param_names, draws = pathfinder(model, data)
     println(param_names)
     println(size(draws))
-    using Statistics
-
-    println(mean(draws, dims=1))
+    println(mean(draws[:, 3]))
 end
 
 end

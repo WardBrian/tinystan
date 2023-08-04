@@ -181,9 +181,9 @@ class FFIStanModel:
         stepsize_jitter=0.0,
         max_depth=10,
     ):
-        assert num_chains > 0, "num_chains must be positive"
+        assert num_chains > 0, "num_chains must be at least 1"
         assert num_warmup >= 0, "num_warmup must be non-negative"
-        assert num_samples > 0, "num_samples must be positive"
+        assert num_samples > 0, "num_samples must be at least 1"
 
         seed = seed or np.random.randint(2**32 - 1)
 
