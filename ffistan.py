@@ -6,6 +6,8 @@ import contextlib
 import numpy as np
 from numpy.ctypeslib import ndpointer
 
+__all__ = ["FFIStanModel", "HMCMetric"]
+
 double_array = ndpointer(dtype=ctypes.c_double, flags=("C_CONTIGUOUS"))
 err_ptr = ctypes.POINTER(ctypes.c_void_p)
 
@@ -30,7 +32,7 @@ FIXED_SAMPLER_VARIABLES = [
 ]
 
 
-class Metric(Enum):
+class HMCMetric(Enum):
     """Docstring for Metric."""
 
     UNIT = 0
@@ -164,7 +166,7 @@ class FFIStanModel:
         init_radius=2.0,
         num_warmup=1000,
         num_samples=1000,
-        metric=Metric.DIAG,
+        metric=HMCMetric.DIAG,
         adapt=True,
         delta=0.8,
         gamma=0.05,
@@ -247,8 +249,8 @@ class FFIStanModel:
         num_multi_draws=1000,
         refresh=0,
     ):
-        assert num_paths > 0, "num_paths must be positive"
-        assert num_draws > 0, "num_draws must be positive"
+        assert num_paths > 0, "num_paths must be at least 1"
+        assert num_draws > 0, "num_draws must be at least 1"
 
         seed = seed or np.random.randint(2**32 - 1)
 
