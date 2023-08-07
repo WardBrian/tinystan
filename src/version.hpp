@@ -1,0 +1,8 @@
+#ifndef FFISTAN_VERSION_HPP
+#define FFISTAN_VERSION_HPP
+
+#define FFISTAN_MAJOR 0
+#define FFISTAN_MINOR 1
+#define FFISTAN_PATCH 0
+
+#endif

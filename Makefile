@@ -30,7 +30,7 @@ else
 endif
 STAN_FLAGS=$(STAN_FLAG_OPENCL)
 
-FFISTAN_DEPS = $(SRC)ffistan.cpp $(SRC)ffistan.h $(SRC)model.hpp $(SRC)util.hpp $(SRC)errors.hpp
+FFISTAN_DEPS = $(SRC)ffistan.cpp $(SRC)ffistan.h $(SRC)model.hpp $(SRC)util.hpp $(SRC)errors.hpp $(SRC)version.hpp
 FFISTAN_O = $(patsubst %.cpp,%$(STAN_FLAGS).o,$(SRC)ffistan.cpp)
 
 $(FFISTAN_O) : $(FFISTAN_DEPS)

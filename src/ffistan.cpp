@@ -28,6 +28,7 @@
 #include "errors.hpp"
 #include "util.hpp"
 #include "model.hpp"
+#include "version.hpp"
 
 // TODOs:
 // - other logging?
@@ -60,7 +61,7 @@ const char *ffistan_model_param_names(const FFIStanModel *model) {
   return model->param_names;
 }
 
-size_t ffistan_model_num_free_params(const FFIStanModel *model){
+size_t ffistan_model_num_free_params(const FFIStanModel *model) {
   return model->num_free_params;
 }
 
@@ -380,10 +381,24 @@ int ffistan_optimize(const FFIStanModel *ffimodel, const char *init,
 }
 
 const char *ffistan_get_error_message(const stan_error *err) {
+  if (err == nullptr) {
+    // TODO(bmw): is this protection sensible?
+    return "Something went wrong: No error found";
+  }
   return err->msg;
 }
 
 void ffistan_free_stan_error(stan_error *err) { delete (err); }
 
 char ffistan_separator_char() { return SEPARATOR; }
+
+int ffistan_major_version = FFISTAN_MAJOR;
+int ffistan_minor_version = FFISTAN_MINOR;
+int ffistan_patch_version = FFISTAN_PATCH;
+
+void ffistan_version(int *major, int *minor, int *patch) {
+  *major = ffistan_major_version;
+  *minor = ffistan_minor_version;
+  *patch = ffistan_patch_version;
+}
 }

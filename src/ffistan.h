@@ -14,11 +14,54 @@ typedef struct stan_error stan_error;      // opaque type
 typedef struct FFIStanModel FFIStanModel;  // opaque type
 #endif
 
+/**
+ * Get the version of the library.
+ * @param[out] major The major version number.
+ * @param[out] minor The minor version number.
+ * @param[out] patch The patch version number.
+ */
+void ffistan_version(int *major, int *minor, int *patch);
+
+/**
+ * Instantiate a model from JSON-encoded data.
+ *
+ * Besides being an argument to the algorithm functions, the model
+ * can be used to query the names of the parameters and the number
+ * of free parameters. This is essential for constructing output
+ * buffers of appropriate size.
+ *
+ * @param[in] data JSON-encoded data.
+ * @param[in] seed Random seed.
+ * @param[out] err Error information.
+ * @return A pointer to the model. Must later be freed with
+ * ffistan_destroy_model().
+ */
 FFIStanModel *ffistan_create_model(const char *data, unsigned int seed,
                                    stan_error **err);
 
+/**
+ * Deallocate a model.
+ * @param[in] model The model to deallocate.
+ */
 void ffistan_destroy_model(FFIStanModel *model);
+
+/**
+ * Get the names of the parameters.
+ *
+ * @param[in] model The model.
+ * @return A string containing the names of the parameters, comma separated.
+ * Multidimensional parameters are flattened, e.g. "foo[2,3]" becomes 6 strings,
+ * starting with "foo.1.1".
+ */
 const char *ffistan_model_param_names(const FFIStanModel *model);
+
+/**
+ * Get the number of free parameters, i.e., those declared in the parameters
+ * block, not transformed parameters or generated quantities.
+ *
+ * @param[in] model The model.
+ * @return The number of free parameters.
+ */
 size_t ffistan_model_num_free_params(const FFIStanModel *model);
 
 /**
@@ -63,7 +106,23 @@ int ffistan_optimize(const FFIStanModel *ffimodel, const char *init,
                      int refresh, int num_threads, double *out,
                      stan_error **err);
 
+/**
+ * Get the error message from an error object.
+ *
+ * @param[in] err The error object.
+ * @return The error message. Will be freed when the error object is freed, so
+ * copy it if you need it later.
+ */
 const char *ffistan_get_error_message(const stan_error *err);
+
+/**
+ * Free the error object.
+ *
+ * @note This will invalidate any pointers returned by
+ * ffistan_get_error_message().
+ *
+ * @param[in] err The error object.
+ */
 void ffistan_free_stan_error(stan_error *err);
 
 #ifdef __cplusplus
