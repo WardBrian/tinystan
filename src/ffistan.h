@@ -50,6 +50,18 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
                        int num_multi_draws, int refresh, int num_threads,
                        double *out, stan_error **err);
 
+enum FFIStanOptimizationAlgorithm { newton = 0, bfgs = 1, lbfgs = 2 };
+
+int ffistan_optimize(const FFIStanModel *ffimodel, const char *init,
+                     unsigned int seed, unsigned int id, double init_radius,
+                     FFIStanOptimizationAlgorithm algorithm, int num_iterations,
+                     bool jacobian,
+                     /* tuning params */ int max_history_size,
+                     double init_alpha, double tol_obj, double tol_rel_obj,
+                     double tol_grad, double tol_rel_grad, double tol_param,
+                     int refresh, int num_threads, double *out,
+                     stan_error **err);
+
 const char *ffistan_get_error_message(const stan_error *err);
 void ffistan_free_stan_error(stan_error *err);
 

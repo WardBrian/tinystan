@@ -6,6 +6,9 @@
 #include <stan/services/util/create_rng.hpp>
 #include <stan/services/pathfinder/multi.hpp>
 #include <stan/services/pathfinder/single.hpp>
+#include <stan/services/optimize/bfgs.hpp>
+#include <stan/services/optimize/lbfgs.hpp>
+#include <stan/services/optimize/newton.hpp>
 #include <stan/services/sample/hmc_nuts_diag_e.hpp>
 #include <stan/services/sample/hmc_nuts_diag_e_adapt.hpp>
 #include <stan/services/sample/hmc_nuts_dense_e.hpp>
@@ -91,8 +94,7 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
 
     init_threading(num_threads);
 
-    std::vector<std::unique_ptr<stan::io::var_context>> json_inits
-        = load_inits(num_chains, inits);
+    auto json_inits = load_inits(num_chains, inits);
 
     auto &model = *ffimodel->model;
 
@@ -198,6 +200,7 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
     check_positive("num_paths", num_paths);
     check_positive("num_draws", num_draws);
     check_positive("id", id);
+    check_nonnegative("init_radius", init_radius);
     check_positive("max_history_size", max_history_size);
     check_nonnegative("init_alpha", init_alpha);
     check_positive("tol_obj", tol_obj);
@@ -211,8 +214,7 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
 
     init_threading(num_threads);
 
-    std::vector<std::unique_ptr<stan::io::var_context>> json_inits
-        = load_inits(num_paths, inits);
+    auto json_inits = load_inits(num_paths, inits);
 
     auto &model = *ffimodel->model;
 
@@ -244,6 +246,115 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
           save_iterations, refresh, interrupt, logger, null_writers,
           null_writers, null_structured_writers, pathfinder_writer,
           dummy_json_writer);
+    }
+
+    if (return_code != 0) {
+      if (err != nullptr) {
+        *err = logger.get_error();
+      }
+    }
+
+    return return_code;
+
+  } catch (const std::exception &e) {
+    if (err != nullptr) {
+      *err = new stan_error(strdup(e.what()));
+    }
+  } catch (...) {
+    if (err != nullptr) {
+      *err = new stan_error(strdup("Unknown error"));
+    }
+  }
+  return -1;
+}
+
+int ffistan_optimize(const FFIStanModel *ffimodel, const char *init,
+                     unsigned int seed, unsigned int id, double init_radius,
+                     FFIStanOptimizationAlgorithm algorithm, int num_iterations,
+                     bool jacobian,
+                     /* tuning params */ int max_history_size,
+                     double init_alpha, double tol_obj, double tol_rel_obj,
+                     double tol_grad, double tol_rel_grad, double tol_param,
+                     int refresh, int num_threads, double *out,
+                     stan_error **err) {
+  try {
+    check_positive("id", id);
+    check_positive("num_iterations", num_iterations);
+    check_nonnegative("init_radius", init_radius);
+
+    if (algorithm == lbfgs) {
+      check_positive("max_history_size", max_history_size);
+    }
+    if (algorithm == bfgs || algorithm == lbfgs) {
+      check_nonnegative("init_alpha", init_alpha);
+      check_positive("tol_obj", tol_obj);
+      check_positive("tol_rel_obj", tol_rel_obj);
+      check_positive("tol_grad", tol_grad);
+      check_positive("tol_rel_grad", tol_rel_grad);
+      check_positive("tol_param", tol_param);
+    }
+
+    init_threading(num_threads);
+
+    auto json_init = load_data(init);
+    auto &model = *ffimodel->model;
+    buffer_writer sample_writer(out);
+    error_logger logger;
+
+    stan::callbacks::interrupt interrupt;
+    stan::callbacks::writer null_writer;
+
+    bool save_iterations = false;
+
+    int return_code = 0;
+    switch (algorithm) {
+      case newton:
+        if (jacobian)
+          return_code
+              = stan::services::optimize::newton<stan::model::model_base, true>(
+                  model, *json_init, seed, id, init_radius, num_iterations,
+                  save_iterations, interrupt, logger, null_writer,
+                  sample_writer);
+        else
+          return_code
+              = stan::services::optimize::newton<stan::model::model_base,
+                                                 false>(
+                  model, *json_init, seed, id, init_radius, num_iterations,
+                  save_iterations, interrupt, logger, null_writer,
+                  sample_writer);
+        break;
+      case bfgs:
+        if (jacobian)
+          return_code
+              = stan::services::optimize::bfgs<stan::model::model_base, true>(
+                  model, *json_init, seed, id, init_radius, init_alpha, tol_obj,
+                  tol_rel_obj, tol_grad, tol_rel_grad, tol_param,
+                  num_iterations, save_iterations, refresh, interrupt, logger,
+                  null_writer, sample_writer);
+        else
+          return_code
+              = stan::services::optimize::bfgs<stan::model::model_base, false>(
+                  model, *json_init, seed, id, init_radius, init_alpha, tol_obj,
+                  tol_rel_obj, tol_grad, tol_rel_grad, tol_param,
+                  num_iterations, save_iterations, refresh, interrupt, logger,
+                  null_writer, sample_writer);
+        break;
+      case lbfgs:
+        if (jacobian)
+          return_code
+              = stan::services::optimize::lbfgs<stan::model::model_base, true>(
+                  model, *json_init, seed, id, init_radius, max_history_size,
+                  init_alpha, tol_obj, tol_rel_obj, tol_grad, tol_rel_grad,
+                  tol_param, num_iterations, save_iterations, refresh,
+                  interrupt, logger, null_writer, sample_writer);
+        else
+          return_code
+              = stan::services::optimize::lbfgs<stan::model::model_base, false>(
+                  model, *json_init, seed, id, init_radius, max_history_size,
+                  init_alpha, tol_obj, tol_rel_obj, tol_grad, tol_rel_grad,
+                  tol_param, num_iterations, save_iterations, refresh,
+                  interrupt, logger, null_writer, sample_writer);
+        break;
     }
 
     if (return_code != 0) {

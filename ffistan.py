@@ -26,6 +26,10 @@ PATHFINDER_VARIABLES = [
     "lp__",
 ]
 
+OPTIMIZE_VARIABLES = [
+    "lp__",
+]
+
 FIXED_SAMPLER_VARIABLES = [
     "lp__",
     "accept_stat__",
@@ -33,11 +37,15 @@ FIXED_SAMPLER_VARIABLES = [
 
 
 class HMCMetric(Enum):
-    """Docstring for Metric."""
-
     UNIT = 0
     DENSE = 1
     DIAG = 2
+
+
+class OptimizationAlgorithm(Enum):
+    NEWTON = 0
+    BFGS = 1
+    LBFGS = 2
 
 
 class FFIStanModel:
@@ -112,6 +120,30 @@ class FFIStanModel:
             ctypes.c_int,  # num_iterations
             ctypes.c_int,  # num_elbo_draws
             ctypes.c_int,  # num_multi_draws
+            ctypes.c_int,  # refresh
+            ctypes.c_int,  # num_threads
+            double_array,
+            err_ptr,
+        ]
+
+        self._ffi_optimize = self._lib.ffistan_optimize
+        self._ffi_optimize.restype = ctypes.c_int
+        self._ffi_optimize.argtypes = [
+            ctypes.c_void_p,  # model
+            ctypes.c_char_p,  # inits
+            ctypes.c_uint,  # seed
+            ctypes.c_uint,  # id
+            ctypes.c_double,  # init_radius
+            ctypes.c_int,  # really enum for algorithm
+            ctypes.c_int,  # num_iterations
+            ctypes.c_bool,  # jacobian
+            ctypes.c_int,  # max_history_size
+            ctypes.c_double,  # init_alpha
+            ctypes.c_double,  # tol_obj
+            ctypes.c_double,  # tol_rel_obj
+            ctypes.c_double,  # tol_grad
+            ctypes.c_double,  # tol_rel_grad
+            ctypes.c_double,  # tol_param
             ctypes.c_int,  # refresh
             ctypes.c_int,  # num_threads
             double_array,
@@ -295,6 +327,63 @@ class FFIStanModel:
 
         return (param_names, out)
 
+    def optimize(
+        self,
+        data="",
+        *,
+        init=None,
+        seed=None,
+        id=1,
+        init_radius=2.0,
+        algorithm=OptimizationAlgorithm.LBFGS,
+        jacobian=False,
+        num_iterations=2000,
+        max_history_size=5,
+        init_alpha=0.001,
+        tol_obj=1e-12,
+        tol_rel_obj=1e4,
+        tol_grad=1e-8,
+        tol_rel_grad=1e7,
+        tol_param=1e-8,
+        refresh=0,
+        num_threads=-1,
+    ):
+        seed = seed or np.random.randint(2**32 - 1)
+
+        with self._get_model(data, seed) as model:
+            param_names = OPTIMIZE_VARIABLES + list(
+                self._get_names(model).decode("utf-8").split(",")
+            )
+
+            num_params = len(param_names)
+            out = np.zeros(num_params, dtype=np.float64)
+
+            err = ctypes.pointer(ctypes.c_void_p())
+            rc = self._ffi_optimize(
+                model,
+                init.encode() if init is not None else None,
+                seed,
+                id,
+                init_radius,
+                algorithm.value,
+                num_iterations,
+                jacobian,
+                max_history_size,
+                init_alpha,
+                tol_obj,
+                tol_rel_obj,
+                tol_grad,
+                tol_rel_grad,
+                tol_param,
+                refresh,
+                num_threads,
+                out,
+                err,
+            )
+            self._raise_for_error(rc, err)
+
+        return (param_names, out)
+
 
 if __name__ == "__main__":
     model = FFIStanModel("./bernoulli.stan")
@@ -309,3 +398,7 @@ if __name__ == "__main__":
     print(pf[0])
     print(pf[1][:, 2].mean())
     print(pf[1].shape)
+
+    o = model.optimize(data)
+    print(o[0])
+    print(o[1])
