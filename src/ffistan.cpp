@@ -30,6 +30,8 @@
 #include "model.hpp"
 #include "version.hpp"
 
+#include "R_shims.cpp"
+
 // TODOs:
 // - other logging?
 //   - needs something like BridgeStan's print callback in general case
