@@ -12,6 +12,28 @@
 #include <sstream>
 #include <string>
 #include <memory>
+#include <stdexcept>
+#include <thread>
+
+void init_threading(int num_threads) {
+  if (num_threads == -1) {
+    num_threads = std::thread::hardware_concurrency();
+  }
+#ifndef STAN_THREADS
+  if (num_threads > 1) {
+    throw std::invalid_argument(
+        "Number of threads greater than 1 requested, but model not compiled "
+        "with threading support.");
+  }
+#endif
+  if (num_threads > 0) {
+    stan::math::init_threadpool_tbb(num_threads);
+  } else {
+    throw std::invalid_argument(
+        "Number of threads requested must be a positive integer or -1"
+        " (for all available cores).");
+  }
+}
 
 class buffer_writer : public stan::callbacks::writer {
  public:

@@ -33,7 +33,7 @@
 //   - use diagnostic_writer, might need new service functions
 // - fixed param
 //   - need to know if model is 0-param excluding tp, gq
-// - optimization 
+// - optimization
 
 extern "C" {
 
@@ -66,14 +66,30 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
                    /* adaptation params */ bool adapt, double delta,
                    double gamma, double kappa, double t0,
                    unsigned int init_buffer, unsigned int term_buffer,
-                   unsigned int window, bool save_warmup,
-                   /* currently has no effect */ int refresh, double stepsize,
-                   double stepsize_jitter, int max_depth, double *out,
-                   stan_error **err) {
+                   unsigned int window, bool save_warmup, double stepsize,
+                   double stepsize_jitter, int max_depth,
+                   /* currently has no effect */ int refresh, int num_threads,
+                   double *out, stan_error **err) {
   try {
-    // consider taking in as argument as well
-    int num_threads = stan::math::internal::get_num_threads();
-    stan::math::init_threadpool_tbb(num_threads);
+    check_positive("num_chains", num_chains);
+    check_positive("id", id);
+    check_nonnegative("init_radius", init_radius);
+    check_nonnegative("num_warmup", num_warmup);
+    check_positive("num_samples", num_samples);
+    if (adapt) {
+      check_between("delta", delta, 0, 1);
+      check_positive("gamma", gamma);
+      check_positive("kappa", kappa);
+      check_positive("t0", t0);
+    }
+    check_nonnegative("init_buffer", init_buffer);
+    check_nonnegative("term_buffer", term_buffer);
+    check_nonnegative("window", window);
+    check_positive("stepsize", stepsize);
+    check_between("stepsize_jitter", stepsize_jitter, 0, 1);
+    check_positive("max_depth", max_depth);
+
+    init_threading(num_threads);
 
     std::vector<std::unique_ptr<stan::io::var_context>> json_inits
         = load_inits(num_chains, inits);
@@ -175,11 +191,25 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
                        double init_alpha, double tol_obj, double tol_rel_obj,
                        double tol_grad, double tol_rel_grad, double tol_param,
                        int num_iterations, int num_elbo_draws,
-                       int num_multi_draws, int refresh, double *out,
-                       stan_error **err) {
+                       int num_multi_draws, int refresh, int num_threads,
+                       double *out, stan_error **err) {
   try {
-    int num_threads = stan::math::internal::get_num_threads();
-    stan::math::init_threadpool_tbb(num_threads);
+    // argument validation
+    check_positive("num_paths", num_paths);
+    check_positive("num_draws", num_draws);
+    check_positive("id", id);
+    check_positive("max_history_size", max_history_size);
+    check_nonnegative("init_alpha", init_alpha);
+    check_positive("tol_obj", tol_obj);
+    check_positive("tol_rel_obj", tol_rel_obj);
+    check_positive("tol_grad", tol_grad);
+    check_positive("tol_rel_grad", tol_rel_grad);
+    check_positive("tol_param", tol_param);
+    check_positive("num_iterations", num_iterations);
+    check_positive("num_elbo_draws", num_elbo_draws);
+    check_positive("num_multi_draws", num_multi_draws);
+
+    init_threading(num_threads);
 
     std::vector<std::unique_ptr<stan::io::var_context>> json_inits
         = load_inits(num_paths, inits);

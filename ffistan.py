@@ -83,10 +83,11 @@ class FFIStanModel:
             ctypes.c_uint,  # term_buffer
             ctypes.c_uint,  # window
             ctypes.c_bool,  # save_warmup
-            ctypes.c_int,  # refresh
             ctypes.c_double,  # stepsize
             ctypes.c_double,  # stepsize_jitter
             ctypes.c_int,  # max_depth
+            ctypes.c_int,  # refresh
+            ctypes.c_int,  # num_threads
             double_array,
             err_ptr,
         ]
@@ -112,6 +113,7 @@ class FFIStanModel:
             ctypes.c_int,  # num_elbo_draws
             ctypes.c_int,  # num_multi_draws
             ctypes.c_int,  # refresh
+            ctypes.c_int,  # num_threads
             double_array,
             err_ptr,
         ]
@@ -176,11 +178,13 @@ class FFIStanModel:
         term_buffer=50,
         window=25,
         save_warmup=False,
-        refresh=0,
         stepsize=1.0,
         stepsize_jitter=0.0,
         max_depth=10,
+        refresh=0,
+        num_threads=-1,
     ):
+        # these are checked here because they're sizes for "out"
         assert num_chains > 0, "num_chains must be at least 1"
         assert num_warmup >= 0, "num_warmup must be non-negative"
         assert num_samples > 0, "num_samples must be at least 1"
@@ -216,10 +220,11 @@ class FFIStanModel:
                 term_buffer,
                 window,
                 save_warmup,
-                refresh,
                 stepsize,
                 stepsize_jitter,
                 max_depth,
+                refresh,
+                num_threads,
                 out,
                 err,
             )
@@ -248,8 +253,8 @@ class FFIStanModel:
         num_elbo_draws=100,
         num_multi_draws=1000,
         refresh=0,
+        num_threads=-1,
     ):
-        assert num_paths > 0, "num_paths must be at least 1"
         assert num_draws > 0, "num_draws must be at least 1"
 
         seed = seed or np.random.randint(2**32 - 1)
@@ -282,6 +287,7 @@ class FFIStanModel:
                 num_elbo_draws,
                 num_multi_draws,
                 refresh,
+                num_threads,
                 out,
                 err,
             )
@@ -291,10 +297,6 @@ class FFIStanModel:
 
 
 if __name__ == "__main__":
-    import os
-
-    os.environ["STAN_NUM_THREADS"] = "-1"
-
     model = FFIStanModel("./bernoulli.stan")
     data = "bernoulli.data.json"
     fit = model.sample(data, num_samples=10000, num_chains=10)

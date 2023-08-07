@@ -111,29 +111,30 @@ end
 
 function sample(
     model::FFIStanModel,
-    data = "",
+    data::String="",
     ;
-    num_chains = 4,
-    inits = nothing,
-    seed = nothing,
-    id = 1,
-    init_radius = 2.0,
-    num_warmup = 1000,
-    num_samples = 1000,
-    metric = DIAG,
-    adapt = true,
-    delta = 0.8,
-    gamma = 0.05,
-    kappa = 0.75,
-    t0 = 10,
-    init_buffer = 75,
-    term_buffer = 50,
-    window = 25,
-    save_warmup = false,
-    refresh = 0,
-    stepsize = 1.0,
-    stepsize_jitter = 0.0,
-    max_depth = 10,
+    num_chains::Int=4,
+    inits=nothing,
+    seed::Union{Nothing,UInt32}=nothing,
+    id::Int=1,
+    init_radius=2.0,
+    num_warmup::Int=1000,
+    num_samples::Int=1000,
+    metric::HMCMetric=DIAG,
+    adapt=true,
+    delta=0.8,
+    gamma=0.05,
+    kappa=0.75,
+    t0::Int=10,
+    init_buffer::Int=75,
+    term_buffer::Int=50,
+    window::Int=25,
+    save_warmup::Bool=false,
+    stepsize=1.0,
+    stepsize_jitter=0.0,
+    max_depth::Int=10,
+    refresh::Int=0,
+    num_threads::Int=-1
 )
     if num_chains < 1
         error("num_chains must be at least 1")
@@ -150,7 +151,7 @@ function sample(
     end
 
     with_model(model, data, seed) do model_ptr
-        param_names = cat(HMC_SAMPLER_VARIABLES, get_names(model, model_ptr), dims = 1)
+        param_names = cat(HMC_SAMPLER_VARIABLES, get_names(model, model_ptr), dims=1)
         num_params = length(param_names)
         num_draws = num_samples + num_warmup * Int(save_warmup)
         out = zeros(Float64, num_params, num_draws, num_chains)
@@ -178,9 +179,10 @@ function sample(
                 Cuint,
                 Cuint,
                 Cint, # really bool
+                Cdouble,
+                Cdouble,
                 Cint,
-                Cdouble,
-                Cdouble,
+                Cint,
                 Cint,
                 Ref{Cdouble},
                 Ref{Ptr{Cvoid}},
@@ -203,10 +205,11 @@ function sample(
             term_buffer,
             window,
             Int32(save_warmup),
-            refresh,
             stepsize,
             stepsize_jitter,
             max_depth,
+            refresh,
+            num_threads,
             out,
             err,
         )
@@ -217,29 +220,27 @@ end
 
 function pathfinder(
     model::FFIStanModel,
-    data::String = "",
+    data::String="",
     ;
-    num_paths::Int = 4,
-    inits::Union{String,Vector{String},Nothing} = nothing,
-    seed::Union{Int,Nothing} = nothing,
-    id::Int = 1,
-    init_radius = 2.0,
-    num_draws = 1000,
-    max_history_size::Int = 5,
-    init_alpha = 0.001,
-    tol_obj = 1e-12,
-    tol_rel_obj = 1e4,
-    tol_grad = 1e-8,
-    tol_rel_grad = 1e7,
-    tol_param = 1e-8,
-    num_iterations::Int = 1000,
-    num_elbo_draws::Int = 100,
-    num_multi_draws::Int = 1000,
-    refresh::Int = 0,
+    num_paths::Int=4,
+    inits::Union{String,Vector{String},Nothing}=nothing,
+    seed::Union{Int,Nothing}=nothing,
+    id::Int=1,
+    init_radius=2.0,
+    num_draws=1000,
+    max_history_size::Int=5,
+    init_alpha=0.001,
+    tol_obj=1e-12,
+    tol_rel_obj=1e4,
+    tol_grad=1e-8,
+    tol_rel_grad=1e7,
+    tol_param=1e-8,
+    num_iterations::Int=1000,
+    num_elbo_draws::Int=100,
+    num_multi_draws::Int=1000,
+    refresh::Int=0,
+    num_threads::Int=-1
 )
-    if num_paths < 1
-        error("num_paths must be at least 1")
-    end
     if num_draws < 1
         error("num_draws must be at least 1")
     end
@@ -249,7 +250,7 @@ function pathfinder(
     end
 
     with_model(model, data, seed) do model_ptr
-        param_names = cat(PATHFINDER_VARIABLES, get_names(model, model_ptr), dims = 1)
+        param_names = cat(PATHFINDER_VARIABLES, get_names(model, model_ptr), dims=1)
         num_params = length(param_names)
         out = zeros(Float64, num_params, num_draws)
 
@@ -276,6 +277,7 @@ function pathfinder(
                 Cint,
                 Cint,
                 Cint,
+                Cint,
                 Ref{Cdouble},
                 Ref{Ptr{Cvoid}},
             ),
@@ -297,6 +299,7 @@ function pathfinder(
             num_elbo_draws,
             num_multi_draws,
             refresh,
+            num_threads,
             out,
             err,
         )
@@ -310,15 +313,13 @@ end
 if abspath(PROGRAM_FILE) == @__FILE__
     using Statistics
 
-    ENV["STAN_NUM_THREADS"] = "-1"
     model = FFIStanModel("./bernoulli.stan")
     data = "bernoulli.data.json"
-
 
     param_names, draws = sample(model, data)
     println(param_names)
     println(size(draws))
-    println(mean(draws, dims = (1, 2))[8])
+    println(mean(draws, dims=(1, 2))[8])
 
     param_names, draws = pathfinder(model, data)
     println(param_names)

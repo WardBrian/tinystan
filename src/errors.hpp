@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 #include <cstdlib>
+#include <stdexcept>
 
 class stan_error {
  public:
@@ -51,5 +52,32 @@ class error_logger : public stan::callbacks::logger {
  private:
   std::string last_error;
 };
+
+template <typename T>
+void check_positive(const char *name, T val) {
+  if (val <= 0) {
+    std::stringstream msg;
+    msg << name << " must be at positive, was " << val;
+    throw std::invalid_argument(msg.str());
+  }
+}
+
+template <typename T>
+void check_nonnegative(const char *name, T val) {
+  if (val < 0) {
+    std::stringstream msg;
+    msg << name << " must be non-negative, was " << val;
+    throw std::invalid_argument(msg.str());
+  }
+}
+
+void check_between(const char *name, double val, double lb, double ub) {
+  if (val < lb || val > ub) {
+    std::stringstream msg;
+    msg << name << " must be between " << lb << " and " << ub << ", was "
+        << val;
+    throw std::invalid_argument(msg.str());
+  }
+}
 
 #endif
