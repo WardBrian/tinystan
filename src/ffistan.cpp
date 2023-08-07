@@ -9,6 +9,7 @@
 #include <stan/services/optimize/bfgs.hpp>
 #include <stan/services/optimize/lbfgs.hpp>
 #include <stan/services/optimize/newton.hpp>
+#include <stan/services/sample/fixed_param.hpp>
 #include <stan/services/sample/hmc_nuts_diag_e.hpp>
 #include <stan/services/sample/hmc_nuts_diag_e_adapt.hpp>
 #include <stan/services/sample/hmc_nuts_dense_e.hpp>
@@ -34,7 +35,6 @@
 //   - needs something like BridgeStan's print callback in general case
 // - ability to output metric, hessian, etc?
 //   - use diagnostic_writer, might need new service functions
-// - fixed param?
 
 extern "C" {
 
@@ -76,23 +76,28 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
                    /* currently has no effect */ int refresh, int num_threads,
                    double *out, stan_error **err) {
   try {
+    bool fixed_param = ffimodel->num_free_params == 0;
+
     check_positive("num_chains", num_chains);
     check_positive("id", id);
     check_nonnegative("init_radius", init_radius);
-    check_nonnegative("num_warmup", num_warmup);
     check_positive("num_samples", num_samples);
-    if (adapt) {
-      check_between("delta", delta, 0, 1);
-      check_positive("gamma", gamma);
-      check_positive("kappa", kappa);
-      check_positive("t0", t0);
+
+    if (!fixed_param) {
+      check_nonnegative("num_warmup", num_warmup);
+      if (adapt) {
+        check_between("delta", delta, 0, 1);
+        check_positive("gamma", gamma);
+        check_positive("kappa", kappa);
+        check_positive("t0", t0);
+      }
+      check_nonnegative("init_buffer", init_buffer);
+      check_nonnegative("term_buffer", term_buffer);
+      check_nonnegative("window", window);
+      check_positive("stepsize", stepsize);
+      check_between("stepsize_jitter", stepsize_jitter, 0, 1);
+      check_positive("max_depth", max_depth);
     }
-    check_nonnegative("init_buffer", init_buffer);
-    check_nonnegative("term_buffer", term_buffer);
-    check_nonnegative("window", window);
-    check_positive("stepsize", stepsize);
-    check_between("stepsize_jitter", stepsize_jitter, 0, 1);
-    check_positive("max_depth", max_depth);
 
     init_threading(num_threads);
 
@@ -100,8 +105,9 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
 
     auto &model = *ffimodel->model;
 
-    // all HMC has 7 algorithm params
-    int num_params = ffimodel->num_params + 7;
+    // all HMC has 7 algorithm params, fixed_param only 2
+    int num_algo_params = fixed_param ? 2 : 7;
+    int num_params = ffimodel->num_params + num_algo_params;
     int offset = num_params * (num_samples + num_warmup * save_warmup);
 
     std::vector<buffer_writer> sample_writers;
@@ -119,55 +125,63 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
 
     int thin = 1;  // no thinning
 
-    switch (metric_choice) {
-      case unit:
-        if (adapt) {
-          return_code = stan::services::sample::hmc_nuts_unit_e_adapt(
-              model, num_chains, json_inits, seed, id, init_radius, num_warmup,
-              num_samples, thin, save_warmup, refresh, stepsize,
-              stepsize_jitter, max_depth, delta, gamma, kappa, t0, interrupt,
-              logger, null_writers, sample_writers, null_writers);
-        } else {
-          return_code = stan::services::sample::hmc_nuts_unit_e(
-              model, num_chains, json_inits, seed, id, init_radius, num_warmup,
-              num_samples, thin, save_warmup, refresh, stepsize,
-              stepsize_jitter, max_depth, interrupt, logger, null_writers,
-              sample_writers, null_writers);
-        }
-        break;
-      case dense:
-        if (adapt) {
-          return_code = stan::services::sample::hmc_nuts_dense_e_adapt(
-              model, num_chains, json_inits, seed, id, init_radius, num_warmup,
-              num_samples, thin, save_warmup, refresh, stepsize,
-              stepsize_jitter, max_depth, delta, gamma, kappa, t0, init_buffer,
-              term_buffer, window, interrupt, logger, null_writers,
-              sample_writers, null_writers);
-        } else {
-          return_code = stan::services::sample::hmc_nuts_dense_e(
-              model, num_chains, json_inits, seed, id, init_radius, num_warmup,
-              num_samples, thin, save_warmup, refresh, stepsize,
-              stepsize_jitter, max_depth, interrupt, logger, null_writers,
-              sample_writers, null_writers);
-        }
-        break;
-      case diagonal:
-        if (adapt) {
-          return_code = stan::services::sample::hmc_nuts_diag_e_adapt(
-              model, num_chains, json_inits, seed, id, init_radius, num_warmup,
-              num_samples, thin, save_warmup, refresh, stepsize,
-              stepsize_jitter, max_depth, delta, gamma, kappa, t0, init_buffer,
-              term_buffer, window, interrupt, logger, null_writers,
-              sample_writers, null_writers);
-        } else {
-          return_code = stan::services::sample::hmc_nuts_diag_e(
-              model, num_chains, json_inits, seed, id, init_radius, num_warmup,
-              num_samples, thin, save_warmup, refresh, stepsize,
-              stepsize_jitter, max_depth, interrupt, logger, null_writers,
-              sample_writers, null_writers);
-        }
-        break;
+    if (fixed_param) {
+      return_code = stan::services::sample::fixed_param(
+          model, num_chains, json_inits, seed, id, init_radius, num_samples,
+          thin, refresh, interrupt, logger, null_writers, sample_writers,
+          null_writers);
+    } else {
+      switch (metric_choice) {
+        case unit:
+          if (adapt) {
+            return_code = stan::services::sample::hmc_nuts_unit_e_adapt(
+                model, num_chains, json_inits, seed, id, init_radius,
+                num_warmup, num_samples, thin, save_warmup, refresh, stepsize,
+                stepsize_jitter, max_depth, delta, gamma, kappa, t0, interrupt,
+                logger, null_writers, sample_writers, null_writers);
+          } else {
+            return_code = stan::services::sample::hmc_nuts_unit_e(
+                model, num_chains, json_inits, seed, id, init_radius,
+                num_warmup, num_samples, thin, save_warmup, refresh, stepsize,
+                stepsize_jitter, max_depth, interrupt, logger, null_writers,
+                sample_writers, null_writers);
+          }
+          break;
+        case dense:
+          if (adapt) {
+            return_code = stan::services::sample::hmc_nuts_dense_e_adapt(
+                model, num_chains, json_inits, seed, id, init_radius,
+                num_warmup, num_samples, thin, save_warmup, refresh, stepsize,
+                stepsize_jitter, max_depth, delta, gamma, kappa, t0,
+                init_buffer, term_buffer, window, interrupt, logger,
+                null_writers, sample_writers, null_writers);
+          } else {
+            return_code = stan::services::sample::hmc_nuts_dense_e(
+                model, num_chains, json_inits, seed, id, init_radius,
+                num_warmup, num_samples, thin, save_warmup, refresh, stepsize,
+                stepsize_jitter, max_depth, interrupt, logger, null_writers,
+                sample_writers, null_writers);
+          }
+          break;
+        case diagonal:
+          if (adapt) {
+            return_code = stan::services::sample::hmc_nuts_diag_e_adapt(
+                model, num_chains, json_inits, seed, id, init_radius,
+                num_warmup, num_samples, thin, save_warmup, refresh, stepsize,
+                stepsize_jitter, max_depth, delta, gamma, kappa, t0,
+                init_buffer, term_buffer, window, interrupt, logger,
+                null_writers, sample_writers, null_writers);
+          } else {
+            return_code = stan::services::sample::hmc_nuts_diag_e(
+                model, num_chains, json_inits, seed, id, init_radius,
+                num_warmup, num_samples, thin, save_warmup, refresh, stepsize,
+                stepsize_jitter, max_depth, interrupt, logger, null_writers,
+                sample_writers, null_writers);
+          }
+          break;
+      }
     }
+
     if (return_code != 0) {
       if (err != nullptr) {
         *err = logger.get_error();

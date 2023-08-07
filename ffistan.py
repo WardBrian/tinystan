@@ -235,9 +235,9 @@ class FFIStanModel:
 
         with self._get_model(data, seed) as model:
             if self._get_free_params(model) == 0:
-                raise ValueError("Model has no parameters to sample.")
-            
-            param_names = HMC_SAMPLER_VARIABLES + self._get_parameter_names(model)
+                param_names = FIXED_SAMPLER_VARIABLES + self._get_parameter_names(model)
+            else:
+                param_names = HMC_SAMPLER_VARIABLES + self._get_parameter_names(model)
 
             num_params = len(param_names)
             num_draws = num_samples + num_warmup * save_warmup
@@ -398,7 +398,7 @@ if __name__ == "__main__":
     fit = model.sample(data, num_samples=10000, num_chains=10)
 
     print(fit[0])
-    print(fit[1].mean(axis=(0, 1))[7])
+    print(fit[1].mean(axis=(0, 1)))
     print(fit[1].shape)
 
     pf = model.pathfinder(data)
