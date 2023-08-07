@@ -34,9 +34,7 @@
 //   - needs something like BridgeStan's print callback in general case
 // - ability to output metric, hessian, etc?
 //   - use diagnostic_writer, might need new service functions
-// - fixed param
-//   - need to know if model is 0-param excluding tp, gq
-// - optimization
+// - fixed param?
 
 extern "C" {
 
@@ -60,6 +58,10 @@ void ffistan_destroy_model(FFIStanModel *model) { delete model; }
 
 const char *ffistan_model_param_names(const FFIStanModel *model) {
   return model->param_names;
+}
+
+size_t ffistan_model_num_free_params(const FFIStanModel *model){
+  return model->num_free_params;
 }
 
 int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,

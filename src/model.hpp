@@ -31,6 +31,7 @@ class FFIStanModel {
     std::unique_ptr<stan::io::var_context> data_context = load_data(data);
     model = &new_model(*data_context, seed, outstream);
     std::vector<std::string> names;
+    num_free_params = model->num_params_r();
     model->constrained_param_names(names, true, true);
     param_names = to_csv(names);
     num_params = names.size();
@@ -45,6 +46,7 @@ class FFIStanModel {
   unsigned int seed;
   char *param_names;
   size_t num_params;
+  size_t num_free_params;
 };
 
 #endif

@@ -69,6 +69,10 @@ class FFIStanModel:
         self._get_names.restype = ctypes.c_char_p
         self._get_names.argtypes = [ctypes.c_void_p]
 
+        self._get_free_params = self._lib.ffistan_model_num_free_params
+        self._get_free_params.restype = ctypes.c_size_t
+        self._get_free_params.argtypes = [ctypes.c_void_p]
+
         self._ffi_sample = self._lib.ffistan_sample
         self._ffi_sample.restype = ctypes.c_int
         self._ffi_sample.argtypes = [
@@ -189,6 +193,12 @@ class FFIStanModel:
                 inits_encoded = inits.encode()
         return inits_encoded
 
+    def _get_parameter_names(self, model):
+        comma_separated = self._get_names(model).decode("utf-8").strip()
+        if comma_separated == "":
+            return []
+        return list(comma_separated.split(","))
+
     def sample(
         self,
         data="",
@@ -224,9 +234,10 @@ class FFIStanModel:
         seed = seed or np.random.randint(2**32 - 1)
 
         with self._get_model(data, seed) as model:
-            param_names = HMC_SAMPLER_VARIABLES + list(
-                self._get_names(model).decode("utf-8").split(",")
-            )
+            if self._get_free_params(model) == 0:
+                raise ValueError("Model has no parameters to sample.")
+            
+            param_names = HMC_SAMPLER_VARIABLES + self._get_parameter_names(model)
 
             num_params = len(param_names)
             num_draws = num_samples + num_warmup * save_warmup
@@ -292,9 +303,7 @@ class FFIStanModel:
         seed = seed or np.random.randint(2**32 - 1)
 
         with self._get_model(data, seed) as model:
-            param_names = PATHFINDER_VARIABLES + list(
-                self._get_names(model).decode("utf-8").split(",")
-            )
+            param_names = PATHFINDER_VARIABLES + self._get_parameter_names(model)
 
             num_params = len(param_names)
             out = np.zeros((num_draws, num_params), dtype=np.float64)
@@ -351,9 +360,7 @@ class FFIStanModel:
         seed = seed or np.random.randint(2**32 - 1)
 
         with self._get_model(data, seed) as model:
-            param_names = OPTIMIZE_VARIABLES + list(
-                self._get_names(model).decode("utf-8").split(",")
-            )
+            param_names = OPTIMIZE_VARIABLES + self._get_parameter_names(model)
 
             num_params = len(param_names)
             out = np.zeros(num_params, dtype=np.float64)

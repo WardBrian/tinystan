@@ -19,6 +19,7 @@ FFIStanModel *ffistan_create_model(const char *data, unsigned int seed,
 
 void ffistan_destroy_model(FFIStanModel *model);
 const char *ffistan_model_param_names(const FFIStanModel *model);
+size_t ffistan_model_num_free_params(const FFIStanModel *model);
 
 /**
  * Returns the separator character which must be used

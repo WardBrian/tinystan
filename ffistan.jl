@@ -112,6 +112,10 @@ function get_names(model::FFIStanModel, model_ptr::Ptr{Cvoid})
         (Ptr{Cvoid},),
         model_ptr,
     )
+    str = unsafe_string(cstr)
+    if isempty(str)
+        return String[]
+    end
     string.(split(unsafe_string(cstr), ','))
 end
 
@@ -159,6 +163,16 @@ function sample(
     end
 
     with_model(model, data, seed) do model_ptr
+        free_params = ccall(
+            Libc.Libdl.dlsym(model.lib, :ffistan_model_num_free_params),
+            Csize_t,
+            (Ptr{Cvoid},),
+            model_ptr,
+        )
+        if free_params == 0
+            error("Model has no parameters to sample")
+        end
+
         param_names = cat(HMC_SAMPLER_VARIABLES, get_names(model, model_ptr), dims = 1)
         num_params = length(param_names)
         num_draws = num_samples + num_warmup * Int(save_warmup)
