@@ -6,3 +6,5 @@ bin/
 
 .RData
 .Rhistory
+
+Manifest.toml
