@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ffistan"
+readme = "README.md"
+authors = [{ "name" = "Brian Ward", "email" = "bward@flatironinstitute.org" }]
+dependencies = ["numpy"]
+requires-python = ">=3.8"
+license = { text = "BSD-3-Clause" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Development Status :: 4 - Beta",
+]
+dynamic = ["version"]
+
+[tool.setuptools.dynamic]
+version = { attr = "ffistan.__version__" }
+
+[tool.setuptools]
+packages = ["stanio"]
+
+[tool.isort]
+profile = "black"
+
+# [tool.setuptools.package-data]
+# "ffistan" = ["py.typed"]

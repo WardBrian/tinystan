@@ -6,7 +6,10 @@ import contextlib
 import numpy as np
 from numpy.ctypeslib import ndpointer
 
-__all__ = ["FFIStanModel", "HMCMetric"]
+__all__ = ["FFIStanModel", "HMCMetric", "OptimizationAlgorithm"]
+
+__version__ = "0.1.0"
+
 
 double_array = ndpointer(dtype=ctypes.c_double, flags=("C_CONTIGUOUS"))
 err_ptr = ctypes.POINTER(ctypes.c_void_p)
