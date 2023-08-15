@@ -4,9 +4,9 @@
 // provide shims which indirect all our arguments and returns
 
 extern "C" {
-void ffistan_create_model_R(FFIStanModel** ptr_out, const char* data,
-                            unsigned int seed, stan_error** err) {
-  *ptr_out = ffistan_create_model(data, seed, err);
+void ffistan_create_model_R(FFIStanModel** ptr_out, const char** data,
+                            unsigned int* seed, stan_error** err) {
+  *ptr_out = ffistan_create_model(*data, *seed, err);
 }
 
 void ffistan_destroy_model_R(FFIStanModel** model) {

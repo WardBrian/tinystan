@@ -236,7 +236,7 @@ class FFIStanModel:
         with self._get_model(data, seed) as model:
             if self._get_free_params(model) == 0:
                 raise ValueError("Model has no parameters to sample.")
-            
+
             param_names = HMC_SAMPLER_VARIABLES + self._get_parameter_names(model)
 
             num_params = len(param_names)
@@ -299,6 +299,7 @@ class FFIStanModel:
         num_threads=-1,
     ):
         assert num_draws > 0, "num_draws must be at least 1"
+        assert num_paths > 0, "num_paths must be at least 1"
 
         seed = seed or np.random.randint(2**32 - 1)
 

@@ -266,6 +266,9 @@ function pathfinder(
     if num_draws < 1
         error("num_draws must be at least 1")
     end
+    if num_paths < 1
+        error("num_paths must be at least 1")
+    end
 
     if seed === nothing
         seed = rand(UInt32)
