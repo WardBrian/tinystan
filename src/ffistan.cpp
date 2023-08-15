@@ -32,13 +32,6 @@
 
 #include "R_shims.cpp"
 
-// TODOs:
-// - other logging?
-//   - needs something like BridgeStan's print callback in general case
-// - ability to output metric, hessian, etc?
-//   - use diagnostic_writer, might need new service functions
-// - fixed param?
-
 extern "C" {
 
 FFIStanModel *ffistan_create_model(const char *data, unsigned int seed,
@@ -384,7 +377,6 @@ int ffistan_optimize(const FFIStanModel *ffimodel, const char *init,
 
 const char *ffistan_get_error_message(const stan_error *err) {
   if (err == nullptr) {
-    // TODO(bmw): is this protection sensible?
     return "Something went wrong: No error found";
   }
   return err->msg;
