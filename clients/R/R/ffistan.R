@@ -9,7 +9,7 @@ OptimizationAlgorithm <- list(NEWTON = 0, BFGS = 1, LBFGS = 2)
 
 OPTIMIZATION_VARIABLES = c("lp__")
 
-StanModel <- R6::R6Class("StanModel", public = list(initialize = function(lib) {
+FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(lib) {
     if (.Platform$OS.type == "windows") {
         lib_old <- lib
         lib <- paste0(tools::file_path_sans_ext(lib), ".dll")
@@ -175,7 +175,7 @@ handle_error <- function(rc, lib_name, err_ptr) {
 }
 
 if (sys.nframe() == 0){
-    model <- StanModel$new("./bernoulli_model.so")
+    model <- FFIStanModel$new("./bernoulli_model.so")
     data <- "bernoulli.data.json"
 
     fit <- model$sample(data, num_samples=10000, num_chains=10)
