@@ -125,7 +125,7 @@ StanModel <- R6::R6Class("StanModel", public = list(initialize = function(lib) {
             err = raw(8), PACKAGE = private$lib_name)
         handle_error(vars$return_code, private$lib_name, vars$err)
         out <- array(vars$out, dim = c(num_params), dimnames = list(params))
-        list(params = params, draws = out)
+        list(params = params, optimum = out)
     })
 
 }), private = list(lib = NA, lib_name = NA, sep = NA, with_model = function(data,
@@ -174,3 +174,16 @@ handle_error <- function(rc, lib_name, err_ptr) {
     }
 }
 
+if (sys.nframe() == 0){
+    model <- StanModel$new("./bernoulli_model.so")
+    data <- "bernoulli.data.json"
+
+    fit <- model$sample(data, num_samples=10000, num_chains=10)
+    print(colMeans(fit$draws, dims=2)[8])
+
+    pf = model$pathfinder(data)
+    print(colMeans(pf$draws)[3])
+
+    o = model$optimize(data)
+    print(o$optimum[2])
+}
