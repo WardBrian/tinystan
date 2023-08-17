@@ -397,8 +397,8 @@ class FFIStanModel:
 
 
 if __name__ == "__main__":
-    model = FFIStanModel("./bernoulli.stan")
-    data = "bernoulli.data.json"
+    model = FFIStanModel("./test_models/bernoulli/bernoulli.stan")
+    data = "./test_models/bernoulli/bernoulli.data.json"
     fit = model.sample(data, num_samples=10000, num_chains=10)
 
     print(fit[0])

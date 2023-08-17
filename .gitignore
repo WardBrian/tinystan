@@ -1,6 +1,7 @@
 *.o
 *.so
 bin/
+test_models/**/*.hpp
 
 *.pyc
 

@@ -422,8 +422,8 @@ end
 if abspath(PROGRAM_FILE) == @__FILE__
     using Statistics
 
-    model = FFIStanModel("./bernoulli.stan")
-    data = "bernoulli.data.json"
+    model = FFIStanModel("./test_models/bernoulli/bernoulli.stan")
+    data = "./test_models/bernoulli/bernoulli.data.json"
 
     param_names, draws = sample(model, data)
     println(param_names)
