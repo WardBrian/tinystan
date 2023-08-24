@@ -200,7 +200,7 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
     check_positive("id", id);
     check_nonnegative("init_radius", init_radius);
     check_positive("max_history_size", max_history_size);
-    check_nonnegative("init_alpha", init_alpha);
+    check_positive("init_alpha", init_alpha);
     check_positive("tol_obj", tol_obj);
     check_positive("tol_rel_obj", tol_rel_obj);
     check_positive("tol_grad", tol_grad);
@@ -284,7 +284,7 @@ int ffistan_optimize(const FFIStanModel *ffimodel, const char *init,
       check_positive("max_history_size", max_history_size);
     }
     if (algorithm == bfgs || algorithm == lbfgs) {
-      check_nonnegative("init_alpha", init_alpha);
+      check_positive("init_alpha", init_alpha);
       check_positive("tol_obj", tol_obj);
       check_positive("tol_rel_obj", tol_rel_obj);
       check_positive("tol_grad", tol_grad);
