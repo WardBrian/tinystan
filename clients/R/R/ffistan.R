@@ -37,7 +37,7 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
     if (num_chains < 1) {
         stop("num_chains must be at least 1")
     }
-    if (num_warmup < 0) {
+    if (save_warmup && num_warmup < 0) {
         stop("num_warmup must be non-negative")
     }
     if (num_samples < 1) {
@@ -75,9 +75,6 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
     refresh = 0, num_threads = -1) {
     if (num_draws < 1) {
         stop("num_draws must be at least 1")
-    }
-    if (num_paths < 1) {
-        stop("num_paths must be at least 1")
     }
 
     if (is.null(seed)) {

@@ -228,7 +228,7 @@ class FFIStanModel:
     ):
         # these are checked here because they're sizes for "out"
         assert num_chains > 0, "num_chains must be at least 1"
-        assert num_warmup >= 0, "num_warmup must be non-negative"
+        assert not save_warmup or num_warmup >= 0, "num_warmup must be non-negative"
         assert num_samples > 0, "num_samples must be at least 1"
 
         seed = seed or np.random.randint(2**32 - 1)
@@ -299,7 +299,6 @@ class FFIStanModel:
         num_threads=-1,
     ):
         assert num_draws > 0, "num_draws must be at least 1"
-        assert num_paths > 0, "num_paths must be at least 1"
 
         seed = seed or np.random.randint(2**32 - 1)
 

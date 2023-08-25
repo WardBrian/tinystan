@@ -151,7 +151,7 @@ function sample(
     if num_chains < 1
         error("num_chains must be at least 1")
     end
-    if num_warmup < 0
+    if save_warmup && num_warmup < 0
         error("num_warmup must be non-negative")
     end
     if num_samples < 1
@@ -265,9 +265,6 @@ function pathfinder(
 )
     if num_draws < 1
         error("num_draws must be at least 1")
-    end
-    if num_paths < 1
-        error("num_paths must be at least 1")
     end
 
     if seed === nothing
