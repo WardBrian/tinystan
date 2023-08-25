@@ -2,10 +2,12 @@ import ctypes
 import subprocess
 from enum import Enum
 import contextlib
+from typing import Any, Dict, Union
 
 import numpy as np
 from numpy.ctypeslib import ndpointer
 
+from stanio import dump_stan_json
 from .output import StanOutput
 
 double_array = ndpointer(dtype=ctypes.c_double, flags=("C_CONTIGUOUS"))
@@ -46,6 +48,12 @@ class OptimizationAlgorithm(Enum):
     NEWTON = 0
     BFGS = 1
     LBFGS = 2
+
+
+def encode_stan_json(data: Union[str, Dict[str, Any]]) -> bytes:
+    if isinstance(data, str):
+        return data.encode()
+    return dump_stan_json(data).encode()
 
 
 class FFIStanModel:
@@ -163,7 +171,7 @@ class FFIStanModel:
         get_separator = self._lib.ffistan_separator_char
         get_separator.restype = ctypes.c_char
         get_separator.argtypes = []
-        self.sep = get_separator().decode("utf-8")
+        self.sep = get_separator()
 
     def _raise_for_error(self, rc: int, err):
         if rc != 0:
@@ -177,7 +185,8 @@ class FFIStanModel:
     @contextlib.contextmanager
     def _get_model(self, data, seed):
         err = ctypes.pointer(ctypes.c_void_p())
-        model = self._create_model(data.encode(), seed, err)
+
+        model = self._create_model(encode_stan_json(data), seed, err)
         self._raise_for_error(not model, err)
         try:
             yield model
@@ -188,9 +197,9 @@ class FFIStanModel:
         inits_encoded = None
         if inits is not None:
             if isinstance(inits, list):
-                inits_encoded = self.sep.join(inits).encode()
+                inits_encoded = self.sep.join(encode_stan_json(init) for init in inits)
             else:
-                inits_encoded = inits.encode()
+                inits_encoded = encode_stan_json(inits)
         return inits_encoded
 
     def _get_parameter_names(self, model):
