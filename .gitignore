@@ -4,6 +4,7 @@ bin/
 test_models/**/*.hpp
 
 *.pyc
+*.egg-info/
 
 .RData
 .Rhistory

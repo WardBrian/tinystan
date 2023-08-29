@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List, Union
 import stanio
 import numpy as np
 
@@ -19,3 +19,30 @@ class StanOutput:
 
     def __getitem__(self, key: str) -> np.ndarray:
         return self._params[key].extract_reshape(self._data)
+
+    # experimental, copied from cmdstanpy Pathfinder draft
+    def create_inits(
+        self, *, chains=4, seed=None
+    ) -> Union[Dict[str, np.ndarray], List[Dict[str, np.ndarray]]]:
+        if self._data.ndim == 1:
+            return {
+                name: var.extract_reshape(self._data)
+                for name, var in self._params.items()
+            }
+
+        data = self._data.reshape((-1, self._data.shape[-1]))
+        rng = np.random.default_rng(seed)
+        idxs = rng.choice(data.shape[0], size=chains, replace=False)
+        if chains == 1:
+            draw = data[idxs[0]]
+            return {
+                name: var.extract_reshape(draw) for name, var in self._params.items()
+            }
+        else:
+            return [
+                {
+                    name: var.extract_reshape(data[idx])
+                    for name, var in self._params.items()
+                }
+                for idx in idxs
+            ]

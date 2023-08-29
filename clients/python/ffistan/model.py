@@ -50,7 +50,9 @@ class OptimizationAlgorithm(Enum):
     LBFGS = 2
 
 
+# also allow inits from a StanOutput
 def encode_stan_json(data: Union[str, Dict[str, Any]]) -> bytes:
+    """Turn the provided data into something we can send to C++."""
     if isinstance(data, str):
         return data.encode()
     return dump_stan_json(data).encode()
@@ -193,9 +195,12 @@ class FFIStanModel:
         finally:
             self._delete_model(model)
 
-    def _encode_inits(self, inits):
+    def _encode_inits(self, inits, chains, seed):
         inits_encoded = None
         if inits is not None:
+            if isinstance(inits, StanOutput):
+                inits = inits.create_inits(chains=chains, seed=seed)
+
             if isinstance(inits, list):
                 inits_encoded = self.sep.join(encode_stan_json(init) for init in inits)
             else:
@@ -259,7 +264,7 @@ class FFIStanModel:
             rc = self._ffi_sample(
                 model,
                 num_chains,
-                self._encode_inits(inits),
+                self._encode_inits(inits, num_chains, seed),
                 seed,
                 id,
                 init_radius,
@@ -325,7 +330,7 @@ class FFIStanModel:
             rc = self._ffi_pathfinder(
                 model,
                 num_paths,
-                self._encode_inits(inits),
+                self._encode_inits(inits, num_paths, seed),
                 seed,
                 id,
                 init_radius,
@@ -372,6 +377,9 @@ class FFIStanModel:
     ):
         seed = seed or np.random.randint(2**32 - 1)
 
+        if isinstance(init, StanOutput):
+            init = init.create_inits(chains=1, seed=seed)
+
         with self._get_model(data, seed) as model:
             param_names = OPTIMIZE_VARIABLES + self._get_parameter_names(model)
 
@@ -381,7 +389,7 @@ class FFIStanModel:
             err = ctypes.pointer(ctypes.c_void_p())
             rc = self._ffi_optimize(
                 model,
-                init.encode() if init is not None else None,
+                encode_stan_json(init) if init is not None else None,
                 seed,
                 id,
                 init_radius,
