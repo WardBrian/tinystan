@@ -57,12 +57,6 @@ $(FFISTAN_O) : $(FFISTAN_DEPS)
 	$(RM) $(subst  \,/,$*).o
 
 
-.PHONY: clean
-clean:
-	$(RM) $(SRC)/*.o
-	$(RM) bin/stanc$(EXE)
-
-
 # build all test models at once
 TEST_MODEL_NAMES = $(patsubst $(FFISTAN_ROOT)/test_models/%/, %, $(sort $(dir $(wildcard $(FFISTAN_ROOT)/test_models/*/))))
 TEST_MODEL_NAMES := $(filter-out syntax_error, $(TEST_MODEL_NAMES))
@@ -70,6 +64,13 @@ TEST_MODEL_LIBS = $(join $(addprefix test_models/, $(TEST_MODEL_NAMES)), $(addsu
 
 .PHONY: test_models
 test_models: $(TEST_MODEL_LIBS)
+
+
+.PHONY: clean
+clean:
+	$(RM) $(SRC)/*.o
+	$(RM) bin/stanc$(EXE)
+	$(RM) $(TEST_MODEL_LIBS)
 
 .PHONY: stan-update stan-update-version
 stan-update:
