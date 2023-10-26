@@ -82,7 +82,7 @@ int ffistan_sample(const FFIStanModel *model, size_t num_chains,
                    unsigned int init_buffer, unsigned int term_buffer,
                    unsigned int window, bool save_warmup, double stepsize,
                    double stepsize_jitter, int max_depth, int refresh,
-                   int num_threads, double *out, stan_error **err);
+                   int num_threads, double *out, double *metric_out, stan_error **err);
 
 int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
                        const char *inits, unsigned int seed, unsigned int id,

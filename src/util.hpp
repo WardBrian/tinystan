@@ -3,6 +3,7 @@
 
 #include <stan/math/prim/fun/Eigen.hpp>
 #include <stan/callbacks/writer.hpp>
+#include <stan/callbacks/structured_writer.hpp>
 #include <stan/io/ends_with.hpp>
 #include <stan/io/json/json_data.hpp>
 #include <stan/io/var_context.hpp>
@@ -61,6 +62,35 @@ class buffer_writer : public stan::callbacks::writer {
  private:
   double *buf;
   unsigned long int pos;
+};
+
+class metric_buffer_writer : public stan::callbacks::structured_writer {
+ public:
+  metric_buffer_writer(double *buf) : buf(buf), pos(0){};
+  virtual ~metric_buffer_writer(){};
+
+  void write(const std::string &key, const Eigen::MatrixXd &mat) {
+    if (!pos && buf != nullptr && key == "inv_metric") {
+      for (int j = 0; j < mat.cols(); ++j) {
+        for (int i = 0; i < mat.rows(); ++i) {
+          buf[pos++] = mat(i, j);
+        }
+      }
+    }
+  }
+  void write(const std::string &key, const Eigen::VectorXd &vec) {
+    if (!pos && buf != nullptr && key == "inv_metric") {
+      for (int i = 0; i < vec.rows(); ++i) {
+        buf[pos++] = vec(i);
+      }
+    }
+  }
+
+  using stan::callbacks::structured_writer::write;
+
+ private:
+  double *buf;
+  int pos;
 };
 
 using var_ctx_ptr = std::unique_ptr<stan::io::var_context>;

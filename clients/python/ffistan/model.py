@@ -11,6 +11,25 @@ from stanio import dump_stan_json
 from .output import StanOutput
 
 double_array = ndpointer(dtype=ctypes.c_double, flags=("C_CONTIGUOUS"))
+
+
+def wrapped_ndptr(*args, **kwargs):
+    """
+    A version of np.ctypeslib.ndpointer
+    which allows None (passed as NULL)
+    """
+    base = ndpointer(*args, **kwargs)
+
+    def from_param(cls, obj):
+        if obj is None:
+            return obj
+        return base.from_param(obj)
+
+    return type(base.__name__, (base,), {"from_param": classmethod(from_param)})
+
+
+nullable_double_array = wrapped_ndptr(dtype=ctypes.c_double, flags=("C_CONTIGUOUS"))
+
 err_ptr = ctypes.POINTER(ctypes.c_void_p)
 
 HMC_SAMPLER_VARIABLES = [
@@ -111,6 +130,7 @@ class FFIStanModel:
             ctypes.c_int,  # refresh
             ctypes.c_int,  # num_threads
             double_array,
+            nullable_double_array,  # metric out
             err_ptr,
         ]
 
@@ -136,7 +156,7 @@ class FFIStanModel:
             ctypes.c_int,  # num_multi_draws
             ctypes.c_int,  # refresh
             ctypes.c_int,  # num_threads
-            double_array,
+            double_array,  # output samples
             err_ptr,
         ]
 
@@ -225,6 +245,7 @@ class FFIStanModel:
         num_warmup=1000,
         num_samples=1000,
         metric=HMCMetric.DIAG,
+        output_metric=False,
         adapt=True,
         delta=0.8,
         gamma=0.05,
@@ -251,7 +272,8 @@ class FFIStanModel:
         seed = seed or np.random.randint(2**32 - 1)
 
         with self._get_model(data, seed) as model:
-            if self._get_free_params(model) == 0:
+            model_params = self._get_free_params(model)
+            if model_params == 0:
                 raise ValueError("Model has no parameters to sample.")
 
             param_names = HMC_SAMPLER_VARIABLES + self._get_parameter_names(model)
@@ -259,6 +281,16 @@ class FFIStanModel:
             num_params = len(param_names)
             num_draws = num_samples + num_warmup * save_warmup
             out = np.zeros((num_chains, num_draws, num_params), dtype=np.float64)
+
+            if output_metric:
+                metric_size = (
+                    (model_params, model_params)
+                    if metric == HMCMetric.DENSE
+                    else (model_params,)
+                )
+                metric_out = np.zeros((num_chains, *metric_size), dtype=np.float64)
+            else:
+                metric_out = None
 
             err = ctypes.pointer(ctypes.c_void_p())
             rc = self._ffi_sample(
@@ -286,11 +318,15 @@ class FFIStanModel:
                 refresh,
                 num_threads,
                 out,
+                metric_out,
                 err,
             )
             self._raise_for_error(rc, err)
 
-        return StanOutput(param_names, out)
+        output = StanOutput(param_names, out)
+        if output_metric:
+            return output, metric_out
+        return output
 
     def pathfinder(
         self,
