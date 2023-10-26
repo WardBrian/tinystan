@@ -28,13 +28,13 @@ void ffistan_sample_R(int* return_code, FFIStanModel** model,
                       unsigned int* init_buffer, unsigned int* term_buffer,
                       unsigned int* window, int* save_warmup, double* stepsize,
                       double* stepsize_jitter, int* max_depth, int* refresh,
-                      int* num_threads, double* out, stan_error** err) {
+                      int* num_threads, double* out, double* metric_out, stan_error** err) {
   *return_code = ffistan_sample(
       *model, *num_chains, *inits, *seed, *chain_id, *init_radius, *num_warmup,
       *num_samples, static_cast<FFIStanMetric>(*metric_choice), (*adapt != 0),
       *delta, *gamma, *kappa, *t0, *init_buffer, *term_buffer, *window,
       (*save_warmup != 0), *stepsize, *stepsize_jitter, *max_depth, *refresh,
-      *num_threads, out, err);
+      *num_threads, out, metric_out, err);
 }
 
 void ffistan_pathfinder_R(

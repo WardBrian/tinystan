@@ -2,8 +2,8 @@
 
 ## Features
 - [ ] Fixed param sampler for 0 dimension parameters?
-- [ ] Ability to output metric, hessian, etc?
-    - use diagnostic_writer, might need new service functions
+- [x] Ability to output metric
+- [ ] Ability to input metric
 - [ ] Other logging?
     - needs something like BridgeStan's print callback in general case,
       could get ugly if need a lock to print progress?

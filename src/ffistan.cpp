@@ -70,7 +70,7 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
                    unsigned int window, bool save_warmup, double stepsize,
                    double stepsize_jitter, int max_depth,
                    /* currently has no effect */ int refresh, int num_threads,
-                   double *out, stan_error **err) {
+                   double *out, double *metric_out, stan_error **err) {
   try {
     check_positive("num_chains", num_chains);
     check_positive("id", id);
@@ -98,12 +98,25 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
 
     // all HMC has 7 algorithm params
     int num_params = ffimodel->num_params + 7;
-    int offset = num_params * (num_samples + num_warmup * save_warmup);
+    int draws_offset = num_params * (num_samples + num_warmup * save_warmup);
 
     std::vector<buffer_writer> sample_writers;
     sample_writers.reserve(num_chains);
     for (size_t i = 0; i < num_chains; ++i) {
-      sample_writers.emplace_back(out + offset * i);
+      sample_writers.emplace_back(out + draws_offset * i);
+    }
+
+    std::vector<metric_buffer_writer> metric_writers;
+    metric_writers.reserve(num_chains);
+    int num_model_params = ffimodel->num_free_params;
+    int metric_offset = metric_choice == dense
+                            ? num_model_params * num_model_params
+                            : num_model_params;
+    for (size_t i = 0; i < num_chains; ++i) {
+      if (metric_out != nullptr)
+        metric_writers.emplace_back(metric_out + metric_offset * i);
+      else
+        metric_writers.emplace_back(nullptr);
     }
 
     error_logger logger;
@@ -122,7 +135,8 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
               model, num_chains, json_inits, seed, id, init_radius, num_warmup,
               num_samples, thin, save_warmup, refresh, stepsize,
               stepsize_jitter, max_depth, delta, gamma, kappa, t0, interrupt,
-              logger, null_writers, sample_writers, null_writers);
+              logger, null_writers, sample_writers, null_writers,
+              metric_writers);
         } else {
           return_code = stan::services::sample::hmc_nuts_unit_e(
               model, num_chains, json_inits, seed, id, init_radius, num_warmup,
@@ -138,7 +152,7 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
               num_samples, thin, save_warmup, refresh, stepsize,
               stepsize_jitter, max_depth, delta, gamma, kappa, t0, init_buffer,
               term_buffer, window, interrupt, logger, null_writers,
-              sample_writers, null_writers);
+              sample_writers, null_writers, metric_writers);
         } else {
           return_code = stan::services::sample::hmc_nuts_dense_e(
               model, num_chains, json_inits, seed, id, init_radius, num_warmup,
@@ -154,7 +168,7 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
               num_samples, thin, save_warmup, refresh, stepsize,
               stepsize_jitter, max_depth, delta, gamma, kappa, t0, init_buffer,
               term_buffer, window, interrupt, logger, null_writers,
-              sample_writers, null_writers);
+              sample_writers, null_writers, metric_writers);
         } else {
           return_code = stan::services::sample::hmc_nuts_diag_e(
               model, num_chains, json_inits, seed, id, init_radius, num_warmup,
