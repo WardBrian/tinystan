@@ -25,14 +25,14 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
 
     dyn.load(private$lib, PACKAGE = private$lib_name)
 
-    sep <- .C("ffistan_separator_char_R", sep = as.raw(1), PACKAGE = private$lib_name)$sep
+    sep <- .C("ffistan_separator_char_R", sep = raw(1), PACKAGE = private$lib_name)$sep
     private$sep <- rawToChar(sep)
 
 }, sample = function(data = "", num_chains = 4, inits = NULL, seed = NULL, id = 1,
     init_radius = 2, num_warmup = 1000, num_samples = 1000, metric = HMCMetric$DIAG,
-    adapt = TRUE, delta = 0.8, gamma = 0.05, kappa = 0.75, t0 = 10, init_buffer = 75,
-    term_buffer = 50, window = 25, save_warmup = FALSE, stepsize = 1, stepsize_jitter = 0,
-    max_depth = 10, refresh = 0, num_threads = -1) {
+    save_metric = FALSE, adapt = TRUE, delta = 0.8, gamma = 0.05, kappa = 0.75, t0 = 10,
+    init_buffer = 75, term_buffer = 50, window = 25, save_warmup = FALSE, stepsize = 1,
+    stepsize_jitter = 0, max_depth = 10, refresh = 0, num_threads = -1) {
 
     if (num_chains < 1) {
         stop("num_chains must be at least 1")
@@ -49,10 +49,14 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
     }
 
     private$with_model(data, seed, {
+
         params <- c(HMC_SAMPLER_VARIABLES, private$get_parameter_names(model))
         num_params <- length(params)
         num_draws <- as.integer(save_warmup) * num_warmup + num_samples
         output_size <- num_params * num_chains * num_draws
+
+        # TODO
+        metric_out <- as.raw(rep(0, 8))
 
         vars <- .C("ffistan_sample_R", return_code = as.integer(0), as.raw(model),
             as.integer(num_chains), private$encode_inits(inits), as.integer(seed),
@@ -61,7 +65,7 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
             as.double(kappa), as.double(t0), as.integer(init_buffer), as.integer(term_buffer),
             as.integer(window), as.logical(save_warmup), as.double(stepsize), as.double(stepsize_jitter),
             as.integer(max_depth), as.integer(refresh), as.integer(num_threads),
-            out = double(output_size), err = raw(8), PACKAGE = private$lib_name)
+            out = double(output_size), metric_out, err = raw(8), PACKAGE = private$lib_name)
         handle_error(vars$return_code, private$lib_name, vars$err)
         # reshape the output matrix
         out <- aperm(array(vars$out, dim = c(num_params, num_draws, num_chains),
@@ -171,12 +175,12 @@ handle_error <- function(rc, lib_name, err_ptr) {
     }
 }
 
-if (sys.nframe() == 0){
+if (sys.nframe() == 0) {
     model <- FFIStanModel$new("./test_models/bernoulli/bernoulli_model.so")
     data <- "./test_models/bernoulli/bernoulli.data.json"
 
-    fit <- model$sample(data, num_samples=10000, num_chains=10)
-    print(colMeans(fit$draws, dims=2)[8])
+    fit <- model$sample(data, num_samples = 10000, num_chains = 10)
+    print(colMeans(fit$draws, dims = 2)[8])
 
     pf = model$pathfinder(data)
     print(colMeans(pf$draws)[3])

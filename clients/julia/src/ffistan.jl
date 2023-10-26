@@ -133,6 +133,7 @@ function sample(
     num_warmup::Int = 1000,
     num_samples::Int = 1000,
     metric::HMCMetric = DIAG,
+    save_metric::Bool = false,
     adapt = true,
     delta = 0.8,
     gamma = 0.05,
@@ -178,6 +179,16 @@ function sample(
         num_draws = num_samples + num_warmup * Int(save_warmup)
         out = zeros(Float64, num_params, num_draws, num_chains)
 
+        if save_metric
+            if metric == DENSE
+                metric_out = zeros(Float64, free_params, free_params, num_chains)
+            else
+                metric_out = zeros(Float64, free_params, num_chains)
+            end
+        else
+            metric_out = C_NULL
+        end
+
         err = Ref{Ptr{Cvoid}}()
         return_code = ccall(
             Libc.Libdl.dlsym(model.lib, :ffistan_sample),
@@ -207,6 +218,7 @@ function sample(
                 Cint,
                 Cint,
                 Ref{Cdouble},
+                Ptr{Cdouble},
                 Ref{Ptr{Cvoid}},
             ),
             model_ptr,
@@ -233,10 +245,16 @@ function sample(
             refresh,
             num_threads,
             out,
+            metric_out,
             err,
         )
         raise_for_error(model.lib, return_code, err)
-        return (param_names, permutedims(out, (3, 2, 1)))
+        out = permutedims(out, (3, 2, 1))
+        if save_metric
+            metric_out = permutedims(metric_out, range(length(size(metric_out)), 1, step = -1))
+            return (param_names, out, metric_out)
+        end
+        return (param_names, out)
     end
 end
 
