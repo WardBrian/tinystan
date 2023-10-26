@@ -49,14 +49,25 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
     }
 
     private$with_model(data, seed, {
+        free_params <- private$get_free_params(model)
+        if (free_params == 0) {
+            stop("Model has no parameters to sample")
+        }
 
         params <- c(HMC_SAMPLER_VARIABLES, private$get_parameter_names(model))
         num_params <- length(params)
         num_draws <- as.integer(save_warmup) * num_warmup + num_samples
         output_size <- num_params * num_chains * num_draws
 
-        # TODO
-        metric_out <- as.raw(rep(0, 8))
+        if (save_metric) {
+            if (metric == HMCMetric$DENSE) {
+                metric_out <- double(num_chains * free_params * free_params)
+            } else {
+                metric_out <- double(num_chains * free_params)
+            }
+        } else {
+            metric_out <- as.raw(rep(0, 8))
+        }
 
         vars <- .C("ffistan_sample_R", return_code = as.integer(0), as.raw(model),
             as.integer(num_chains), private$encode_inits(inits), as.integer(seed),
@@ -65,11 +76,21 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
             as.double(kappa), as.double(t0), as.integer(init_buffer), as.integer(term_buffer),
             as.integer(window), as.logical(save_warmup), as.double(stepsize), as.double(stepsize_jitter),
             as.integer(max_depth), as.integer(refresh), as.integer(num_threads),
-            out = double(output_size), metric_out, err = raw(8), PACKAGE = private$lib_name)
+            out = double(output_size), metric= metric_out, err = raw(8), PACKAGE = private$lib_name)
         handle_error(vars$return_code, private$lib_name, vars$err)
         # reshape the output matrix
         out <- aperm(array(vars$out, dim = c(num_params, num_draws, num_chains),
             dimnames = list(params, NULL, NULL)), c(3, 2, 1))
+
+        if (save_metric){
+            if (metric == HMCMetric$DENSE) {
+                metric <- aperm(array(vars$metric, dim = c(free_params, free_params, num_chains)), c(3, 2, 1))
+            } else {
+                metric <- aperm(array(vars$metric, dim = c(free_params, num_chains)), c(2, 1))
+            }
+            return(list(params = params, draws = out, metric = metric))
+        }
+
         list(params = params, draws = out)
     })
 }, pathfinder = function(data = "", num_paths = 4, inits = NULL, seed = NULL, id = 1,
@@ -148,6 +169,9 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
     }
     strsplit(param_names_raw, ",")[[1]]
 
+}, get_free_params = function(model) {
+    .C("ffistan_model_num_free_params_R", as.raw(model), params = as.integer(0),
+        PACKAGE = private$lib_name)$params
 }, encode_inits = function(inits) {
     if (is.null(inits)) {
         return(as.character(""))

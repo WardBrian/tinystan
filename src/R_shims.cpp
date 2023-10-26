@@ -17,6 +17,11 @@ void ffistan_model_param_names_R(FFIStanModel** model, char const** names) {
   *names = ffistan_model_param_names(*model);
 }
 
+void ffistan_model_num_free_params_R(FFIStanModel** model, int* n) {
+  *n = ffistan_model_num_free_params(*model);
+}
+
+
 void ffistan_separator_char_R(char* sep) { *sep = ffistan_separator_char(); }
 
 void ffistan_sample_R(int* return_code, FFIStanModel** model,
