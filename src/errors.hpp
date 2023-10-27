@@ -47,9 +47,9 @@ class error_logger : public stan::callbacks::logger {
 
   FFIStanError *get_error() {
     if (last_error.empty())
-      return new FFIStanError(strdup("Unknown error"));
+      return new FFIStanError("Unknown error");
     last_error.pop_back();
-    return new FFIStanError(strdup(last_error.c_str()));
+    return new FFIStanError(last_error.c_str());
   }
 
  private:
