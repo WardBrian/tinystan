@@ -1,8 +1,6 @@
-#include <stan/callbacks/logger.hpp>
 #include <stan/callbacks/writer.hpp>
 #include <stan/callbacks/structured_writer.hpp>
 #include <stan/model/model_base.hpp>
-#include <stan/services/util/create_rng.hpp>
 #include <stan/services/pathfinder/multi.hpp>
 #include <stan/services/pathfinder/single.hpp>
 #include <stan/services/optimize/bfgs.hpp>
@@ -15,35 +13,38 @@
 #include <stan/services/sample/hmc_nuts_unit_e.hpp>
 #include <stan/services/sample/hmc_nuts_unit_e_adapt.hpp>
 
-#include <stan/math/prim/core/init_threadpool_tbb.hpp>
-
-#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 #include "ffistan.h"
+
 #include "errors.hpp"
+#include "file.hpp"
+#include "buffer.hpp"
+#include "interrupts.hpp"
 #include "util.hpp"
 #include "model.hpp"
 #include "version.hpp"
 
 #include "R_shims.cpp"
 
+using namespace ffistan;
+
 extern "C" {
 
 FFIStanModel *ffistan_create_model(const char *data, unsigned int seed,
-                                   stan_error **err) {
+                                   FFIStanError **err) {
   try {
     return new FFIStanModel(data, seed);
   } catch (const std::exception &e) {
     if (err != nullptr) {
-      *err = new stan_error(strdup(e.what()));
+      *err = new FFIStanError(e.what());
     }
   } catch (...) {
     if (err != nullptr) {
-      *err = new stan_error(strdup("Unknown error"));
+      *err = new FFIStanError("Unknown error");
     }
   }
   return nullptr;
@@ -69,29 +70,29 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
                    unsigned int window, bool save_warmup, double stepsize,
                    double stepsize_jitter, int max_depth,
                    /* currently has no effect */ int refresh, int num_threads,
-                   double *out, double *metric_out, stan_error **err) {
+                   double *out, double *metric_out, FFIStanError **err) {
   try {
-    check_positive("num_chains", num_chains);
-    check_positive("id", id);
-    check_nonnegative("init_radius", init_radius);
-    check_nonnegative("num_warmup", num_warmup);
-    check_positive("num_samples", num_samples);
+    error::check_positive("num_chains", num_chains);
+    error::check_positive("id", id);
+    error::check_nonnegative("init_radius", init_radius);
+    error::check_nonnegative("num_warmup", num_warmup);
+    error::check_positive("num_samples", num_samples);
     if (adapt) {
-      check_between("delta", delta, 0, 1);
-      check_positive("gamma", gamma);
-      check_positive("kappa", kappa);
-      check_positive("t0", t0);
+      error::check_between("delta", delta, 0, 1);
+      error::check_positive("gamma", gamma);
+      error::check_positive("kappa", kappa);
+      error::check_positive("t0", t0);
     }
-    check_nonnegative("init_buffer", init_buffer);
-    check_nonnegative("term_buffer", term_buffer);
-    check_nonnegative("window", window);
-    check_positive("stepsize", stepsize);
-    check_between("stepsize_jitter", stepsize_jitter, 0, 1);
-    check_positive("max_depth", max_depth);
+    error::check_nonnegative("init_buffer", init_buffer);
+    error::check_nonnegative("term_buffer", term_buffer);
+    error::check_nonnegative("window", window);
+    error::check_positive("stepsize", stepsize);
+    error::check_between("stepsize_jitter", stepsize_jitter, 0, 1);
+    error::check_positive("max_depth", max_depth);
 
-    init_threading(num_threads);
+    util::init_threading(num_threads);
 
-    auto json_inits = load_inits(num_chains, inits);
+    auto json_inits = io::load_inits(num_chains, inits);
 
     auto &model = *ffimodel->model;
 
@@ -99,13 +100,13 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
     int num_params = ffimodel->num_params + 7;
     int draws_offset = num_params * (num_samples + num_warmup * save_warmup);
 
-    std::vector<buffer_writer> sample_writers;
+    std::vector<io::buffer_writer> sample_writers;
     sample_writers.reserve(num_chains);
     for (size_t i = 0; i < num_chains; ++i) {
       sample_writers.emplace_back(out + draws_offset * i);
     }
 
-    std::vector<metric_buffer_writer> metric_writers;
+    std::vector<io::metric_buffer_writer> metric_writers;
     metric_writers.reserve(num_chains);
     int num_model_params = ffimodel->num_free_params;
     int metric_offset = metric_choice == dense
@@ -118,8 +119,8 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
         metric_writers.emplace_back(nullptr);
     }
 
-    error_logger logger;
-    ffistan_interrupt_handler interrupt;
+    error::error_logger logger;
+    interrupt::ffistan_interrupt_handler interrupt;
 
     std::vector<stan::callbacks::writer> null_writers(num_chains);
 
@@ -187,11 +188,11 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
 
   } catch (const std::exception &e) {
     if (err != nullptr) {
-      *err = new stan_error(strdup(e.what()));
+      *err = new FFIStanError(e.what());
     }
   } catch (...) {
     if (err != nullptr) {
-      *err = new stan_error(strdup("Unknown error"));
+      *err = new FFIStanError("Unknown error");
     }
   }
   return -1;
@@ -205,34 +206,34 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
                        double tol_grad, double tol_rel_grad, double tol_param,
                        int num_iterations, int num_elbo_draws,
                        int num_multi_draws, int refresh, int num_threads,
-                       double *out, stan_error **err) {
+                       double *out, FFIStanError **err) {
   try {
     // argument validation
-    check_positive("num_paths", num_paths);
-    check_positive("num_draws", num_draws);
-    check_positive("id", id);
-    check_nonnegative("init_radius", init_radius);
-    check_positive("max_history_size", max_history_size);
-    check_positive("init_alpha", init_alpha);
-    check_positive("tol_obj", tol_obj);
-    check_positive("tol_rel_obj", tol_rel_obj);
-    check_positive("tol_grad", tol_grad);
-    check_positive("tol_rel_grad", tol_rel_grad);
-    check_positive("tol_param", tol_param);
-    check_positive("num_iterations", num_iterations);
-    check_positive("num_elbo_draws", num_elbo_draws);
-    check_positive("num_multi_draws", num_multi_draws);
+    error::check_positive("num_paths", num_paths);
+    error::check_positive("num_draws", num_draws);
+    error::check_positive("id", id);
+    error::check_nonnegative("init_radius", init_radius);
+    error::check_positive("max_history_size", max_history_size);
+    error::check_positive("init_alpha", init_alpha);
+    error::check_positive("tol_obj", tol_obj);
+    error::check_positive("tol_rel_obj", tol_rel_obj);
+    error::check_positive("tol_grad", tol_grad);
+    error::check_positive("tol_rel_grad", tol_rel_grad);
+    error::check_positive("tol_param", tol_param);
+    error::check_positive("num_iterations", num_iterations);
+    error::check_positive("num_elbo_draws", num_elbo_draws);
+    error::check_positive("num_multi_draws", num_multi_draws);
 
-    init_threading(num_threads);
+    util::init_threading(num_threads);
 
-    auto json_inits = load_inits(num_paths, inits);
+    auto json_inits = io::load_inits(num_paths, inits);
 
     auto &model = *ffimodel->model;
 
-    buffer_writer pathfinder_writer(out);
-    error_logger logger;
+    io::buffer_writer pathfinder_writer(out);
+    error::error_logger logger;
 
-    ffistan_interrupt_handler interrupt;
+    interrupt::ffistan_interrupt_handler interrupt;
     stan::callbacks::structured_writer dummy_json_writer;
     std::vector<stan::callbacks::writer> null_writers(num_paths);
     std::vector<stan::callbacks::structured_writer> null_structured_writers(
@@ -269,11 +270,11 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
 
   } catch (const std::exception &e) {
     if (err != nullptr) {
-      *err = new stan_error(strdup(e.what()));
+      *err = new FFIStanError(e.what());
     }
   } catch (...) {
     if (err != nullptr) {
-      *err = new stan_error(strdup("Unknown error"));
+      *err = new FFIStanError("Unknown error");
     }
   }
   return -1;
@@ -287,32 +288,32 @@ int ffistan_optimize(const FFIStanModel *ffimodel, const char *init,
                      double init_alpha, double tol_obj, double tol_rel_obj,
                      double tol_grad, double tol_rel_grad, double tol_param,
                      int refresh, int num_threads, double *out,
-                     stan_error **err) {
+                     FFIStanError **err) {
   try {
-    check_positive("id", id);
-    check_positive("num_iterations", num_iterations);
-    check_nonnegative("init_radius", init_radius);
+    error::check_positive("id", id);
+    error::check_positive("num_iterations", num_iterations);
+    error::check_nonnegative("init_radius", init_radius);
 
     if (algorithm == lbfgs) {
-      check_positive("max_history_size", max_history_size);
+      error::check_positive("max_history_size", max_history_size);
     }
     if (algorithm == bfgs || algorithm == lbfgs) {
-      check_positive("init_alpha", init_alpha);
-      check_positive("tol_obj", tol_obj);
-      check_positive("tol_rel_obj", tol_rel_obj);
-      check_positive("tol_grad", tol_grad);
-      check_positive("tol_rel_grad", tol_rel_grad);
-      check_positive("tol_param", tol_param);
+      error::check_positive("init_alpha", init_alpha);
+      error::check_positive("tol_obj", tol_obj);
+      error::check_positive("tol_rel_obj", tol_rel_obj);
+      error::check_positive("tol_grad", tol_grad);
+      error::check_positive("tol_rel_grad", tol_rel_grad);
+      error::check_positive("tol_param", tol_param);
     }
 
-    init_threading(num_threads);
+    util::init_threading(num_threads);
 
-    auto json_init = load_data(init);
+    auto json_init = io::load_data(init);
     auto &model = *ffimodel->model;
-    buffer_writer sample_writer(out);
-    error_logger logger;
+    io::buffer_writer sample_writer(out);
+    error::error_logger logger;
 
-    ffistan_interrupt_handler interrupt;
+    interrupt::ffistan_interrupt_handler interrupt;
     stan::callbacks::writer null_writer;
 
     bool save_iterations = false;
@@ -378,26 +379,26 @@ int ffistan_optimize(const FFIStanModel *ffimodel, const char *init,
 
   } catch (const std::exception &e) {
     if (err != nullptr) {
-      *err = new stan_error(strdup(e.what()));
+      *err = new FFIStanError(e.what());
     }
   } catch (...) {
     if (err != nullptr) {
-      *err = new stan_error(strdup("Unknown error"));
+      *err = new FFIStanError("Unknown error");
     }
   }
   return -1;
 }
 
-const char *ffistan_get_error_message(const stan_error *err) {
+const char *ffistan_get_error_message(const FFIStanError *err) {
   if (err == nullptr) {
     return "Something went wrong: No error found";
   }
   return err->msg;
 }
 
-void ffistan_free_stan_error(stan_error *err) { delete (err); }
+void ffistan_free_stan_error(FFIStanError *err) { delete (err); }
 
-char ffistan_separator_char() { return SEPARATOR; }
+char ffistan_separator_char() { return io::SEPARATOR; }
 
 int ffistan_major_version = FFISTAN_MAJOR;
 int ffistan_minor_version = FFISTAN_MINOR;

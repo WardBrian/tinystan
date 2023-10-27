@@ -8,14 +8,17 @@
 #include <cstdlib>
 #include <stdexcept>
 
-class stan_error {
+class FFIStanError {
  public:
-  stan_error(char *msg) : msg(msg) {}
+  FFIStanError(const char *msg) : msg(strdup(msg)) {}
 
-  ~stan_error() { free(this->msg); }
+  ~FFIStanError() { free(this->msg); }
 
   char *msg;
 };
+
+namespace ffistan {
+namespace error {
 
 class error_logger : public stan::callbacks::logger {
  public:
@@ -42,11 +45,11 @@ class error_logger : public stan::callbacks::logger {
       last_error += s.str() + "\n";
   }
 
-  stan_error *get_error() {
+  FFIStanError *get_error() {
     if (last_error.empty())
-      return new stan_error(strdup("Unknown error"));
+      return new FFIStanError(strdup("Unknown error"));
     last_error.pop_back();
-    return new stan_error(strdup(last_error.c_str()));
+    return new FFIStanError(strdup(last_error.c_str()));
   }
 
  private:
@@ -79,5 +82,8 @@ void check_between(const char *name, double val, double lb, double ub) {
     throw std::invalid_argument(msg.str());
   }
 }
+
+}  // namespace error
+}  // namespace ffistan
 
 #endif

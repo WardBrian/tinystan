@@ -30,12 +30,12 @@ else
 endif
 STAN_FLAGS=$(STAN_FLAG_OPENCL)
 
-FFISTAN_DEPS = $(SRC)ffistan.cpp $(SRC)ffistan.h $(SRC)model.hpp $(SRC)util.hpp $(SRC)errors.hpp $(SRC)version.hpp $(SRC)R_shims.cpp
+FFISTAN_DEPS := $(wildcard $(SRC)*.cpp) $(wildcard $(SRC)*.hpp) $(wildcard $(SRC)*.h)
+
 FFISTAN_O = $(patsubst %.cpp,%$(STAN_FLAGS).o,$(SRC)ffistan.cpp)
 
 $(FFISTAN_O) : $(FFISTAN_DEPS)
-	@echo ''
-	@echo '--- Compiling Stan C++ code ---'
+	@echo '--- Compiling FFIStan C++ code ---'
 	@mkdir -p $(dir $@)
 	$(COMPILE.cpp) $(OUTPUT_OPTION) $(LDLIBS) $<
 
@@ -45,17 +45,14 @@ $(FFISTAN_O) : $(FFISTAN_DEPS)
 	@echo '--- Translating Stan model to C++ code ---'
 	$(STANC) $(STANCFLAGS) --o=$(subst  \,/,$@) $(subst  \,/,$<)
 
-## declares we want to keep .hpp even though it's an intermediate
-
-## builds executable (suffix depends on platform)
-%_model.so : %.hpp $(FFISTAN_O) $(SUNDIALS_TARGETS) $(MPI_TARGETS) $(TBB_TARGETS)
-	@echo ''
+%.o : %.hpp
 	@echo '--- Compiling C++ code ---'
 	$(COMPILE.cpp) -x c++ -o $(subst  \,/,$*).o $(subst \,/,$<)
-	@echo '--- Linking C++ code ---'
-	$(LINK.cpp) -shared -lm -o $(patsubst %.hpp, %_model.so, $(subst \,/,$<)) $(subst \,/,$*.o) $(FFISTAN_O) $(LDLIBS) $(SUNDIALS_TARGETS) $(MPI_TARGETS) $(TBB_TARGETS)
-	$(RM) $(subst  \,/,$*).o
 
+## builds executable (suffix depends on platform)
+%_model.so : %.o $(FFISTAN_O) $(SUNDIALS_TARGETS) $(MPI_TARGETS) $(TBB_TARGETS)
+	@echo '--- Linking C++ code ---'
+	$(LINK.cpp) -shared -lm -o $(patsubst %.o, %_model.so, $(subst \,/,$<)) $(subst \,/,$*.o) $(FFISTAN_O) $(LDLIBS) $(SUNDIALS_TARGETS) $(MPI_TARGETS) $(TBB_TARGETS)
 
 # build all test models at once
 TEST_MODEL_NAMES = $(patsubst $(FFISTAN_ROOT)/test_models/%/, %, $(sort $(dir $(wildcard $(FFISTAN_ROOT)/test_models/*/))))

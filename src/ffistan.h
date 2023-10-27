@@ -4,13 +4,13 @@
 /// \file ffistan.h
 
 #ifdef __cplusplus
-struct stan_error;
+struct FFIStanError;
 struct FFIStanModel;
 extern "C" {
 #else
 #include <stddef.h>
 #include <stdbool.h>
-typedef struct stan_error stan_error;      // opaque type
+typedef struct FFIStanError FFIStanError;  // opaque type
 typedef struct FFIStanModel FFIStanModel;  // opaque type
 #endif
 
@@ -37,7 +37,7 @@ void ffistan_version(int *major, int *minor, int *patch);
  * ffistan_destroy_model().
  */
 FFIStanModel *ffistan_create_model(const char *data, unsigned int seed,
-                                   stan_error **err);
+                                   FFIStanError **err);
 
 /**
  * Deallocate a model.
@@ -82,7 +82,8 @@ int ffistan_sample(const FFIStanModel *model, size_t num_chains,
                    unsigned int init_buffer, unsigned int term_buffer,
                    unsigned int window, bool save_warmup, double stepsize,
                    double stepsize_jitter, int max_depth, int refresh,
-                   int num_threads, double *out, double *metric_out, stan_error **err);
+                   int num_threads, double *out, double *metric_out,
+                   FFIStanError **err);
 
 int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
                        const char *inits, unsigned int seed, unsigned int id,
@@ -92,7 +93,7 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
                        double tol_grad, double tol_rel_grad, double tol_param,
                        int num_iterations, int num_elbo_draws,
                        int num_multi_draws, int refresh, int num_threads,
-                       double *out, stan_error **err);
+                       double *out, FFIStanError **err);
 
 enum FFIStanOptimizationAlgorithm { newton = 0, bfgs = 1, lbfgs = 2 };
 
@@ -104,7 +105,7 @@ int ffistan_optimize(const FFIStanModel *ffimodel, const char *init,
                      double init_alpha, double tol_obj, double tol_rel_obj,
                      double tol_grad, double tol_rel_grad, double tol_param,
                      int refresh, int num_threads, double *out,
-                     stan_error **err);
+                     FFIStanError **err);
 
 /**
  * Get the error message from an error object.
@@ -113,7 +114,7 @@ int ffistan_optimize(const FFIStanModel *ffimodel, const char *init,
  * @return The error message. Will be freed when the error object is freed, so
  * copy it if you need it later.
  */
-const char *ffistan_get_error_message(const stan_error *err);
+const char *ffistan_get_error_message(const FFIStanError *err);
 
 /**
  * Free the error object.
@@ -123,7 +124,7 @@ const char *ffistan_get_error_message(const stan_error *err);
  *
  * @param[in] err The error object.
  */
-void ffistan_free_stan_error(stan_error *err);
+void ffistan_free_stan_error(FFIStanError *err);
 
 #ifdef __cplusplus
 }

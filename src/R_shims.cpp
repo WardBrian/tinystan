@@ -5,7 +5,7 @@
 
 extern "C" {
 void ffistan_create_model_R(FFIStanModel** ptr_out, const char** data,
-                            unsigned int* seed, stan_error** err) {
+                            unsigned int* seed, FFIStanError** err) {
   *ptr_out = ffistan_create_model(*data, *seed, err);
 }
 
@@ -33,7 +33,7 @@ void ffistan_sample_R(int* return_code, FFIStanModel** model,
                       unsigned int* window, int* save_warmup, double* stepsize,
                       double* stepsize_jitter, int* max_depth, int* refresh,
                       int* num_threads, double* out, int* save_metric,
-                      double* metric_out, stan_error** err) {
+                      double* metric_out, FFIStanError** err) {
   //  difficult to directly pass a null pointer from R
   double* metric_out_ptr = nullptr;
   if (*save_metric)
@@ -54,7 +54,7 @@ void ffistan_pathfinder_R(
     double* tol_rel_obj, double* tol_grad, double* tol_rel_grad,
     double* tol_param, int* num_iterations, int* num_elbo_draws,
     int* num_multi_draws, int* refresh, int* num_threads, double* out,
-    stan_error** err) {
+    FFIStanError** err) {
   *return_code = ffistan_pathfinder(
       *model, *num_paths, *inits, *seed, *id, *init_radius, *num_draws,
       *max_history_size, *init_alpha, *tol_obj, *tol_rel_obj, *tol_grad,
@@ -69,7 +69,7 @@ void ffistan_optimize_R(int* return_code, FFIStanModel** ffimodel, char** init,
                         int* max_history_size, double* init_alpha,
                         double* tol_obj, double* tol_rel_obj, double* tol_grad,
                         double* tol_rel_grad, double* tol_param, int* refresh,
-                        int* num_threads, double* out, stan_error** err) {
+                        int* num_threads, double* out, FFIStanError** err) {
   *return_code = ffistan_optimize(
       *ffimodel, *init, *seed, *id, *init_radius,
       static_cast<FFIStanOptimizationAlgorithm>(*algorithm), *num_iterations,
@@ -77,11 +77,11 @@ void ffistan_optimize_R(int* return_code, FFIStanModel** ffimodel, char** init,
       *tol_grad, *tol_rel_grad, *tol_param, *refresh, *num_threads, out, err);
 }
 
-void ffistan_get_error_message_R(stan_error** err, char const** err_msg) {
+void ffistan_get_error_message_R(FFIStanError** err, char const** err_msg) {
   *err_msg = ffistan_get_error_message(*err);
 }
 
-void ffistan_free_stan_error_R(stan_error** err) {
+void ffistan_free_stan_error_R(FFIStanError** err) {
   ffistan_free_stan_error(*err);
 }
 }

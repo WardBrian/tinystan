@@ -4,14 +4,11 @@
 #include <stan/model/model_base.hpp>
 #include <stan/io/var_context.hpp>
 
-#include <iostream>
 #include <ostream>
+#include <memory>
+#include <vector>
 
 #include "util.hpp"
-
-// globals for Stan model output
-std::streambuf *buf = nullptr;
-std::ostream *outstream = &std::cout;
 
 /**
  * Allocate and return a new model as a reference given the specified
@@ -28,12 +25,13 @@ stan::model::model_base &new_model(stan::io::var_context &data_context,
 class FFIStanModel {
  public:
   FFIStanModel(const char *data, unsigned int seed) : seed(seed) {
-    std::unique_ptr<stan::io::var_context> data_context = load_data(data);
-    model = &new_model(*data_context, seed, outstream);
+    std::unique_ptr<stan::io::var_context> data_context
+        = ffistan::io::load_data(data);
+    model = &new_model(*data_context, seed, &std::cout);
     std::vector<std::string> names;
     num_free_params = model->num_params_r();
     model->constrained_param_names(names, true, true);
-    param_names = to_csv(names);
+    param_names = ffistan::util::to_csv(names);
     num_params = names.size();
   }
 
