@@ -64,6 +64,9 @@ function raise_for_error(lib::Ptr{Nothing}, return_code::Cint, err::Ref{Ptr{Cvoi
         )
         msg = unsafe_string(cstr)
         ccall(Libc.Libdl.dlsym(lib, :ffistan_free_stan_error), Cvoid, (Ptr{Cvoid},), err[])
+        if (msg == "Interrupted")
+            error(InterruptException())
+        end
         error(msg)
     end
 end
