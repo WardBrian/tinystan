@@ -10,6 +10,8 @@
 #include <windows.h>
 #endif
 
+#include "errors.hpp"
+
 namespace ffistan {
 namespace interrupt {
 
@@ -64,7 +66,7 @@ class ffistan_interrupt_handler : public stan::callbacks::interrupt {
  public:
   void operator()() {
     if (interrupted) {
-      throw std::runtime_error("Interrupted");
+      throw ffistan::error::interrupt_exception();
     }
   }
 };

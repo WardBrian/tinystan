@@ -1,6 +1,7 @@
 from typing import Dict, List, Union
-import stanio
+
 import numpy as np
+import stanio
 
 
 class StanOutput:

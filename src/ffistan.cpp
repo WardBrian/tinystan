@@ -39,15 +39,9 @@ FFIStanModel *ffistan_create_model(const char *data, unsigned int seed,
                                    FFIStanError **err) {
   try {
     return new FFIStanModel(data, seed);
-  } catch (const std::exception &e) {
-    if (err != nullptr) {
-      *err = new FFIStanError(e.what());
-    }
-  } catch (...) {
-    if (err != nullptr) {
-      *err = new FFIStanError("Unknown error");
-    }
   }
+  FFISTAN_CATCH()
+
   return nullptr;
 }
 
@@ -186,16 +180,9 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
     }
 
     return return_code;
-
-  } catch (const std::exception &e) {
-    if (err != nullptr) {
-      *err = new FFIStanError(e.what());
-    }
-  } catch (...) {
-    if (err != nullptr) {
-      *err = new FFIStanError("Unknown error");
-    }
   }
+  FFISTAN_CATCH()
+
   return -1;
 }
 
@@ -268,16 +255,9 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
     }
 
     return return_code;
-
-  } catch (const std::exception &e) {
-    if (err != nullptr) {
-      *err = new FFIStanError(e.what());
-    }
-  } catch (...) {
-    if (err != nullptr) {
-      *err = new FFIStanError("Unknown error");
-    }
   }
+  FFISTAN_CATCH()
+
   return -1;
 }
 
@@ -377,16 +357,9 @@ int ffistan_optimize(const FFIStanModel *ffimodel, const char *init,
     }
 
     return return_code;
-
-  } catch (const std::exception &e) {
-    if (err != nullptr) {
-      *err = new FFIStanError(e.what());
-    }
-  } catch (...) {
-    if (err != nullptr) {
-      *err = new FFIStanError("Unknown error");
-    }
   }
+  FFISTAN_CATCH()
+
   return -1;
 }
 
@@ -395,6 +368,13 @@ const char *ffistan_get_error_message(const FFIStanError *err) {
     return "Something went wrong: No error found";
   }
   return err->msg;
+}
+
+FFIStanErrorType ffistan_get_error_type(const FFIStanError *err) {
+  if (err == nullptr) {
+    return FFIStanErrorType::generic;
+  }
+  return err->type;
 }
 
 void ffistan_free_stan_error(FFIStanError *err) { delete (err); }
