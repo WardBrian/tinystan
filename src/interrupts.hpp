@@ -10,8 +10,10 @@ namespace interrupt {
 
 volatile std::sig_atomic_t interrupted = false;
 
-// TODO this may not work on windows, maybe ifdef it away
 class ffistan_interrupt_handler : public stan::callbacks::interrupt {
+// TODO: signal handling on Windows?
+// https://learn.microsoft.com/en-us/windows/console/registering-a-control-handler-function
+#if !defined _WIN32 && !defined __MINGW32__
  public:
   ffistan_interrupt_handler() {
     interrupted = false;
@@ -37,6 +39,7 @@ class ffistan_interrupt_handler : public stan::callbacks::interrupt {
  private:
   struct sigaction before;
   struct sigaction custom;
+#endif
 };
 
 }  // namespace interrupt
