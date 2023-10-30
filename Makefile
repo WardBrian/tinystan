@@ -30,7 +30,7 @@ else
 endif
 STAN_FLAGS=$(STAN_FLAG_OPENCL)
 
-FFISTAN_DEPS := $(wildcard $(SRC)*.cpp) $(wildcard $(SRC)*.hpp) $(wildcard $(SRC)*.h)
+FFISTAN_DEPS := $(SRC)ffistan.cpp $(SRC)R_shims.cpp $(wildcard $(SRC)*.hpp) $(wildcard $(SRC)*.h)
 
 FFISTAN_O = $(patsubst %.cpp,%$(STAN_FLAGS).o,$(SRC)ffistan.cpp)
 
@@ -38,6 +38,8 @@ $(FFISTAN_O) : $(FFISTAN_DEPS)
 	@echo '--- Compiling FFIStan C++ code ---'
 	@mkdir -p $(dir $@)
 	$(COMPILE.cpp) $(OUTPUT_OPTION) $(LDLIBS) $<
+
+
 
 ## generate .hpp file from .stan file using stanc
 %.hpp : %.stan $(STANC)
