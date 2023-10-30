@@ -124,6 +124,10 @@ int ffistan_optimize(const FFIStanModel *ffimodel, const char *init,
  */
 const char *ffistan_get_error_message(const FFIStanError *err);
 
+enum FFIStanErrorType { generic = 0, config = 1, interrupt = 2 };
+
+FFIStanErrorType ffistan_get_error_type(const FFIStanError *err);
+
 /**
  * Free the error object.
  *

@@ -81,6 +81,10 @@ void ffistan_get_error_message_R(FFIStanError** err, char const** err_msg) {
   *err_msg = ffistan_get_error_message(*err);
 }
 
+void ffistan_get_error_type_R(FFIStanError** err, int* err_type) {
+  *err_type = static_cast<int>(ffistan_get_error_type(*err));
+}
+
 void ffistan_free_stan_error_R(FFIStanError** err) {
   ffistan_free_stan_error(*err);
 }

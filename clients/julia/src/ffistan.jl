@@ -29,6 +29,8 @@ const PATHFINDER_VARIABLES = ["lp_approx__", "lp__"]
 
 const OPTIMIZE_VARIABLES = ["lp__"]
 
+const exceptions = [ErrorException, ArgumentError, _ -> InterruptException()]
+
 mutable struct FFIStanModel
     lib::Ptr{Nothing}
     const sep::Cchar
@@ -63,11 +65,15 @@ function raise_for_error(lib::Ptr{Nothing}, return_code::Cint, err::Ref{Ptr{Cvoi
             err[],
         )
         msg = unsafe_string(cstr)
+        type = ccall(
+            Libc.Libdl.dlsym(lib, :ffistan_get_error_type),
+            Cint,
+            (Ptr{Cvoid},),
+            err[],
+        )
         ccall(Libc.Libdl.dlsym(lib, :ffistan_free_stan_error), Cvoid, (Ptr{Cvoid},), err[])
-        if (msg == "Interrupted")
-            error(InterruptException())
-        end
-        error(msg)
+        exn = exceptions[type+1]
+        throw(exn(msg))
     end
 end
 
@@ -254,7 +260,8 @@ function sample(
         raise_for_error(model.lib, return_code, err)
         out = permutedims(out, (3, 2, 1))
         if save_metric
-            metric_out = permutedims(metric_out, range(length(size(metric_out)), 1, step = -1))
+            metric_out =
+                permutedims(metric_out, range(length(size(metric_out)), 1, step = -1))
             return (param_names, out, metric_out)
         end
         return (param_names, out)

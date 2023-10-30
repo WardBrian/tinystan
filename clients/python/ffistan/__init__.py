@@ -1,5 +1,5 @@
-from .output import StanOutput
 from .model import FFIStanModel, HMCMetric, OptimizationAlgorithm
+from .output import StanOutput
 
 __all__ = ["FFIStanModel", "HMCMetric", "OptimizationAlgorithm", "StanOutput"]
 

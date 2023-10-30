@@ -1,13 +1,13 @@
+import contextlib
 import ctypes
 import subprocess
 from enum import Enum
-import contextlib
 from typing import Any, Dict, Union
 
 import numpy as np
 from numpy.ctypeslib import ndpointer
-
 from stanio import dump_stan_json
+
 from .output import StanOutput
 
 double_array = ndpointer(dtype=ctypes.c_double, flags=("C_CONTIGUOUS"))
@@ -69,6 +69,8 @@ class OptimizationAlgorithm(Enum):
     LBFGS = 2
 
 
+_exception_types = [RuntimeError, ValueError, KeyboardInterrupt]
+
 # also allow inits from a StanOutput
 def encode_stan_json(data: Union[str, Dict[str, Any]]) -> bytes:
     """Turn the provided data into something we can send to C++."""
@@ -87,7 +89,7 @@ class FFIStanModel:
             self._lib = ctypes.CDLL(model)
 
         # TODO dllist warning, windows dll setup a.la bridgestan
-        
+
         self._create_model = self._lib.ffistan_create_model
         self._create_model.restype = ctypes.c_void_p
         self._create_model.argtypes = [ctypes.c_char_p, ctypes.c_uint, err_ptr]
@@ -186,12 +188,16 @@ class FFIStanModel:
             err_ptr,
         ]
 
-        self._get_error = self._lib.ffistan_get_error_message
-        self._get_error.restype = ctypes.c_char_p
-        self._get_error.argtypes = [ctypes.c_void_p]
+        self._get_error_msg = self._lib.ffistan_get_error_message
+        self._get_error_msg.restype = ctypes.c_char_p
+        self._get_error_msg.argtypes = [ctypes.c_void_p]
+        self._get_error_type = self._lib.ffistan_get_error_type
+        self._get_error_type.restype = ctypes.c_int # really enum
+        self._get_error_type.argtypes = [ctypes.c_void_p]
         self._free_error = self._lib.ffistan_free_stan_error
         self._free_error.restype = None
         self._free_error.argtypes = [ctypes.c_void_p]
+        
         get_separator = self._lib.ffistan_separator_char
         get_separator.restype = ctypes.c_char
         get_separator.argtypes = []
@@ -200,11 +206,11 @@ class FFIStanModel:
     def _raise_for_error(self, rc: int, err):
         if rc != 0:
             if err.contents:
-                msg = self._get_error(err.contents).decode("utf-8")
+                msg = self._get_error_msg(err.contents).decode("utf-8")
+                exception_type = self._get_error_type(err.contents)
                 self._free_error(err.contents)
-                if msg == "Interrupted":
-                    raise KeyboardInterrupt()
-                raise RuntimeError(msg)
+                exn = _exception_types[exception_type]
+                raise exn(msg)
             else:
                 raise RuntimeError(f"Unknown error, function returned code {rc}")
 
@@ -249,7 +255,7 @@ class FFIStanModel:
         num_warmup=1000,
         num_samples=1000,
         metric=HMCMetric.DIAG,
-        output_metric=False,
+        save_metric=False,
         adapt=True,
         delta=0.8,
         gamma=0.05,
@@ -268,7 +274,7 @@ class FFIStanModel:
         # these are checked here because they're sizes for "out"
         if num_chains < 1:
             raise ValueError("num_chains must be at least 1")
-        if save_warmup and num_warmup < 0:
+        if num_warmup < 0:
             raise ValueError("num_warmup must be non-negative")
         if num_samples < 1:
             raise ValueError("num_samples must be at least 1")
@@ -286,7 +292,7 @@ class FFIStanModel:
             num_draws = num_samples + num_warmup * save_warmup
             out = np.zeros((num_chains, num_draws, num_params), dtype=np.float64)
 
-            if output_metric:
+            if save_metric:
                 metric_size = (
                     (model_params, model_params)
                     if metric == HMCMetric.DENSE
@@ -328,8 +334,8 @@ class FFIStanModel:
             self._raise_for_error(rc, err)
 
         output = StanOutput(param_names, out)
-        if output_metric:
-            return output, metric_out
+        if save_metric:
+            output.metric = metric_out
         return output
 
     def pathfinder(

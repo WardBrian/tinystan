@@ -197,9 +197,14 @@ handle_error <- function(rc, lib_name, err_ptr) {
         }
         msg <- .C("ffistan_get_error_message_R", as.raw(err_ptr), err_msg = as.character(""),
             PACKAGE = lib_name)$err_msg
+        type <- .C("ffistan_get_error_type_R", as.raw(err_ptr), err_type = as.integer(0),
+            PACKAGE = lib_name)$err_type
         .C("ffistan_free_stan_error_R", as.raw(err_ptr), PACKAGE = lib_name)
-        if (msg == "Interrupted" && requireNamespace("rlang", quietly = TRUE)) {
-            rlang::interrupt()
+        if (type == 3) {
+            if (requireNamespace("rlang", quietly = TRUE)) {
+                rlang::interrupt()
+            }
+            msg <- "User interrupt"
         }
         stop(msg)
     }
