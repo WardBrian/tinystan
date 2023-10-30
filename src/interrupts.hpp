@@ -5,15 +5,18 @@
 #include <stan/callbacks/interrupt.hpp>
 #include <csignal>
 
+#if defined _WIN32 || defined __MINGW32__
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 namespace ffistan {
 namespace interrupt {
 
 volatile std::sig_atomic_t interrupted = false;
 
 class ffistan_interrupt_handler : public stan::callbacks::interrupt {
-// TODO: signal handling on Windows?
-// https://learn.microsoft.com/en-us/windows/console/registering-a-control-handler-function
-#if !defined _WIN32 && !defined __MINGW32__
+#if !defined _WIN32 && !defined __MINGW32__  // POSIX signals
  public:
   ffistan_interrupt_handler() {
     interrupted = false;
@@ -28,18 +31,42 @@ class ffistan_interrupt_handler : public stan::callbacks::interrupt {
 
   virtual ~ffistan_interrupt_handler() { sigaction(SIGINT, &before, NULL); }
 
-  void operator()() {
-    if (interrupted) {
-      throw std::runtime_error("Interrupted");
-    }
-  }
-
   static void signal_handler(int signal) { interrupted = true; }
 
  private:
   struct sigaction before;
   struct sigaction custom;
+
+#else  // Windows
+ public:
+  ffistan_interrupt_handler() {
+    interrupted = false;
+
+    SetConsoleCtrlHandler(ffistan_interrupt_handler::signal_handler, TRUE);
+  }
+
+  virtual ~ffistan_interrupt_handler() {
+    SetConsoleCtrlHandler(ffistan_interrupt_handler::signal_handler, FALSE);
+  }
+
+  static BOOL WINAPI signal_handler(DWORD type) {
+    switch (type) {
+      case CTRL_C_EVENT:
+      case CTRL_BREAK_EVENT:
+        interrupted = true;
+        return TRUE;
+      default:
+        return FALSE;
+    }
+  }
 #endif
+
+ public:
+  void operator()() {
+    if (interrupted) {
+      throw std::runtime_error("Interrupted");
+    }
+  }
 };
 
 }  // namespace interrupt
