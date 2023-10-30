@@ -20,7 +20,15 @@ typedef struct FFIStanModel FFIStanModel;  // opaque type
  * @param[out] minor The minor version number.
  * @param[out] patch The patch version number.
  */
-void ffistan_version(int *major, int *minor, int *patch);
+void ffistan_api_version(int *major, int *minor, int *patch);
+
+/**
+ * Get the version of Stan this library is built against.
+ * @param[out] major The major version number.
+ * @param[out] minor The minor version number.
+ * @param[out] patch The patch version number
+ */
+void ffistan_stan_version(int *major, int *minor, int *patch);
 
 /**
  * Instantiate a model from JSON-encoded data.

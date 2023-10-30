@@ -12,6 +12,7 @@
 #include <stan/services/sample/hmc_nuts_dense_e_adapt.hpp>
 #include <stan/services/sample/hmc_nuts_unit_e.hpp>
 #include <stan/services/sample/hmc_nuts_unit_e_adapt.hpp>
+#include <stan/version.hpp>
 
 #include <sstream>
 #include <stdexcept>
@@ -400,13 +401,15 @@ void ffistan_free_stan_error(FFIStanError *err) { delete (err); }
 
 char ffistan_separator_char() { return io::SEPARATOR; }
 
-int ffistan_major_version = FFISTAN_MAJOR;
-int ffistan_minor_version = FFISTAN_MINOR;
-int ffistan_patch_version = FFISTAN_PATCH;
+void ffistan_api_version(int *major, int *minor, int *patch) {
+  *major = FFISTAN_MAJOR;
+  *minor = FFISTAN_MINOR;
+  *patch = FFISTAN_PATCH;
+}
 
-void ffistan_version(int *major, int *minor, int *patch) {
-  *major = ffistan_major_version;
-  *minor = ffistan_minor_version;
-  *patch = ffistan_patch_version;
+void ffistan_stan_version(int *major, int *minor, int *patch) {
+  *major = STAN_MAJOR;
+  *minor = STAN_MINOR;
+  *patch = STAN_PATCH;
 }
 }
