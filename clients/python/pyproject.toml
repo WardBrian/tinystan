@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "ffistan"
 readme = "README.md"
 authors = [{ "name" = "Brian Ward", "email" = "bward@flatironinstitute.org" }]
-dependencies = ["numpy", "stanio~=0.3.0"]
+dependencies = ["numpy", "stanio~=0.3.0", "dllist"]
 requires-python = ">=3.8"
 license = { text = "BSD-3-Clause" }
 classifiers = [

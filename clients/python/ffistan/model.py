@@ -86,6 +86,8 @@ class FFIStanModel:
         else:
             self._lib = ctypes.CDLL(model)
 
+        # TODO dllist warning, windows dll setup a.la bridgestan
+        
         self._create_model = self._lib.ffistan_create_model
         self._create_model.restype = ctypes.c_void_p
         self._create_model.argtypes = [ctypes.c_char_p, ctypes.c_uint, err_ptr]
