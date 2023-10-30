@@ -21,6 +21,10 @@ STAN_THREADS=1
 CXXFLAGS += -fPIC
 CXXFLAGS_SUNDIALS += -fPIC
 
+ifeq ($(OS),Windows_NT)
+	CXXFLAGS += -Wa,-mbig-obj
+endif
+
 ## set flags for stanc compiler (math calls MIGHT? set STAN_OPENCL)
 ifdef STAN_OPENCL
 	STANCFLAGS += --use-opencl
