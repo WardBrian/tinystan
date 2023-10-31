@@ -17,7 +17,7 @@
 ## Testing
 - [ ] Add a variety of models, including:
     - [ ] A model that uses SUNDIALS
-    - [ ] A model with no parameters
+    - [x] A model with no parameters
 - [ ] Test in each language
-- [ ] Test on all platforms
-- [ ] Set up Github Actions
+- [x] Test on all platforms
+- [x] Set up Github Actions
