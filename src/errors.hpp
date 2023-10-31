@@ -21,25 +21,29 @@ class FFIStanError {
 };
 
 /**
- * Macro for catching exceptions and setting the error pointer.
+ * Macro for the repeated try-catch pattern used in all our wrapper functions.
+ *
+ * Note: __VA_ARGS__ is a special macro that expands to the arguments passed to
+ * the macro. It is needed because commas can appear in the body of the code
+ * passed to the macro, and the preprocessor would interpret them as argument
+ * separators.
  */
-#define FFISTAN_CATCH()                                            \
-  catch (const ffistan::error::interrupt_exception &e) {           \
+#define FFISTAN_TRY_CATCH(...)                                     \
+  try {                                                            \
+    __VA_ARGS__                                                    \
+  } catch (const ffistan::error::interrupt_exception &e) {         \
     if (err != nullptr) {                                          \
       *err = new FFIStanError("", FFIStanErrorType::interrupt);    \
     }                                                              \
-  }                                                                \
-  catch (const std::invalid_argument &e) {                         \
+  } catch (const std::invalid_argument &e) {                       \
     if (err != nullptr) {                                          \
       *err = new FFIStanError(e.what(), FFIStanErrorType::config); \
     }                                                              \
-  }                                                                \
-  catch (const std::exception &e) {                                \
+  } catch (const std::exception &e) {                              \
     if (err != nullptr) {                                          \
       *err = new FFIStanError(e.what());                           \
     }                                                              \
-  }                                                                \
-  catch (...) {                                                    \
+  } catch (...) {                                                  \
     if (err != nullptr) {                                          \
       *err = new FFIStanError("Unknown error");                    \
     }                                                              \

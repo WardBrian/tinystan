@@ -37,10 +37,7 @@ extern "C" {
 
 FFIStanModel *ffistan_create_model(const char *data, unsigned int seed,
                                    FFIStanError **err) {
-  try {
-    return new FFIStanModel(data, seed);
-  }
-  FFISTAN_CATCH()
+  FFISTAN_TRY_CATCH({ return new FFIStanModel(data, seed); })
 
   return nullptr;
 }
@@ -66,7 +63,7 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
                    double stepsize_jitter, int max_depth,
                    /* currently has no effect */ int refresh, int num_threads,
                    double *out, double *metric_out, FFIStanError **err) {
-  try {
+  FFISTAN_TRY_CATCH({
     error::check_positive("num_chains", num_chains);
     error::check_positive("id", id);
     error::check_nonnegative("init_radius", init_radius);
@@ -78,9 +75,6 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
       error::check_positive("kappa", kappa);
       error::check_positive("t0", t0);
     }
-    error::check_nonnegative("init_buffer", init_buffer);
-    error::check_nonnegative("term_buffer", term_buffer);
-    error::check_nonnegative("window", window);
     error::check_positive("stepsize", stepsize);
     error::check_between("stepsize_jitter", stepsize_jitter, 0, 1);
     error::check_positive("max_depth", max_depth);
@@ -180,8 +174,7 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
     }
 
     return return_code;
-  }
-  FFISTAN_CATCH()
+  })
 
   return -1;
 }
@@ -195,7 +188,7 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
                        int num_iterations, int num_elbo_draws,
                        int num_multi_draws, int refresh, int num_threads,
                        double *out, FFIStanError **err) {
-  try {
+  FFISTAN_TRY_CATCH({
     // argument validation
     error::check_positive("num_paths", num_paths);
     error::check_positive("num_draws", num_draws);
@@ -255,8 +248,7 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
     }
 
     return return_code;
-  }
-  FFISTAN_CATCH()
+  })
 
   return -1;
 }
@@ -270,7 +262,7 @@ int ffistan_optimize(const FFIStanModel *ffimodel, const char *init,
                      double tol_grad, double tol_rel_grad, double tol_param,
                      int refresh, int num_threads, double *out,
                      FFIStanError **err) {
-  try {
+  FFISTAN_TRY_CATCH({
     error::check_positive("id", id);
     error::check_positive("num_iterations", num_iterations);
     error::check_nonnegative("init_radius", init_radius);
@@ -357,8 +349,7 @@ int ffistan_optimize(const FFIStanModel *ffimodel, const char *init,
     }
 
     return return_code;
-  }
-  FFISTAN_CATCH()
+  })
 
   return -1;
 }
