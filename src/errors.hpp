@@ -92,7 +92,7 @@ template <typename T>
 void check_positive(const char *name, T val) {
   if (val <= 0) {
     std::stringstream msg;
-    msg << name << " must be at positive, was " << val;
+    msg << name << " must be positive, was " << val;
     throw std::invalid_argument(msg.str());
   }
 }

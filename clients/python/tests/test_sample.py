@@ -1,26 +1,29 @@
 import json
-from pathlib import Path
+import tempfile
 
 import numpy as np
 import pytest
 
 import ffistan
-
-STAN_FOLDER = Path(__file__).parent.parent.parent.parent / "test_models"
-
-
-def model_fixture(name):
-    @pytest.fixture(scope="module", name=f"{name}_model")
-    def fix():
-        yield ffistan.FFIStanModel(str(STAN_FOLDER / name / f"{name}.stan"))
-
-    return fix
+from tests import (
+    BERNOULLI_DATA,
+    STAN_FOLDER,
+    bernoulli_model,
+    empty_model,
+    gaussian_model,
+    multimodal_model,
+)
 
 
-bernoulli_model = model_fixture("bernoulli")
-BERNOULLI_DATA = json.dumps({"N": 10, "y": [1, 0, 1, 1, 0, 0, 0, 0, 0, 1]})
+def test_data(bernoulli_model):
+    # data is a string
+    out1 = bernoulli_model.sample(BERNOULLI_DATA)
+    assert 0.2 < out1["theta"].mean() < 0.3
 
-gaussian_model = model_fixture("gaussian")
+    # data stored in a file
+    data_file = str(STAN_FOLDER / "bernoulli" / "bernoulli.data.json")
+    out2 = bernoulli_model.sample(data=data_file)
+    assert 0.2 < out2["theta"].mean() < 0.3
 
 
 def test_save_warmup(bernoulli_model):
@@ -54,7 +57,7 @@ def test_seed(bernoulli_model):
 
 
 def test_save_metric(gaussian_model):
-    data = json.dumps({"N": 5})
+    data = {"N": 5}
     out_unit = gaussian_model.sample(
         data,
         num_warmup=100,
@@ -97,91 +100,102 @@ def test_save_metric(gaussian_model):
     assert not hasattr(out_nometric, "metric")
 
 
-def test_multiple_inits():
+def test_multiple_inits(multimodal_model):
     # well-separated mixture of gaussians
-    model = ffistan.FFIStanModel(str(STAN_FOLDER / "multimodal" / "multimodal.stan"))
+    # same init for each chain
     init1 = {"mu": -10}
-    out1 = model.sample(num_chains=2, num_warmup=100, num_samples=100, inits=init1)
+    out1 = multimodal_model.sample(
+        num_chains=2, num_warmup=100, num_samples=100, inits=init1
+    )
     assert np.all(out1["mu"] < 0)
 
+    # different inits for each chain
     init2 = {"mu": 10}
-    out2 = model.sample(
+    out2 = multimodal_model.sample(
         num_chains=2, num_warmup=100, num_samples=100, inits=[init1, init2]
     )
     assert np.all(out2["mu"][0] < 0)
     assert np.all(out2["mu"][1] > 0)
 
+    # mix of files and json
+    with tempfile.NamedTemporaryFile(suffix=".json") as f:
+        f.write(json.dumps(init1).encode())
+        f.flush()
+        out3 = multimodal_model.sample(
+            num_chains=2, num_warmup=100, num_samples=100, inits=[f.name, init2]
+        )
+        assert np.all(out3["mu"][0] < 0)
+        assert np.all(out3["mu"][1] > 0)
+
 
 def test_bad_data(bernoulli_model):
     data = {"N": -1}
-    with pytest.raises(RuntimeError):
-        bernoulli_model.sample(data=json.dumps(data))
+    with pytest.raises(RuntimeError, match="greater than or equal to 0"):
+        bernoulli_model.sample(data=(data))
 
     data2 = {"N": 1, "y": [1, 2]}
-    with pytest.raises(RuntimeError):
-        bernoulli_model.sample(data=json.dumps(data2))
+    with pytest.raises(RuntimeError, match="mismatch in dimension"):
+        bernoulli_model.sample(data=(data2))
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError, match="Error in JSON parsing"):
         bernoulli_model.sample(data="{'bad'}")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Could not open data file"):
         bernoulli_model.sample(data="path/not/here.json")
 
 
 def test_bad_init(bernoulli_model):
-    init1 = json.dumps({"theta": 2})  # out of bounds
-    with pytest.raises(RuntimeError):
+    init1 = {"theta": 2}  # out of bounds
+    with pytest.raises(RuntimeError, match="Initialization failed"):
         bernoulli_model.sample(BERNOULLI_DATA, inits=init1)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Could not open data file"):
         bernoulli_model.sample(BERNOULLI_DATA, inits="bad/path.json")
 
-    init2 = json.dumps({"theta": 0.2})
+    init2 = {"theta": 0.2}
 
     inits = [init2, init1]
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError, match="Initialization failed"):
         bernoulli_model.sample(BERNOULLI_DATA, num_chains=2, inits=inits)
 
     inits = [init2, init2]
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="match the number of chains"):
         bernoulli_model.sample(BERNOULLI_DATA, num_chains=1, inits=inits)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="match the number of chains"):
         bernoulli_model.sample(BERNOULLI_DATA, num_chains=3, inits=inits)
 
 
 def test_bad_num_warmup(bernoulli_model):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="non-negative"):
         bernoulli_model.sample(BERNOULLI_DATA, save_warmup=False, num_warmup=-1)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="non-negative"):
         bernoulli_model.sample(BERNOULLI_DATA, save_warmup=True, num_warmup=-1)
 
 
-def test_model_no_params():
-    model = ffistan.FFIStanModel(str(STAN_FOLDER / "empty" / "empty.stan"))
-    with pytest.raises(ValueError):
-        model.sample()
+def test_model_no_params(empty_model):
+    with pytest.raises(ValueError, match="Model has no parameters to sample"):
+        empty_model.sample()
 
 
 @pytest.mark.parametrize(
-    "arg, value",
+    "arg, value, match",
     [
-        ("num_chains", 0),
-        ("num_samples", 0),
-        ("num_warmup", -1),
-        ("id", 0),
-        ("init_radius", -0.1),
-        ("delta", -0.1),
-        ("delta", 1.1),
-        ("gamma", 0),
-        ("kappa", 0),
-        ("t0", 0),
-        ("stepsize", 0.0),
-        ("stepsize_jitter", -0.1),
-        ("stepsize_jitter", 1.1),
-        ("max_depth", 0),
-        ("num_threads", 0),
+        ("num_chains", 0, "at least 1"),
+        ("num_samples", 0, "at least 1"),
+        ("id", 0, "positive"),
+        ("init_radius", -0.1, "non-negative"),
+        ("delta", -0.1, "between 0 and 1"),
+        ("delta", 1.1, "between 0 and 1"),
+        ("gamma", 0, "positive"),
+        ("kappa", 0, "positive"),
+        ("t0", 0, "positive"),
+        ("stepsize", 0.0, "positive"),
+        ("stepsize_jitter", -0.1, "between 0 and 1"),
+        ("stepsize_jitter", 1.1, "between 0 and 1"),
+        ("max_depth", 0, "positive"),
+        ("num_threads", 0, "positive"),
     ],
 )
-def test_bad_argument(bernoulli_model, arg, value):
-    with pytest.raises(ValueError):
+def test_bad_argument(bernoulli_model, arg, value, match):
+    with pytest.raises(ValueError, match=match):
         bernoulli_model.sample(BERNOULLI_DATA, **{arg: value})
