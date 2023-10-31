@@ -8,6 +8,7 @@ import numpy as np
 from numpy.ctypeslib import ndpointer
 from stanio import dump_stan_json
 
+from .compile import windows_dll_path_setup
 from .output import StanOutput
 
 double_array = ndpointer(dtype=ctypes.c_double, flags=("C_CONTIGUOUS"))
@@ -71,6 +72,7 @@ class OptimizationAlgorithm(Enum):
 
 _exception_types = [RuntimeError, ValueError, KeyboardInterrupt]
 
+
 # also allow inits from a StanOutput
 def encode_stan_json(data: Union[str, Dict[str, Any]]) -> bytes:
     """Turn the provided data into something we can send to C++."""
@@ -79,16 +81,21 @@ def encode_stan_json(data: Union[str, Dict[str, Any]]) -> bytes:
     return dump_stan_json(data).encode()
 
 
+def rand_u32():
+    return np.random.randint(0, 2**32 - 1, dtype=np.uint32)
+
+
 class FFIStanModel:
     def __init__(self, model):
+        windows_dll_path_setup()
+        # TODO dllist warning
+
         if model.endswith(".stan"):
             libname = model[:-5] + "_model.so"
             subprocess.run(["make", libname])
             self._lib = ctypes.CDLL(libname)
         else:
             self._lib = ctypes.CDLL(model)
-
-        # TODO dllist warning, windows dll setup a.la bridgestan
 
         self._create_model = self._lib.ffistan_create_model
         self._create_model.restype = ctypes.c_void_p
@@ -192,12 +199,12 @@ class FFIStanModel:
         self._get_error_msg.restype = ctypes.c_char_p
         self._get_error_msg.argtypes = [ctypes.c_void_p]
         self._get_error_type = self._lib.ffistan_get_error_type
-        self._get_error_type.restype = ctypes.c_int # really enum
+        self._get_error_type.restype = ctypes.c_int  # really enum
         self._get_error_type.argtypes = [ctypes.c_void_p]
         self._free_error = self._lib.ffistan_free_stan_error
         self._free_error.restype = None
         self._free_error.argtypes = [ctypes.c_void_p]
-        
+
         get_separator = self._lib.ffistan_separator_char
         get_separator.restype = ctypes.c_char
         get_separator.argtypes = []
@@ -279,7 +286,7 @@ class FFIStanModel:
         if num_samples < 1:
             raise ValueError("num_samples must be at least 1")
 
-        seed = seed or np.random.randint(2**32 - 1)
+        seed = seed or rand_u32()
 
         with self._get_model(data, seed) as model:
             model_params = self._get_free_params(model)
@@ -364,7 +371,7 @@ class FFIStanModel:
         if num_draws < 1:
             raise ValueError("num_draws must be at least 1")
 
-        seed = seed or np.random.randint(2**32 - 1)
+        seed = seed or rand_u32()
 
         with self._get_model(data, seed) as model:
             param_names = PATHFINDER_VARIABLES + self._get_parameter_names(model)
@@ -421,7 +428,7 @@ class FFIStanModel:
         refresh=0,
         num_threads=-1,
     ):
-        seed = seed or np.random.randint(2**32 - 1)
+        seed = seed or rand_u32()
 
         if isinstance(init, StanOutput):
             init = init.create_inits(chains=1, seed=seed)
