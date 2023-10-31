@@ -81,6 +81,10 @@ def encode_stan_json(data: Union[str, Dict[str, Any]]) -> bytes:
     return dump_stan_json(data).encode()
 
 
+def rand_u32():
+    return np.random.randint(0, 2**32 - 1, dtype=np.uint32)
+
+
 class FFIStanModel:
     def __init__(self, model):
         windows_dll_path_setup()
@@ -282,7 +286,7 @@ class FFIStanModel:
         if num_samples < 1:
             raise ValueError("num_samples must be at least 1")
 
-        seed = seed or np.random.randint(2**32 - 1)
+        seed = seed or rand_u32()
 
         with self._get_model(data, seed) as model:
             model_params = self._get_free_params(model)
@@ -367,7 +371,7 @@ class FFIStanModel:
         if num_draws < 1:
             raise ValueError("num_draws must be at least 1")
 
-        seed = seed or np.random.randint(2**32 - 1)
+        seed = seed or rand_u32()
 
         with self._get_model(data, seed) as model:
             param_names = PATHFINDER_VARIABLES + self._get_parameter_names(model)
@@ -424,7 +428,7 @@ class FFIStanModel:
         refresh=0,
         num_threads=-1,
     ):
-        seed = seed or np.random.randint(2**32 - 1)
+        seed = seed or rand_u32()
 
         if isinstance(init, StanOutput):
             init = init.create_inits(chains=1, seed=seed)
