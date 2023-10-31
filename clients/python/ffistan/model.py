@@ -8,6 +8,7 @@ import numpy as np
 from numpy.ctypeslib import ndpointer
 from stanio import dump_stan_json
 
+from .compile import windows_dll_path_setup
 from .output import StanOutput
 
 double_array = ndpointer(dtype=ctypes.c_double, flags=("C_CONTIGUOUS"))
@@ -71,6 +72,7 @@ class OptimizationAlgorithm(Enum):
 
 _exception_types = [RuntimeError, ValueError, KeyboardInterrupt]
 
+
 # also allow inits from a StanOutput
 def encode_stan_json(data: Union[str, Dict[str, Any]]) -> bytes:
     """Turn the provided data into something we can send to C++."""
@@ -81,14 +83,15 @@ def encode_stan_json(data: Union[str, Dict[str, Any]]) -> bytes:
 
 class FFIStanModel:
     def __init__(self, model):
+        windows_dll_path_setup()
+        # TODO dllist warning
+
         if model.endswith(".stan"):
             libname = model[:-5] + "_model.so"
             subprocess.run(["make", libname])
             self._lib = ctypes.CDLL(libname)
         else:
             self._lib = ctypes.CDLL(model)
-
-        # TODO dllist warning, windows dll setup a.la bridgestan
 
         self._create_model = self._lib.ffistan_create_model
         self._create_model.restype = ctypes.c_void_p
@@ -192,12 +195,12 @@ class FFIStanModel:
         self._get_error_msg.restype = ctypes.c_char_p
         self._get_error_msg.argtypes = [ctypes.c_void_p]
         self._get_error_type = self._lib.ffistan_get_error_type
-        self._get_error_type.restype = ctypes.c_int # really enum
+        self._get_error_type.restype = ctypes.c_int  # really enum
         self._get_error_type.argtypes = [ctypes.c_void_p]
         self._free_error = self._lib.ffistan_free_stan_error
         self._free_error.restype = None
         self._free_error.argtypes = [ctypes.c_void_p]
-        
+
         get_separator = self._lib.ffistan_separator_char
         get_separator.restype = ctypes.c_char
         get_separator.argtypes = []
