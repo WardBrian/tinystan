@@ -94,7 +94,7 @@ jobs:
 
       - name: Install package
         run: |
-          cd python/
+          cd clients/python/
           pip install pytest
           pip install .
 
@@ -104,8 +104,7 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest -v python/
-          cd python/
-          python example.py
+          pytest -v clients/python/
+          python clients/python/example.py
         env:
           FFISTAN: ${{ github.workspace }}
