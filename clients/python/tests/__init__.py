@@ -24,3 +24,4 @@ gaussian_model = model_fixture("gaussian")
 
 empty_model = model_fixture("empty")
 multimodal_model = model_fixture("multimodal")
+simple_jacobian_model = model_fixture("simple_jacobian")
