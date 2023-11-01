@@ -370,6 +370,12 @@ class FFIStanModel:
     ):
         if num_draws < 1:
             raise ValueError("num_draws must be at least 1")
+        if num_paths < 1:
+            raise ValueError("num_paths must be at least 1")
+        if num_multi_draws < 1:
+            raise ValueError("num_multi_draws must be at least 1")
+
+        output_size = num_draws if num_paths == 1 else num_multi_draws
 
         seed = seed or rand_u32()
 
@@ -377,7 +383,7 @@ class FFIStanModel:
             param_names = PATHFINDER_VARIABLES + self._get_parameter_names(model)
 
             num_params = len(param_names)
-            out = np.zeros((num_draws, num_params), dtype=np.float64)
+            out = np.zeros((output_size, num_params), dtype=np.float64)
 
             err = ctypes.pointer(ctypes.c_void_p())
             rc = self._ffi_pathfinder(

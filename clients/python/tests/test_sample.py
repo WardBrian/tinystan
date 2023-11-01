@@ -154,9 +154,10 @@ def test_bad_init(bernoulli_model):
 
     init2 = {"theta": 0.2}
 
-    inits = [init2, init1]
+    # half of all inits fail
+    inits = [init2, init1] * 6
     with pytest.raises(RuntimeError, match="Initialization failed"):
-        bernoulli_model.sample(BERNOULLI_DATA, num_chains=2, inits=inits)
+        bernoulli_model.sample(BERNOULLI_DATA, num_chains=12, inits=inits)
 
     inits = [init2, init2]
     with pytest.raises(ValueError, match="match the number of chains"):

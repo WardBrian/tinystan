@@ -216,22 +216,22 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
 
     interrupt::ffistan_interrupt_handler interrupt;
     stan::callbacks::structured_writer dummy_json_writer;
-    std::vector<stan::callbacks::writer> null_writers(num_paths);
-    std::vector<stan::callbacks::structured_writer> null_structured_writers(
-        num_paths);
 
     bool save_iterations = false;
 
     int return_code = 0;
 
     if (num_paths == 1) {
+      stan::callbacks::writer null_writer;
       return_code = stan::services::pathfinder::pathfinder_lbfgs_single(
           model, *(json_inits[0]), seed, id, init_radius, max_history_size,
           init_alpha, tol_obj, tol_rel_obj, tol_grad, tol_rel_grad, tol_param,
           num_iterations, num_elbo_draws, num_draws, save_iterations, refresh,
-          interrupt, logger, null_writers[0], pathfinder_writer,
-          null_structured_writers[0]);
+          interrupt, logger, null_writer, pathfinder_writer, dummy_json_writer);
     } else {
+      std::vector<stan::callbacks::writer> null_writers(num_paths);
+      std::vector<stan::callbacks::structured_writer> null_structured_writers(
+          num_paths);
       return_code = stan::services::pathfinder::pathfinder_lbfgs_multi(
           model, json_inits, seed, id, init_radius, max_history_size,
           init_alpha, tol_obj, tol_rel_obj, tol_grad, tol_rel_grad, tol_param,

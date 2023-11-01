@@ -30,18 +30,17 @@ class buffer_writer : public stan::callbacks::writer {
 
   // needed for pathfinder - transposed order per spec
   void operator()(const Eigen::MatrixXd &m) override {
-    for (int j = 0; j < m.cols(); ++j) {
-      for (int i = 0; i < m.rows(); ++i) {
-        buf[pos++] = m(i, j);
-      }
-    }
+    // copy into buffer
+    Eigen::MatrixXd mT = m.transpose();
+    Eigen::Map<Eigen::MatrixXd>(buf + pos, mT.rows(), mT.cols()) = mT;
+    pos += mT.size();
   }
 
   using stan::callbacks::writer::operator();
 
  private:
   double *buf;
-  unsigned long int pos;
+  size_t pos;
 };
 
 class metric_buffer_writer : public stan::callbacks::structured_writer {

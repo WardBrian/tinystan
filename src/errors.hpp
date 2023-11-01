@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 #include <cstdlib>
+#include <mutex>
 #include <stdexcept>
 
 class FFIStanError {
@@ -58,34 +59,45 @@ class error_logger : public stan::callbacks::logger {
   ~error_logger(){};
 
   void error(const std::string &s) override {
-    if (!s.empty())
-      last_error += s + "\n";
+    if (!s.empty()) {
+      std::unique_lock<std::mutex> lock(error_mutex);
+      last_error << s << "\n";
+    }
   }
 
   void error(const std::stringstream &s) override {
-    if (!s.str().empty())
-      last_error += s.str() + "\n";
+    if (!s.str().empty()) {
+      std::unique_lock<std::mutex> lock(error_mutex);
+      last_error << s.str() << "\n";
+    }
   }
 
   void fatal(const std::string &s) override {
-    if (!s.empty())
-      last_error += s + "\n";
+    if (!s.empty()) {
+      std::unique_lock<std::mutex> lock(error_mutex);
+      last_error << s << "\n";
+    }
   }
 
   void fatal(const std::stringstream &s) override {
-    if (!s.str().empty())
-      last_error += s.str() + "\n";
+    if (!s.str().empty()) {
+      std::unique_lock<std::mutex> lock(error_mutex);
+      last_error << s.str() << "\n";
+    }
   }
 
   FFIStanError *get_error() {
-    if (last_error.empty())
+    std::unique_lock<std::mutex> lock(error_mutex);
+    auto err = last_error.str();
+    if (err.empty())
       return new FFIStanError("Unknown error");
-    last_error.pop_back();
-    return new FFIStanError(last_error.c_str());
+    err.pop_back();
+    return new FFIStanError(err.c_str());
   }
 
  private:
-  std::string last_error;
+  std::stringstream last_error;
+  std::mutex error_mutex;
 };
 
 template <typename T>
