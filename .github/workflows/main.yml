@@ -105,6 +105,11 @@ jobs:
       - name: Run tests
         run: |
           pytest -v clients/python/
+        env:
+          FFISTAN: ${{ github.workspace }}
+
+      - name: Run example
+        run: |
           python clients/python/example.py
         env:
           FFISTAN: ${{ github.workspace }}
