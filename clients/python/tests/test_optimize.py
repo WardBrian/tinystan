@@ -25,12 +25,12 @@ ALL_ALGORITHMS = [
 def test_data(bernoulli_model):
     # data is a string
     out1 = bernoulli_model.optimize(BERNOULLI_DATA)
-    assert 0.19 < out1["theta"].mean() < 0.21
+    assert 0.19 < out1["theta"] < 0.21
 
     # data stored in a file
     data_file = str(STAN_FOLDER / "bernoulli" / "bernoulli.data.json")
     out2 = bernoulli_model.optimize(data=data_file)
-    assert 0.19 < out2["theta"].mean() < 0.21
+    assert 0.19 < out2["theta"] < 0.21
 
 
 @pytest.mark.parametrize("jacobian", [True, False], ids=["jacobian", "no_jacobian"])

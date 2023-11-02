@@ -4,7 +4,7 @@ stan_folder <- file.path("..", "..", "..", "..", "test_models")
 
 bernoulli_model <- ffistan::FFIStanModel$new(file.path(stan_folder, "bernoulli",
     "bernoulli_model.so"))
-BERNOULLI_DATA <- '{"N": 10, "y": [0, 1, 0, 0, 0, 0, 0, 0, 0, 1]}'
+BERNOULLI_DATA <- "{\"N\": 10, \"y\": [0, 1, 0, 0, 0, 0, 0, 0, 0, 1]}"
 
 gaussian_model <- ffistan::FFIStanModel$new(file.path(stan_folder, "gaussian", "gaussian_model.so"))
 
@@ -57,7 +57,7 @@ test_that("seed works", {
 
 test_that("save_metric works", {
 
-    data <- '{"N": 5}'
+    data <- "{\"N\": 5}"
 
     out_unit <- gaussian_model$sample(data, num_warmup = 100, num_samples = 10, save_metric = TRUE,
         metric = ffistan::HMCMetric$UNIT)
@@ -83,12 +83,12 @@ test_that("save_metric works", {
 
 test_that("multiple inits work", {
 
-    init1 <- '{"mu": -10}'
+    init1 <- "{\"mu\": -10}"
     out1 <- multimodal_model$sample(num_chains = 2, num_warmup = 100, num_samples = 100,
         inits = init1)
     expect_true(all(out1$draws[, , 8] < 0))
 
-    init2 <- '{"mu": 10}'
+    init2 <- "{\"mu\": 10}"
     out2 <- multimodal_model$sample(num_chains = 2, num_warmup = 100, num_samples = 100,
         inits = list(init1, init2))
     expect_true(all(out2$draws[1, , 8] < 0))
@@ -105,13 +105,13 @@ test_that("multiple inits work", {
 
 test_that("bad data handled properly", {
 
-    data <- '{"N": -1}'
+    data <- "{\"N\": -1}"
     expect_error(bernoulli_model$sample(data), "greater than or equal to 0")
 
-    data <- '{"N\": 1, \"y": [0, 1]}'
+    data <- "{\"N\": 1, \"y\": [0, 1]}"
     expect_error(bernoulli_model$sample(data), "mismatch in dimension")
 
-    expect_error(bernoulli_model$sample('{"bad"}'), "Error in JSON parsing")
+    expect_error(bernoulli_model$sample("{\"bad\"}"), "Error in JSON parsing")
 
     expect_error(bernoulli_model$sample("not/real/path.json"), "Could not open data file")
 
@@ -119,13 +119,13 @@ test_that("bad data handled properly", {
 
 test_that("bad inits handled properly", {
 
-    init1 <- '{"theta": 2}'
+    init1 <- "{\"theta\": 2}"
     expect_error(bernoulli_model$sample(BERNOULLI_DATA, inits = init1), "Initialization failed")
 
     expect_error(bernoulli_model$sample(BERNOULLI_DATA, inits = "bad/path.json"),
         "Could not open data file")
 
-    init2 <- '{"theta": 0.5}'
+    init2 <- "{\"theta\": 0.5}"
     expect_error(bernoulli_model$sample(BERNOULLI_DATA, num_chains = 2, inits = c(init2,
         init1)), "Initialization failed")
 
