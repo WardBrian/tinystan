@@ -44,7 +44,7 @@ void ffistan_sample_R(int* return_code, FFIStanModel** model,
       *num_samples, static_cast<FFIStanMetric>(*metric_choice), (*adapt != 0),
       *delta, *gamma, *kappa, *t0, *init_buffer, *term_buffer, *window,
       (*save_warmup != 0), *stepsize, *stepsize_jitter, *max_depth, *refresh,
-      *num_threads, out, metric_out, err);
+      *num_threads, out, metric_out_ptr, err);
 }
 
 void ffistan_pathfinder_R(

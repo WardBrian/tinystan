@@ -1,3 +1,4 @@
+#' @export
 HMCMetric <- list(UNIT = 0, DENSE = 1, DIAG = 2)
 
 HMC_SAMPLER_VARIABLES = c("lp__", "accept_stat__", "stepsize__", "treedepth__", "n_leapfrog__",
@@ -5,10 +6,12 @@ HMC_SAMPLER_VARIABLES = c("lp__", "accept_stat__", "stepsize__", "treedepth__", 
 
 PATHFINDER_VARIABLES = c("lp_approx__", "lp__")
 
+#' @export
 OptimizationAlgorithm <- list(NEWTON = 0, BFGS = 1, LBFGS = 2)
 
 OPTIMIZATION_VARIABLES = c("lp__")
 
+#' @export
 FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(lib) {
     if (.Platform$OS.type == "windows") {
         lib_old <- lib
@@ -29,7 +32,8 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
     private$sep <- rawToChar(sep)
 
 }, api_version = function() {
-    .C("ffistan_api_version", major = integer(1), minor = integer(1), patch = integer(1), PACKAGE = private$lib_name)
+    .C("ffistan_api_version", major = integer(1), minor = integer(1), patch = integer(1),
+        PACKAGE = private$lib_name)
 }, sample = function(data = "", num_chains = 4, inits = NULL, seed = NULL, id = 1,
     init_radius = 2, num_warmup = 1000, num_samples = 1000, metric = HMCMetric$DIAG,
     save_metric = FALSE, adapt = TRUE, delta = 0.8, gamma = 0.05, kappa = 0.75, t0 = 10,
@@ -68,7 +72,7 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
                 metric_size <- num_chains * free_params
             }
         } else {
-            metric_size <- 2
+            metric_size <- 1
         }
 
         vars <- .C("ffistan_sample_R", return_code = as.integer(0), as.raw(model),
@@ -182,7 +186,11 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
         return(as.character(""))
     }
     if (is.character(inits)) {
-        return(as.character(inits))
+        if (length(inits) == 1) {
+            return(as.character(inits))
+        } else {
+            return(as.character(paste0(inits, collapse = private$sep)))
+        }
     }
     if (is.list(inits)) {
         return(as.character(paste0(inits, collapse = private$sep)))
