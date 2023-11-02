@@ -105,13 +105,21 @@ class FFIStanModel:
         self._delete_model.restype = None
         self._delete_model.argtypes = [ctypes.c_void_p]
 
-        self._get_names = self._lib.ffistan_model_param_names
-        self._get_names.restype = ctypes.c_char_p
-        self._get_names.argtypes = [ctypes.c_void_p]
+        self._get_param_names = self._lib.ffistan_model_param_names
+        self._get_param_names.restype = ctypes.c_char_p
+        self._get_param_names.argtypes = [ctypes.c_void_p]
 
-        self._get_free_params = self._lib.ffistan_model_num_free_params
-        self._get_free_params.restype = ctypes.c_size_t
-        self._get_free_params.argtypes = [ctypes.c_void_p]
+        self._num_free_params = self._lib.ffistan_model_num_free_params
+        self._num_free_params.restype = ctypes.c_size_t
+        self._num_free_params.argtypes = [ctypes.c_void_p]
+
+        self._version = self._lib.ffistan_api_version
+        self._version.restype = None
+        self._version.argtypes = [
+            ctypes.POINTER(ctypes.c_int),
+            ctypes.POINTER(ctypes.c_int),
+            ctypes.POINTER(ctypes.c_int),
+        ]
 
         self._ffi_sample = self._lib.ffistan_sample
         self._ffi_sample.restype = ctypes.c_int
@@ -245,10 +253,15 @@ class FFIStanModel:
         return inits_encoded
 
     def _get_parameter_names(self, model):
-        comma_separated = self._get_names(model).decode("utf-8").strip()
+        comma_separated = self._get_param_names(model).decode("utf-8").strip()
         if comma_separated == "":
             return []
         return list(comma_separated.split(","))
+
+    def api_version(self):
+        major, minor, patch = ctypes.c_int(), ctypes.c_int(), ctypes.c_int()
+        self._version(ctypes.byref(major), ctypes.byref(minor), ctypes.byref(patch))
+        return (major.value, minor.value, patch.value)
 
     def sample(
         self,
@@ -289,7 +302,7 @@ class FFIStanModel:
         seed = seed or rand_u32()
 
         with self._get_model(data, seed) as model:
-            model_params = self._get_free_params(model)
+            model_params = self._num_free_params(model)
             if model_params == 0:
                 raise ValueError("Model has no parameters to sample.")
 

@@ -13,6 +13,7 @@ from tests import (
     gaussian_model,
     multimodal_model,
     simple_jacobian_model,
+    temp_json,
 )
 
 ALL_ALGORITHMS = [
@@ -67,18 +68,17 @@ def test_seed(bernoulli_model):
         np.testing.assert_equal(out1["theta"], out3["theta"])
 
 
-def test_inits(multimodal_model):
+def test_inits(multimodal_model, temp_json):
     # well-separated mixture of gaussians
     init1 = {"mu": -100}
     out1 = multimodal_model.optimize(init=init1)
     assert np.all(out1["mu"] < 0)
 
     init2 = {"mu": 100}
-    with tempfile.NamedTemporaryFile(suffix=".json") as f:
-        f.write(json.dumps(init2).encode())
-        f.flush()
-        out2 = multimodal_model.optimize(init=f.name)
-        assert np.all(out2["mu"] > 0)
+    temp_json.write(json.dumps(init2).encode())
+    temp_json.flush()
+    out2 = multimodal_model.optimize(init=temp_json.name)
+    assert np.all(out2["mu"] > 0)
 
 
 def test_bad_data(bernoulli_model):

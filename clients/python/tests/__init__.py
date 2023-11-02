@@ -1,12 +1,25 @@
 import json
+import tempfile
 from pathlib import Path
 
-import numpy as np
 import pytest
 
 import ffistan
 
 STAN_FOLDER = Path(__file__).parent.parent.parent.parent / "test_models"
+
+
+@pytest.fixture
+def temp_json():
+    f = tempfile.NamedTemporaryFile(suffix=".json", delete=False)
+    try:
+        yield f
+    finally:
+        try:
+            f.close()
+            Path(f.name).unlink()
+        except:
+            pass
 
 
 def model_fixture(name):

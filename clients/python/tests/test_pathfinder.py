@@ -11,6 +11,7 @@ from tests import (
     empty_model,
     gaussian_model,
     multimodal_model,
+    temp_json,
 )
 
 
@@ -50,7 +51,7 @@ def test_output_sizes(bernoulli_model):
     assert out2["theta"].shape == (101,)
 
 
-def test_inits(multimodal_model):
+def test_inits(multimodal_model, temp_json):
     # well-separated mixture of gaussians
 
     init1 = {"mu": -1000}
@@ -61,11 +62,10 @@ def test_inits(multimodal_model):
     out2 = multimodal_model.pathfinder(inits=[init2])
     assert np.all(out2["mu"] > 0)
 
-    with tempfile.NamedTemporaryFile(suffix=".json") as f:
-        f.write(json.dumps(init1).encode())
-        f.flush()
-        out3 = multimodal_model.pathfinder(num_paths=2, inits=[f.name, init1])
-        assert np.all(out3["mu"] < 0)
+    temp_json.write(json.dumps(init1).encode())
+    temp_json.flush()
+    out3 = multimodal_model.pathfinder(num_paths=2, inits=[temp_json.name, init1])
+    assert np.all(out3["mu"] < 0)
 
 
 def test_bad_data(bernoulli_model):

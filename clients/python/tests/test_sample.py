@@ -12,6 +12,7 @@ from tests import (
     empty_model,
     gaussian_model,
     multimodal_model,
+    temp_json,
 )
 
 
@@ -100,7 +101,7 @@ def test_save_metric(gaussian_model):
     assert not hasattr(out_nometric, "metric")
 
 
-def test_multiple_inits(multimodal_model):
+def test_multiple_inits(multimodal_model, temp_json):
     # well-separated mixture of gaussians
     # same init for each chain
     init1 = {"mu": -10}
@@ -118,14 +119,13 @@ def test_multiple_inits(multimodal_model):
     assert np.all(out2["mu"][1] > 0)
 
     # mix of files and json
-    with tempfile.NamedTemporaryFile(suffix=".json") as f:
-        f.write(json.dumps(init1).encode())
-        f.flush()
-        out3 = multimodal_model.sample(
-            num_chains=2, num_warmup=100, num_samples=100, inits=[f.name, init2]
-        )
-        assert np.all(out3["mu"][0] < 0)
-        assert np.all(out3["mu"][1] > 0)
+    temp_json.write(json.dumps(init1).encode())
+    temp_json.flush()
+    out3 = multimodal_model.sample(
+        num_chains=2, num_warmup=100, num_samples=100, inits=[temp_json.name, init2]
+    )
+    assert np.all(out3["mu"][0] < 0)
+    assert np.all(out3["mu"][1] > 0)
 
 
 def test_bad_data(bernoulli_model):

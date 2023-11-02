@@ -126,6 +126,12 @@ const char *ffistan_get_error_message(const FFIStanError *err);
 
 enum FFIStanErrorType { generic = 0, config = 1, interrupt = 2 };
 
+/**
+ * Get the type of error.
+ *
+ * @param[in] err The error object.
+ * @return The type of error.
+ */
 FFIStanErrorType ffistan_get_error_type(const FFIStanError *err);
 
 /**
