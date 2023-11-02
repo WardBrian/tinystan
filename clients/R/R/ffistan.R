@@ -28,6 +28,8 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
     sep <- .C("ffistan_separator_char_R", sep = raw(1), PACKAGE = private$lib_name)$sep
     private$sep <- rawToChar(sep)
 
+}, api_version = function() {
+    .C("ffistan_api_version", major = integer(1), minor = integer(1), patch = integer(1), PACKAGE = private$lib_name)
 }, sample = function(data = "", num_chains = 4, inits = NULL, seed = NULL, id = 1,
     init_radius = 2, num_warmup = 1000, num_samples = 1000, metric = HMCMetric$DIAG,
     save_metric = FALSE, adapt = TRUE, delta = 0.8, gamma = 0.05, kappa = 0.75, t0 = 10,

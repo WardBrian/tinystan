@@ -128,6 +128,19 @@ function get_names(model::FFIStanModel, model_ptr::Ptr{Cvoid})
     string.(split(unsafe_string(cstr), ','))
 end
 
+function api_version(model::FFIStanModel)
+    major, minor, patch = Ref{Cint}(), Ref{Cint}(), Ref{Cint}()
+    cstr = ccall(
+        Libc.Libdl.dlsym(model.lib, :ffistan_api_version),
+        Cvoid,
+        (Ptr{Cint}, Ptr{Cint}, Ptr{Cint}),
+        major,
+        minor,
+        patch,
+    )
+    (major[], minor[], patch[])
+end
+
 # algorithms
 
 function sample(
