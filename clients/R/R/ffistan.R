@@ -110,7 +110,18 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
     if (num_draws < 1) {
         stop("num_draws must be at least 1")
     }
+    if (num_paths < 1) {
+        stop("num_paths must be at least 1")
+    }
+    if (num_multi_draws < 1) {
+        stop("num_multi_draws must be at least 1")
+    }
 
+    if (num_paths == 1) {
+        num_output <- num_draws
+    } else {
+        num_output <- num_multi_draws
+    }
     if (is.null(seed)) {
         seed <- as.integer(runif(1, min = 0, max = (2^31)))
     }
@@ -118,7 +129,7 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
     private$with_model(data, seed, {
         params <- c(PATHFINDER_VARIABLES, private$get_parameter_names(model))
         num_params <- length(params)
-        output_size <- num_params * num_draws
+        output_size <- num_params * num_output
 
         vars <- .C("ffistan_pathfinder_R", return_code = as.integer(0), as.raw(model),
             as.integer(num_paths), private$encode_inits(inits), as.integer(seed),
@@ -129,7 +140,7 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
             as.integer(num_threads), out = double(output_size), err = raw(8), PACKAGE = private$lib_name)
         handle_error(vars$return_code, private$lib_name, vars$err)
         # reshape the output matrix
-        out <- t(array(vars$out, dim = c(num_params, num_draws), dimnames = list(params,
+        out <- t(array(vars$out, dim = c(num_params, num_output), dimnames = list(params,
             NULL)))
         list(params = params, draws = out)
     })
