@@ -1,5 +1,7 @@
 # FFIStan
 
+**Note**: This project is still under active development. The API is not yet stable, and the documentation is incomplete. Using before a 1.0 release is not recommended for most users.
+
 **FFIStan** (short for *Foreign Function Interface Stan*, alternatively *Fast, Flatiron Institute, Stan*) is a library that
 provides a C interface to the [Stan](https://mc-stan.org) algorithms, such as sampling with the No-U-Turn Sampler (NUTS).
 
