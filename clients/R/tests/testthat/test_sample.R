@@ -1,13 +1,6 @@
-# test-ffistan.R
-
 library(testthat)
-library(jsonlite)
 
-# Set path to stan models
 stan_folder <- file.path("..", "..", "..", "..", "test_models")
-
-# Fixtures
-# -------------------------------------------------------------------------
 
 bernoulli_model <- ffistan::FFIStanModel$new(file.path(stan_folder, "bernoulli",
     "bernoulli_model.so"))
@@ -22,17 +15,15 @@ simple_jacobian_model <- ffistan::FFIStanModel$new(file.path(stan_folder, "simpl
     "simple_jacobian_model.so"))
 
 
-# Tests
-# ------------------------------------------------------------------------
-
 test_that("data arguments work", {
 
     out1 <- bernoulli_model$sample(BERNOULLI_DATA, num_warmup = 100, num_samples = 100)
-    expect_true(all(out1$theta > 0.2) && all(out1$theta < 0.3))
+
+    expect_true(mean(out1$draws[,,8]) > 0.2 && mean(out1$draws[,,8]) < 0.3)
 
     data_file <- file.path(stan_folder, "bernoulli", "bernoulli.data.json")
     out2 <- bernoulli_model$sample(data = data_file, num_warmup = 100, num_samples = 100)
-    expect_true(all(out2$theta > 0.2) && all(out2$theta < 0.3))
+    expect_true(mean(out2$draws[,,8]) > 0.2 && mean(out2$draws[,,8]) < 0.3)
 
 })
 
@@ -81,7 +72,7 @@ test_that("save_metric works", {
     out_dense <- gaussian_model$sample(data, num_warmup = 100, num_samples = 10,
         save_metric = TRUE, metric = ffistan::HMCMetric$DENSE)
     expect_equal(dim(out_dense$metric), c(4, 5, 5))
-    four_identities <- aperm(array(rep(diag(5),4), c(5,5,4)), c(3,2,1))
+    four_identities <- aperm(array(rep(diag(5), 4), c(5, 5, 4)), c(3, 2, 1))
     expect_equal(out_dense$metric, four_identities)
 
     out_nometric <- gaussian_model$sample(data, num_warmup = 10, num_samples = 10,
@@ -95,20 +86,20 @@ test_that("multiple inits work", {
     init1 <- "{\"mu\": -10}"
     out1 <- multimodal_model$sample(num_chains = 2, num_warmup = 100, num_samples = 100,
         inits = init1)
-    expect_true(all(out1$mu < 0))
+    expect_true(all(out1$draws[,,8] < 0))
 
     init2 <- "{\"mu\": 10}"
     out2 <- multimodal_model$sample(num_chains = 2, num_warmup = 100, num_samples = 100,
         inits = list(init1, init2))
-    expect_true(all(out2$mu[1] < 0))
-    expect_true(all(out2$mu[2] > 0))
+    expect_true(all(out2$draws[1,,8] < 0))
+    expect_true(all(out2$draws[2,,8] > 0))
 
     temp_file <- tempfile(fileext = ".json")
     write(init1, temp_file)
     out3 <- multimodal_model$sample(num_chains = 2, num_warmup = 100, num_samples = 100,
         inits = c(temp_file, init2))
-    expect_true(all(out3$mu[1] < 0))
-    expect_true(all(out3$mu[2] > 0))
+    expect_true(all(out3$draws[1,,8] < 0))
+    expect_true(all(out3$draws[2,,8] > 0))
 
 })
 
