@@ -69,11 +69,11 @@ def test_seed(bernoulli_model):
 
 def test_inits(multimodal_model, temp_json):
     # well-separated mixture of gaussians
-    init1 = {"mu": -100}
+    init1 = {"mu": -1000}
     out1 = multimodal_model.optimize(init=init1)
     assert np.all(out1["mu"] < 0)
 
-    init2 = {"mu": 100}
+    init2 = {"mu": 1000}
     temp_json.write(json.dumps(init2).encode())
     temp_json.flush()
     out2 = multimodal_model.optimize(init=temp_json.name)

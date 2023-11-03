@@ -106,12 +106,12 @@
     end
 
     @testset "Multiple inits" begin
-        init1 = "{\"mu\": -10}"
+        init1 = "{\"mu\": -100}"
         (names, draws1) =
             sample(multimodal_model; num_warmup = 100, num_samples = 100, inits = init1)
         @test all(draws1[:, :, names.=="mu"] .< 0)
 
-        init2 = "{\"mu\": 10}"
+        init2 = "{\"mu\": 100}"
         (names, draws2) = sample(
             multimodal_model;
             num_warmup = 100,

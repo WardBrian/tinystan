@@ -103,14 +103,14 @@ def test_save_metric(gaussian_model):
 def test_multiple_inits(multimodal_model, temp_json):
     # well-separated mixture of gaussians
     # same init for each chain
-    init1 = {"mu": -10}
+    init1 = {"mu": -100}
     out1 = multimodal_model.sample(
         num_chains=2, num_warmup=100, num_samples=100, inits=init1
     )
     assert np.all(out1["mu"] < 0)
 
     # different inits for each chain
-    init2 = {"mu": 10}
+    init2 = {"mu": 100}
     out2 = multimodal_model.sample(
         num_chains=2, num_warmup=100, num_samples=100, inits=[init1, init2]
     )

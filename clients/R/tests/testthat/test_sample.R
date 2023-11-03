@@ -66,12 +66,12 @@ test_that("save_metric works", {
 
 test_that("multiple inits work", {
 
-    init1 <- "{\"mu\": -10}"
+    init1 <- "{\"mu\": -100}"
     out1 <- multimodal_model$sample(num_chains = 2, num_warmup = 100, num_samples = 100,
         inits = init1)
     expect_true(all(out1$draws[, , 8] < 0))
 
-    init2 <- "{\"mu\": 10}"
+    init2 <- "{\"mu\": 100}"
     out2 <- multimodal_model$sample(num_chains = 2, num_warmup = 100, num_samples = 100,
         inits = list(init1, init2))
     expect_true(all(out2$draws[1, , 8] < 0))
