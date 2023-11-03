@@ -69,6 +69,14 @@ TEST_MODEL_LIBS = $(join $(addprefix test_models/, $(TEST_MODEL_NAMES)), $(addsu
 test_models: $(TEST_MODEL_LIBS)
 
 
+.PHONY: format
+format:
+	clang-format -i src/*.cpp src/*.hpp src/*.h || true
+	isort clients/python || true
+	black clients/python || true
+	julia --project=clients/julia -e 'using JuliaFormatter; format("clients/julia/")' || true
+	Rscript -e 'formatR::tidy_dir("clients/R/", recursive=TRUE)' || true
+
 .PHONY: clean
 clean:
 	$(RM) $(SRC)/*.o
