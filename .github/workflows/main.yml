@@ -212,6 +212,8 @@ jobs:
           cd clients/julia/
           julia --project=. -e "using Pkg; Pkg.instantiate()"
           julia --project=. -e "using FFIStan"
+        env:
+          FFISTAN: ${{ github.workspace }}
 
       - name: Run tests
         run: |
