@@ -1,6 +1,7 @@
 module FFIStan
 
-export FFIStanModel, HMCMetric, pathfinder, sample, optimize, OptimizationAlgorithm
+export FFIStanModel,
+    HMCMetric, pathfinder, sample, optimize, OptimizationAlgorithm, api_version
 
 
 @enum HMCMetric begin
@@ -33,7 +34,7 @@ const exceptions = [ErrorException, ArgumentError, _ -> InterruptException()]
 
 mutable struct FFIStanModel
     lib::Ptr{Nothing}
-    const sep::Cchar
+    const sep::Char
 
     function FFIStanModel(model::String)
         if endswith(model, ".stan")
@@ -44,7 +45,7 @@ mutable struct FFIStanModel
             lib = Libc.Libdl.dlopen(model)
         end
 
-        sep = ccall(Libc.Libdl.dlsym(lib, :ffistan_separator_char), Cchar, ())
+        sep = Char(ccall(Libc.Libdl.dlsym(lib, :ffistan_separator_char), Cchar, ()))
 
         new(lib, sep)
     end
@@ -77,7 +78,7 @@ function raise_for_error(lib::Ptr{Nothing}, return_code::Cint, err::Ref{Ptr{Cvoi
     end
 end
 
-function encode_inits(sep::Cchar, inits::Union{String,Vector{String},Nothing})
+function encode_inits(sep::Char, inits::Union{String,Vector{String},Nothing})
     if inits === nothing
         return C_NULL
     end
@@ -455,27 +456,4 @@ function optimize(
         return (param_names, out)
     end
 end
-
-
-if abspath(PROGRAM_FILE) == @__FILE__
-    using Statistics
-
-    model = FFIStanModel("./test_models/bernoulli/bernoulli.stan")
-    data = "./test_models/bernoulli/bernoulli.data.json"
-
-    param_names, draws = sample(model, data)
-    println(param_names)
-    println(size(draws))
-    println(mean(draws, dims = (1, 2))[8])
-
-    param_names, draws = pathfinder(model, data)
-    println(param_names)
-    println(size(draws))
-    println(mean(draws[:, 3]))
-
-    param_names, draw = optimize(model, data)
-    println(param_names)
-    println(draw)
-end
-
 end
