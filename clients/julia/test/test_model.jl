@@ -1,7 +1,7 @@
 @testset "Model" verbose = true begin
 
     @testset "Loading model" begin
-        model = FFIStanModel(joinpath(STAN_FOLDER, "bernoulli", "bernoulli.stan"))
+        model = FFIStanModel(joinpath(STAN_FOLDER, "bernoulli", "bernoulli_model.so"))
         @test model !== nothing
     end
 
