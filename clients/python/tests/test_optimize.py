@@ -37,7 +37,7 @@ def test_data(bernoulli_model):
 @pytest.mark.parametrize("algorithm", ALL_ALGORITHMS)
 def test_jacobian_algorithm(simple_jacobian_model, algorithm, jacobian):
     out = simple_jacobian_model.optimize(
-        BERNOULLI_DATA, algorithm=algorithm, jacobian=jacobian, seed=1234
+        algorithm=algorithm, jacobian=jacobian, seed=1234
     )
     if jacobian:
         optimum = 3.3

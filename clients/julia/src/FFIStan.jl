@@ -288,7 +288,7 @@ function pathfinder(
     ;
     num_paths::Int = 4,
     inits::Union{String,Vector{String},Nothing} = nothing,
-    seed::Union{Int,Nothing} = nothing,
+    seed::Union{UInt32,Nothing} = nothing,
     id::Int = 1,
     init_radius = 2.0,
     num_draws = 1000,
@@ -308,6 +308,18 @@ function pathfinder(
     if num_draws < 1
         error("num_draws must be at least 1")
     end
+    if num_paths < 1
+        error("num_paths must be at least 1")
+    end
+    if num_multi_draws < 1
+        error("num_multi_draws must be at least 1")
+    end
+
+    num_output = if num_paths == 1
+        num_draws
+    else
+        num_multi_draws
+    end
 
     if seed === nothing
         seed = rand(UInt32)
@@ -316,7 +328,7 @@ function pathfinder(
     with_model(model, data, seed) do model_ptr
         param_names = cat(PATHFINDER_VARIABLES, get_names(model, model_ptr), dims = 1)
         num_params = length(param_names)
-        out = zeros(Float64, num_params, num_draws)
+        out = zeros(Float64, num_params, num_output)
 
         err = Ref{Ptr{Cvoid}}()
         return_code = ccall(
@@ -378,7 +390,7 @@ function optimize(
     data::String = "",
     ;
     init::Union{String,Nothing} = nothing,
-    seed::Union{Int,Nothing} = nothing,
+    seed::Union{UInt32,Nothing} = nothing,
     id::Int = 1,
     init_radius = 2.0,
     algorithm::OptimizationAlgorithm = LBFGS,

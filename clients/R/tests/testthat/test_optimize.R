@@ -17,8 +17,8 @@ test_that("algorithm and jacobian args work", {
     for (algorithm in ALGORITHMS) {
         for (jacobian in c(TRUE, FALSE)) {
 
-            out <- simple_jacobian_model$optimize(BERNOULLI_DATA, algorithm = algorithm,
-                jacobian = jacobian, seed = 1234)
+            out <- simple_jacobian_model$optimize(algorithm = algorithm, jacobian = jacobian,
+                seed = 1234)
 
             if (jacobian) {
                 expect_equal(out$optimum[2], 3.3, tolerance = 0.01, ignore_attr = TRUE)
