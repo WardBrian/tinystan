@@ -19,6 +19,7 @@ STAN_THREADS=true
 ## makefiles needed for math library
 include $(MATH)make/compiler_flags
 include $(MATH)make/libraries
+include $(MATH)make/dependencies
 
 ## Set -fPIC globally since we're always building a shared library
 CXXFLAGS += -fPIC
@@ -37,11 +38,11 @@ else
 endif
 STAN_FLAGS=$(STAN_FLAG_OPENCL)
 
-FFISTAN_DEPS := $(SRC)ffistan.cpp $(SRC)R_shims.cpp $(wildcard $(SRC)*.hpp) $(wildcard $(SRC)*.h)
 
 FFISTAN_O = $(patsubst %.cpp,%$(STAN_FLAGS).o,$(SRC)ffistan.cpp)
+include $(SRC)ffistan.d
 
-$(FFISTAN_O) : $(FFISTAN_DEPS)
+$(FFISTAN_O) :
 	@echo '--- Compiling FFIStan C++ code ---'
 	@mkdir -p $(dir $@)
 	$(COMPILE.cpp) $(OUTPUT_OPTION) $(LDLIBS) $<
