@@ -27,7 +27,8 @@ void ffistan_sample_R(int* return_code, FFIStanModel** model,
                       unsigned int* num_chains, char** inits,
                       unsigned int* seed, unsigned int* chain_id,
                       double* init_radius, int* num_warmup, int* num_samples,
-                      int* metric_choice, int* adapt, double* delta,
+                      int* metric_choice, int* init_metric,
+                      const double* metric_init, int* adapt, double* delta,
                       double* gamma, double* kappa, double* t0,
                       unsigned int* init_buffer, unsigned int* term_buffer,
                       unsigned int* window, int* save_warmup, double* stepsize,
@@ -39,12 +40,16 @@ void ffistan_sample_R(int* return_code, FFIStanModel** model,
   if (*save_metric)
     metric_out_ptr = metric_out;
 
+  const double* metric_init_ptr = nullptr;
+  if (*init_metric)
+    metric_init_ptr = metric_init;
+
   *return_code = ffistan_sample(
       *model, *num_chains, *inits, *seed, *chain_id, *init_radius, *num_warmup,
-      *num_samples, static_cast<FFIStanMetric>(*metric_choice), (*adapt != 0),
-      *delta, *gamma, *kappa, *t0, *init_buffer, *term_buffer, *window,
-      (*save_warmup != 0), *stepsize, *stepsize_jitter, *max_depth, *refresh,
-      *num_threads, out, metric_out_ptr, err);
+      *num_samples, static_cast<FFIStanMetric>(*metric_choice), metric_init_ptr,
+      (*adapt != 0), *delta, *gamma, *kappa, *t0, *init_buffer, *term_buffer,
+      *window, (*save_warmup != 0), *stepsize, *stepsize_jitter, *max_depth,
+      *refresh, *num_threads, out, metric_out_ptr, err);
 }
 
 void ffistan_pathfinder_R(
