@@ -55,7 +55,7 @@ size_t ffistan_model_num_free_params(const FFIStanModel *model) {
 int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
                    const char *inits, unsigned int seed, unsigned int id,
                    double init_radius, int num_warmup, int num_samples,
-                   FFIStanMetric metric_choice, const double *init_metric,
+                   FFIStanMetric metric_choice, const double *init_inv_metric,
                    /* adaptation params */ bool adapt, double delta,
                    double gamma, double kappa, double t0,
                    unsigned int init_buffer, unsigned int term_buffer,
@@ -109,7 +109,7 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
     }
 
     auto initial_metrics = io::make_metric_inits(
-        num_chains, init_metric, num_model_params, metric_choice);
+        num_chains, init_inv_metric, num_model_params, metric_choice);
 
     error::error_logger logger;
     interrupt::ffistan_interrupt_handler interrupt;

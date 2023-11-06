@@ -85,7 +85,7 @@ enum FFIStanMetric { unit = 0, dense = 1, diagonal = 2 };
 int ffistan_sample(const FFIStanModel *model, size_t num_chains,
                    const char *inits, unsigned int seed, unsigned int chain_id,
                    double init_radius, int num_warmup, int num_samples,
-                   FFIStanMetric metric_choice, const double *init_metric,
+                   FFIStanMetric metric_choice, const double *init_inv_metric,
                    bool adapt, double delta, double gamma, double kappa,
                    double t0, unsigned int init_buffer,
                    unsigned int term_buffer, unsigned int window,
