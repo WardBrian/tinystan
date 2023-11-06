@@ -22,8 +22,17 @@ test_that("output sizes are correct", {
 
 })
 
-# TODO seed works test after stan issue resolved
+test_that("seed works", {
 
+    out1 <- bernoulli_model$pathfinder(BERNOULLI_DATA, seed = 123)
+    out2 <- bernoulli_model$pathfinder(BERNOULLI_DATA, seed = 123)
+
+    expect_equal(out1$draws, out2$draws)
+
+    out3 <- bernoulli_model$pathfinder(BERNOULLI_DATA, seed = 456)
+    expect_error(expect_equal(out1$draws, out3$draws))
+
+})
 test_that("inits work", {
 
     init1 <- "{\"mu\": -1000}"

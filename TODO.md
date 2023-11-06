@@ -18,6 +18,6 @@
 - [ ] Add a variety of models, including:
     - [ ] A model that uses SUNDIALS
     - [x] A model with no parameters
-- [ ] Test in each language
+- [x] Test in each language
 - [x] Test on all platforms
 - [x] Set up Github Actions

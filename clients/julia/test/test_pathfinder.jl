@@ -37,10 +37,10 @@
     @testset "Seed" begin
         (_, draws1) = pathfinder(bernoulli_model, BERNOULLI_DATA; seed = UInt32(123))
         (_, draws2) = pathfinder(bernoulli_model, BERNOULLI_DATA; seed = UInt32(123))
-        @test draws1 == draws2 skip = true
+        @test draws1 == draws2
 
         (_, draws3) = pathfinder(bernoulli_model, BERNOULLI_DATA; seed = UInt32(456))
-        @test draws1 != draws3 skip = true
+        @test draws1 != draws3
     end
 
     @testset "Inits" begin

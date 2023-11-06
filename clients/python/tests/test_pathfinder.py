@@ -25,7 +25,6 @@ def test_data(bernoulli_model):
     assert 0.2 < out2["theta"].mean() < 0.3
 
 
-@pytest.mark.xfail(reason="stan issue #3237")
 def test_seed(bernoulli_model):
     out1 = bernoulli_model.pathfinder(BERNOULLI_DATA, seed=123)
     out2 = bernoulli_model.pathfinder(BERNOULLI_DATA, seed=123)
