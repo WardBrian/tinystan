@@ -1,5 +1,9 @@
 ## include paths
 FFISTAN_ROOT ?= .
+
+# user customization
+-include $(FFISTAN_ROOT)/make/local
+
 SRC ?= $(FFISTAN_ROOT)/src/
 STAN ?= $(FFISTAN_ROOT)/stan/
 STANC ?= $(FFISTAN_ROOT)/bin/stanc$(EXE)
@@ -10,12 +14,11 @@ RAPIDJSON ?= $(STAN)lib/rapidjson_1.1.0/
 INC_FIRST ?= -I $(STAN)src -I $(RAPIDJSON)
 
 # FFIStan always wants multithreading support
-STAN_THREADS=1
+STAN_THREADS=true
 
 ## makefiles needed for math library
--include $(FFISTAN_ROOT)/make/local
--include $(MATH)make/compiler_flags
--include $(MATH)make/libraries
+include $(MATH)make/compiler_flags
+include $(MATH)make/libraries
 
 ## Set -fPIC globally since we're always building a shared library
 CXXFLAGS += -fPIC
@@ -138,3 +141,19 @@ $(STANC):
 	curl -L https://github.com/stan-dev/stanc3/releases/download/$(STANC3_VERSION)/$(OS_TAG)$(ARCH_TAG)-stanc -o $(STANC) --retry $(STANC_DL_RETRY) --retry-delay $(STANC_DL_DELAY)
 	chmod +x $(STANC)
 endif
+
+##
+# This is only run if the `include` statements earlier fail to find a file.
+# We assume that means the submodule is missing
+##
+$(MATH)make/% :
+	@echo 'ERROR: Missing Stan submodules.'
+	@echo 'We tried to find the Stan Math submodule at:'
+	@echo '  $(MATH)'
+	@echo ''
+	@echo 'The most likely source of the problem is FFIStan was cloned without'
+	@echo 'the --recursive flag.  To fix this, run the following command:'
+	@echo '  git submodule update --init --recursive'
+	@echo ''
+	@echo 'And try building again'
+	@exit 1
