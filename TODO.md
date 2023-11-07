@@ -2,7 +2,6 @@
 
 ## Features
 - [ ] Fixed param sampler for 0 dimension parameters?
-- [ ] Ability to input metric init
 - [ ] Other logging?
     - needs something like BridgeStan's print callback in general case,
       could get ugly if need a lock to print progress?
@@ -13,6 +12,7 @@
 - [x] Add ability to interrupt the algorithms during runs (Ctrl+C)
     - probably tricky to do in a way that works for all languages
 - [x] Ability to output metric
+- [x] Ability to input metric init
 
 ## Testing
 - [ ] Add a variety of models, including:

@@ -61,7 +61,7 @@ FIXED_SAMPLER_VARIABLES = [
 class HMCMetric(Enum):
     UNIT = 0
     DENSE = 1
-    DIAG = 2
+    DIAGONAL = 2
 
 
 class OptimizationAlgorithm(Enum):
@@ -133,6 +133,7 @@ class FFIStanModel:
             ctypes.c_int,  # num_warmup
             ctypes.c_int,  # num_samples
             ctypes.c_int,  # really enum for metric
+            nullable_double_array,  # metric init in
             # adaptation
             ctypes.c_bool,  # adapt
             ctypes.c_double,  # delta
@@ -274,7 +275,8 @@ class FFIStanModel:
         init_radius=2.0,
         num_warmup=1000,
         num_samples=1000,
-        metric=HMCMetric.DIAG,
+        metric=HMCMetric.DIAGONAL,
+        init_inv_metric=None,
         save_metric=False,
         adapt=True,
         delta=0.8,
@@ -312,12 +314,26 @@ class FFIStanModel:
             num_draws = num_samples + num_warmup * save_warmup
             out = np.zeros((num_chains, num_draws, num_params), dtype=np.float64)
 
+            metric_size = (
+                (model_params, model_params)
+                if metric == HMCMetric.DENSE
+                else (model_params,)
+            )
+
+            if init_inv_metric is not None:
+                if init_inv_metric.shape == metric_size:
+                    init_inv_metric = np.repeat(
+                        init_inv_metric[np.newaxis], num_chains, axis=0
+                    )
+                elif init_inv_metric.shape == (num_chains, *metric_size):
+                    pass
+                else:
+                    raise ValueError(
+                        f"Invalid initial metric size. Expected a {metric_size} "
+                        f"or {(num_chains, *metric_size)} matrix."
+                    )
+
             if save_metric:
-                metric_size = (
-                    (model_params, model_params)
-                    if metric == HMCMetric.DENSE
-                    else (model_params,)
-                )
                 metric_out = np.zeros((num_chains, *metric_size), dtype=np.float64)
             else:
                 metric_out = None
@@ -333,6 +349,7 @@ class FFIStanModel:
                 num_warmup,
                 num_samples,
                 metric.value,
+                init_inv_metric,
                 adapt,
                 delta,
                 gamma,

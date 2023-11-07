@@ -81,7 +81,7 @@
             num_warmup = 100,
             num_samples = 10,
             save_metric = true,
-            metric = FFIStan.DIAG,
+            metric = FFIStan.DIAGONAL,
         )
         @test size(metric) == (4, 5)
 
@@ -103,6 +103,73 @@
         @test isapprox(metric, mat; rtol = 1e-6)
 
 
+    end
+
+    @testset "Initial metric used" begin
+        @testset for adapt in [true, false]
+            data = "{\"N\": 3}"
+            diag_metric = ones(3, 2)
+            diag_metric[:, 1] .= 1e20
+            (names, draws, metric) = sample(
+                gaussian_model,
+                data;
+                num_chains = 2,
+                save_warmup = true,
+                adapt = adapt,
+                metric = FFIStan.DIAGONAL,
+                init_inv_metric = diag_metric,
+                save_metric = true,
+                seed = UInt32(1234),
+            )
+
+            chain_one_divergences = sum(draws[1, :, names.=="divergent__"])
+            @test chain_one_divergences > (
+                if adapt
+                    10
+                else
+                    500
+                end
+            )
+            chain_two_divergences = sum(draws[2, :, names.=="divergent__"])
+            @test chain_two_divergences < 10
+            @test chain_two_divergences < chain_one_divergences
+            @test diag_metric != metric
+
+            dense_metric = zeros(3, 3, 2)
+            for i = 1:2
+                for j = 1:3
+                    dense_metric[j, j, i] = if i == 1
+                        1e20
+                    else
+                        1
+                    end
+                end
+            end
+            (names, draws, metric) = sample(
+                gaussian_model,
+                data;
+                num_chains = 2,
+                save_warmup = true,
+                adapt = adapt,
+                metric = FFIStan.DENSE,
+                init_inv_metric = dense_metric,
+                save_metric = true,
+                seed = UInt32(1234),
+            )
+            chain_one_divergences = sum(draws[1, :, names.=="divergent__"])
+            @test chain_one_divergences > (
+                if adapt
+                    10
+                else
+                    500
+                end
+            )
+            chain_two_divergences = sum(draws[2, :, names.=="divergent__"])
+            @test chain_two_divergences < 10
+            @test chain_two_divergences < chain_one_divergences
+            @test diag_metric != metric
+
+        end
     end
 
     @testset "Multiple inits" begin
@@ -190,6 +257,79 @@
             inits = inits,
         )
 
+    end
+
+    @testset "Bad initial metric size" begin
+        data = "{\"N\": 5}"
+
+        @test_throws "Invalid initial metric size" sample(
+            gaussian_model,
+            data;
+            metric = FFIStan.DENSE,
+            init_inv_metric = ones(5),
+        )
+
+        @test_throws "Invalid initial metric size" sample(
+            gaussian_model,
+            data;
+            metric = FFIStan.DENSE,
+            init_inv_metric = ones(5, 4),
+        )
+
+        @test_throws "Invalid initial metric size" sample(
+            gaussian_model,
+            data;
+            num_chains = 2,
+            metric = FFIStan.DENSE,
+            init_inv_metric = ones(5, 5, 3),
+        )
+
+        @test_throws "Invalid initial metric size" sample(
+            gaussian_model,
+            data;
+            metric = FFIStan.DIAGONAL,
+            init_inv_metric = ones(4),
+        )
+
+        @test_throws "Invalid initial metric size" sample(
+            gaussian_model,
+            data;
+            num_chains = 2,
+            metric = FFIStan.DIAGONAL,
+            init_inv_metric = ones(5, 3),
+        )
+
+        @test_throws "Invalid initial metric size" sample(
+            gaussian_model,
+            data;
+            num_chains = 2,
+            metric = FFIStan.DIAGONAL,
+            init_inv_metric = ones(5, 5, 3),
+        )
+    end
+
+    @testset "Bad initial metric" begin
+        data = "{\"N\": 3}"
+        @test_throws "not positive definite" sample(
+            gaussian_model,
+            data;
+            metric = FFIStan.DENSE,
+            init_inv_metric = ones(3, 3) * 1e20,
+        )
+
+        metric = zeros(3, 3, 2)
+        metric[:, :, 1] .= 1e20
+        for i = 1:3
+            metric[i, i, 2] = 1
+        end
+
+        @test_throws "not positive definite" sample(
+            gaussian_model,
+            data;
+            num_chains = 2,
+            metric = FFIStan.DENSE,
+            init_inv_metric = metric,
+        )
     end
 
     @testset "Model without parameters" begin

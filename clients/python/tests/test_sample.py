@@ -74,7 +74,7 @@ def test_save_metric(gaussian_model):
         num_warmup=100,
         num_samples=10,
         save_metric=True,
-        metric=ffistan.HMCMetric.DIAG,
+        metric=ffistan.HMCMetric.DIAGONAL,
     )
     assert len(out_diag.metric.shape) == 2
     assert out_diag.metric.shape[1] == 5
@@ -98,6 +98,58 @@ def test_save_metric(gaussian_model):
         data, num_warmup=10, num_samples=10, save_metric=False
     )
     assert not hasattr(out_nometric, "metric")
+
+
+@pytest.mark.parametrize("adapt", [True, False], ids=["adapt", "no adapt"])
+def test_init_inv_metric_used(gaussian_model, adapt):
+    data = {"N": 3}
+    # insane metric to generate divergences
+    diag_metric = np.ones((2, 3))
+    diag_metric[0, :] = 1e20
+    out_diag = gaussian_model.sample(
+        data,
+        num_chains=2,
+        save_warmup=True,
+        adapt=adapt,
+        metric=ffistan.HMCMetric.DIAGONAL,
+        init_inv_metric=diag_metric,
+        save_metric=True,
+        seed=1234,
+    )
+
+    # first chain should have a lot of divergences
+    # second chain should have almost none
+    chain_one_divergences = out_diag["divergent__"][0].sum()
+    assert chain_one_divergences > (10 if adapt else 500)
+    chain_two_divergences = out_diag["divergent__"][1].sum()
+    assert chain_two_divergences < 10
+    assert chain_two_divergences < chain_one_divergences
+
+    # note: when adapt=false, returned metric is all 0
+    with pytest.raises(AssertionError):
+        np.testing.assert_allclose(out_diag.metric, diag_metric)
+
+    dense_metric = np.repeat(np.eye(3)[np.newaxis], 2, axis=0)
+    dense_metric[0, np.eye(3, dtype=bool)] = 1e20
+    out_dense = gaussian_model.sample(
+        data,
+        num_chains=2,
+        save_warmup=True,
+        adapt=adapt,
+        metric=ffistan.HMCMetric.DENSE,
+        init_inv_metric=dense_metric,
+        save_metric=True,
+        seed=1234,
+    )
+
+    chain_one_divergences = out_dense["divergent__"][0].sum()
+    assert chain_one_divergences > (10 if adapt else 500)
+    chain_two_divergences = out_dense["divergent__"][1].sum()
+    assert chain_two_divergences < 10
+    assert chain_two_divergences < chain_one_divergences
+
+    with pytest.raises(AssertionError):
+        np.testing.assert_allclose(out_dense.metric, dense_metric)
 
 
 def test_multiple_inits(multimodal_model, temp_json):
@@ -163,6 +215,64 @@ def test_bad_init(bernoulli_model):
         bernoulli_model.sample(BERNOULLI_DATA, num_chains=1, inits=inits)
     with pytest.raises(ValueError, match="match the number of chains"):
         bernoulli_model.sample(BERNOULLI_DATA, num_chains=3, inits=inits)
+
+
+def test_bad_initial_metric_size(gaussian_model):
+    data = {"N": 5}
+
+    with pytest.raises(ValueError, match="Invalid initial metric size"):
+        gaussian_model.sample(
+            data, metric=ffistan.HMCMetric.DENSE, init_inv_metric=np.ones((5,))
+        )
+
+    with pytest.raises(ValueError, match="Invalid initial metric size"):
+        gaussian_model.sample(
+            data, metric=ffistan.HMCMetric.DENSE, init_inv_metric=np.ones((4, 5))
+        )
+
+    with pytest.raises(ValueError, match="Invalid initial metric size"):
+        gaussian_model.sample(
+            data,
+            num_chains=4,
+            metric=ffistan.HMCMetric.DENSE,
+            init_inv_metric=np.ones((3, 5, 5)),
+        )
+
+    with pytest.raises(ValueError, match="Invalid initial metric size"):
+        gaussian_model.sample(
+            data, metric=ffistan.HMCMetric.DIAGONAL, init_inv_metric=np.ones((4,))
+        )
+    with pytest.raises(ValueError, match="Invalid initial metric size"):
+        gaussian_model.sample(
+            data,
+            num_chains=4,
+            metric=ffistan.HMCMetric.DIAGONAL,
+            init_inv_metric=np.ones((3, 5)),
+        )
+    with pytest.raises(ValueError, match="Invalid initial metric size"):
+        gaussian_model.sample(
+            data,
+            num_chains=4,
+            metric=ffistan.HMCMetric.DIAGONAL,
+            init_inv_metric=np.ones((3, 5, 5)),
+        )
+
+
+def test_bad_initial_metric(gaussian_model):
+    data = {"N": 3}
+    with pytest.raises(RuntimeError, match="not positive definite"):
+        gaussian_model.sample(
+            data, metric=ffistan.HMCMetric.DENSE, init_inv_metric=np.ones((3, 3)) * 1e20
+        )
+
+    metric = np.zeros((2, 3, 3))
+    metric[0, :, :] = 1e20
+    metric[1, :, :] = np.eye(3)
+
+    with pytest.raises(RuntimeError, match="not positive definite"):
+        gaussian_model.sample(
+            data, num_chains=2, metric=ffistan.HMCMetric.DENSE, init_inv_metric=metric
+        )
 
 
 def test_bad_num_warmup(bernoulli_model):

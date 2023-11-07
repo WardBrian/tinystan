@@ -4,7 +4,15 @@
 #include <stan/math/prim/fun/Eigen.hpp>
 #include <stan/callbacks/writer.hpp>
 #include <stan/callbacks/structured_writer.hpp>
+
+#include <stan/services/util/create_unit_e_dense_inv_metric.hpp>
+#include <stan/services/util/create_unit_e_diag_inv_metric.hpp>
+#include <stan/io/var_context.hpp>
+#include <stan/io/empty_var_context.hpp>
+
 #include <vector>
+#include <memory>
+#include <stdexcept>
 #include <string>
 
 namespace ffistan {
@@ -69,8 +77,91 @@ class metric_buffer_writer : public stan::callbacks::structured_writer {
 
  private:
   double *buf;
-  int pos;
+  size_t pos;
 };
+
+class metric_buffer_reader : public stan::io::empty_var_context {
+ public:
+  metric_buffer_reader(const double *buf, size_t size,
+                       FFIStanMetric metric_choice)
+      : buf(buf), size(size), dense(metric_choice == FFIStanMetric::dense){};
+  virtual ~metric_buffer_reader(){};
+
+  bool contains_r(const std::string &name) const override {
+    return name == "inv_metric";
+  }
+
+  std::vector<double> vals_r(const std::string &name) const override {
+    if (name == "inv_metric") {
+      return std::vector<double>(buf, buf + size);
+    }
+    throw std::runtime_error("Tried to read non-metric out of metric input");
+  }
+
+  void validate_dims(const std::string &stage, const std::string &name,
+                     const std::string &base_type,
+                     const std::vector<size_t> &dims_declared) const override {
+    if (name == "inv_metric") {
+      if (dense && dims_declared.size() == 2) {
+        size_t d1 = dims_declared.at(0);
+        size_t d2 = dims_declared.at(1);
+        if (d1 == d2 && d1 * d2 == size) {
+          return;
+        }
+      } else if (!dense && dims_declared.size() == 1
+                 && dims_declared.at(0) == size) {
+        return;
+      }
+      throw std::runtime_error("Invalid dimensions for metric");
+    }
+    throw std::runtime_error("Unknown variable name");
+  }
+
+ private:
+  const double *buf;
+  bool dense;
+  size_t size;
+};
+
+using var_ctx_ptr = std::unique_ptr<stan::io::var_context>;
+
+var_ctx_ptr default_metric(size_t num_params, FFIStanMetric metric_choice) {
+  switch (metric_choice) {
+    case (FFIStanMetric::dense):
+      return var_ctx_ptr(new stan::io::dump(
+          stan::services::util::create_unit_e_dense_inv_metric(num_params)));
+
+    case (FFIStanMetric::diagonal):
+      return var_ctx_ptr(new stan::io::dump(
+          stan::services::util::create_unit_e_diag_inv_metric(num_params)));
+
+    default:
+      return var_ctx_ptr(new stan::io::empty_var_context());
+  }
+}
+
+std::vector<var_ctx_ptr> make_metric_inits(size_t num_chains, const double *buf,
+                                           size_t num_params,
+                                           FFIStanMetric metric_choice) {
+  std::vector<var_ctx_ptr> metrics;
+  metrics.reserve(num_chains);
+  if (buf == nullptr) {
+    for (size_t i = 0; i < num_chains; ++i) {
+      metrics.emplace_back(
+          std::move(default_metric(num_params, metric_choice)));
+    }
+  } else {
+    int metric_size = metric_choice == FFIStanMetric::dense
+                          ? num_params * num_params
+                          : num_params;
+    for (size_t i = 0; i < num_chains; ++i) {
+      metrics.emplace_back(std::move(var_ctx_ptr(new metric_buffer_reader(
+          buf + (i * metric_size), metric_size, metric_choice))));
+    }
+  }
+  return metrics;
+}
+
 }  // namespace io
 }  // namespace ffistan
 

@@ -1,5 +1,5 @@
 #' @export
-HMCMetric <- list(UNIT = 0, DENSE = 1, DIAG = 2)
+HMCMetric <- list(UNIT = 0, DENSE = 1, DIAGONAL = 2)
 
 HMC_SAMPLER_VARIABLES = c("lp__", "accept_stat__", "stepsize__", "treedepth__", "n_leapfrog__",
     "divergent__", "energy__")
@@ -35,10 +35,10 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
     .C("ffistan_api_version", major = integer(1), minor = integer(1), patch = integer(1),
         PACKAGE = private$lib_name)
 }, sample = function(data = "", num_chains = 4, inits = NULL, seed = NULL, id = 1,
-    init_radius = 2, num_warmup = 1000, num_samples = 1000, metric = HMCMetric$DIAG,
-    save_metric = FALSE, adapt = TRUE, delta = 0.8, gamma = 0.05, kappa = 0.75, t0 = 10,
-    init_buffer = 75, term_buffer = 50, window = 25, save_warmup = FALSE, stepsize = 1,
-    stepsize_jitter = 0, max_depth = 10, refresh = 0, num_threads = -1) {
+    init_radius = 2, num_warmup = 1000, num_samples = 1000, metric = HMCMetric$DIAGONAL,
+    init_inv_metric = NULL, save_metric = FALSE, adapt = TRUE, delta = 0.8, gamma = 0.05,
+    kappa = 0.75, t0 = 10, init_buffer = 75, term_buffer = 50, window = 25, save_warmup = FALSE,
+    stepsize = 1, stepsize_jitter = 0, max_depth = 10, refresh = 0, num_threads = -1) {
 
     if (num_chains < 1) {
         stop("num_chains must be at least 1")
@@ -65,12 +65,34 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
         num_draws <- as.integer(save_warmup) * num_warmup + num_samples
         output_size <- num_params * num_chains * num_draws
 
-        if (save_metric) {
-            if (metric == HMCMetric$DENSE) {
-                metric_size <- num_chains * free_params * free_params
+        if (metric == HMCMetric$DENSE) {
+            metric_shape <- rep(free_params, 2)
+        } else {
+            metric_shape <- free_params
+        }
+
+        if (is.null(init_inv_metric)) {
+            metric_has_init <- FALSE
+            inv_metric_init <- 0
+        } else {
+            metric_has_init <- TRUE
+            metric_dims <- dim(init_inv_metric)
+
+            if (length(metric_dims) == length(metric_shape) && all(metric_dims ==
+                metric_shape)) {
+                inv_metric_init <- replicate(num_chains, init_inv_metric)
+            } else if (length(metric_dims) == (length(metric_shape) + 1) && all(metric_dims ==
+                c(metric_shape, num_chains))) {
+                inv_metric_init <- init_inv_metric
             } else {
-                metric_size <- num_chains * free_params
+                stop("Invalid initial metric size. Expected a ", paste(metric_shape,
+                  collapse = " x "), " or ", paste(c(metric_shape, num_chains), collapse = " x "),
+                  " matrix")
             }
+        }
+
+        if (save_metric) {
+            metric_size <- num_chains * prod(metric_shape)
         } else {
             metric_size <- 1
         }
@@ -78,9 +100,10 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
         vars <- .C("ffistan_sample_R", return_code = as.integer(0), as.raw(model),
             as.integer(num_chains), private$encode_inits(inits), as.integer(seed),
             as.integer(id), as.double(init_radius), as.integer(num_warmup), as.integer(num_samples),
-            as.integer(metric), as.logical(adapt), as.double(delta), as.double(gamma),
-            as.double(kappa), as.double(t0), as.integer(init_buffer), as.integer(term_buffer),
-            as.integer(window), as.logical(save_warmup), as.double(stepsize), as.double(stepsize_jitter),
+            as.integer(metric), as.logical(metric_has_init), as.double(inv_metric_init),
+            as.logical(adapt), as.double(delta), as.double(gamma), as.double(kappa),
+            as.double(t0), as.integer(init_buffer), as.integer(term_buffer), as.integer(window),
+            as.logical(save_warmup), as.double(stepsize), as.double(stepsize_jitter),
             as.integer(max_depth), as.integer(refresh), as.integer(num_threads),
             out = double(output_size), save_metric = as.logical(save_metric), metric = double(metric_size),
             err = raw(8), PACKAGE = private$lib_name)

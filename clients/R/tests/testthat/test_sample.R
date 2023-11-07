@@ -48,7 +48,7 @@ test_that("save_metric works", {
     expect_equal(out_unit$metric, matrix(1, ncol = 5, nrow = 4))
 
     out_diag <- gaussian_model$sample(data, num_warmup = 100, num_samples = 10, save_metric = TRUE,
-        metric = ffistan::HMCMetric$DIAG)
+        metric = ffistan::HMCMetric$DIAGONAL)
     expect_equal(dim(out_diag$metric), c(4, 5))
     expect_equal(out_diag$metric, matrix(1, ncol = 5, nrow = 4))
 
@@ -62,6 +62,40 @@ test_that("save_metric works", {
         save_metric = FALSE)
     expect_false(exists("metric", out_nometric))
 
+})
+
+test_that("init_inv_metric is used", {
+    data <- "{\"N\": 3}"
+
+    for (adapt in c(TRUE, FALSE)) {
+        diag_metric <- matrix(1, 3, 2)
+        # multiply only first chain
+        diag_metric[, 1] <- diag_metric[, 1] * 1e+20
+        out_diag <- gaussian_model$sample(data, num_chains = 2, save_warmup = TRUE,
+            adapt = adapt, metric = HMCMetric$DIAGONAL, init_inv_metric = diag_metric,
+            save_metric = TRUE, seed = 1234)
+
+        chain_one_divergences <- sum(out_diag$draws[1, , 6])
+        expect_true(chain_one_divergences > ifelse(adapt, 10, 500))
+        chain_two_divergences <- sum(out_diag$draws[2, , 6])
+        expect_true(chain_two_divergences < 10)
+        expect_true(chain_two_divergences < chain_one_divergences)
+        expect_false(all(diag_metric == t(out_diag$metric)))
+
+        dense_metric <- array(0, c(3, 3, 2))
+        dense_metric[, , 1] <- diag(3) * 1e+20
+        dense_metric[, , 2] <- diag(3)
+        out_dense <- gaussian_model$sample(data, num_chains = 2, save_warmup = TRUE,
+            adapt = adapt, metric = HMCMetric$DENSE, init_inv_metric = dense_metric,
+            save_metric = TRUE, seed = 1234)
+
+        chain_one_divergences <- sum(out_dense$draws[1, , 6])
+        expect_true(chain_one_divergences > ifelse(adapt, 10, 500))
+        chain_two_divergences <- sum(out_dense$draws[2, , 6])
+        expect_true(chain_two_divergences < 10)
+        expect_true(chain_two_divergences < chain_one_divergences)
+        expect_false(all(dense_metric == aperm(out_dense$metric, c(3, 2, 1))))
+    }
 })
 
 test_that("multiple inits work", {
@@ -120,6 +154,41 @@ test_that("bad inits handled properly", {
 
 })
 
+test_that("bad initial metric shape handled properly", {
+    data <- "{\"N\": 5}"
+
+    expect_error(gaussian_model$sample(data, metric = ffistan::HMCMetric$DENSE, init_inv_metric = rep(1,
+        5)), "Invalid initial metric size")
+
+    expect_error(gaussian_model$sample(data, metric = ffistan::HMCMetric$DENSE, init_inv_metric = matrix(1,
+        5, 4)), "Invalid initial metric size")
+
+    expect_error(gaussian_model$sample(data, num_chains = 4, metric = ffistan::HMCMetric$DENSE,
+        init_inv_metric = array(1, c(5, 5, 3))), "Invalid initial metric size")
+
+    expect_error(gaussian_model$sample(data, metric = ffistan::HMCMetric$DIAGONAL,
+        init_inv_metric = rep(1, 4)), "Invalid initial metric size")
+
+    expect_error(gaussian_model$sample(data, num_chains = 4, metric = ffistan::HMCMetric$DIAGONAL,
+        init_inv_metric = matrix(1, 5, 3)), "Invalid initial metric size")
+
+    expect_error(gaussian_model$sample(data, num_chains = 4, metric = ffistan::HMCMetric$DIAGONAL,
+        init_inv_metric = array(1, c(5, 5, 3))), "Invalid initial metric size")
+})
+
+test_that("bad initial metric handled properly", {
+    data <- "{\"N\": 3}"
+
+    expect_error(gaussian_model$sample(data, metric = ffistan::HMCMetric$DENSE, init_inv_metric = matrix(1e+20,
+        3, 3)), "not positive definite")
+
+    metric = array(0, c(3, 3, 2))
+    metric[, , 1] <- 1e+20
+    metric[, , 2] <- diag(3)
+    expect_error(gaussian_model$sample(data, num_chains = 2, metric = ffistan::HMCMetric$DENSE,
+        init_inv_metric = metric), "not positive definite")
+
+})
 test_that("bad num_warmup handled properly", {
 
     expect_error(bernoulli_model$sample(BERNOULLI_DATA, num_warmup = -1), "non-negative")
