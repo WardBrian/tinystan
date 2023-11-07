@@ -2,7 +2,7 @@
 @enum HMCMetric begin
     UNIT = 0
     DENSE = 1
-    DIAG = 2
+    DIAGONAL = 2
 end
 
 @enum OptimizationAlgorithm begin
@@ -150,7 +150,8 @@ function sample(
     init_radius = 2.0,
     num_warmup::Int = 1000,
     num_samples::Int = 1000,
-    metric::HMCMetric = DIAG,
+    metric::HMCMetric = DIAGONAL,
+    init_inv_metric::Union{Nothing,Array{Float64}} = nothing,
     save_metric::Bool = false,
     adapt = true,
     delta = 0.8,
@@ -182,11 +183,13 @@ function sample(
     end
 
     with_model(model, data, seed) do model_ptr
-        free_params = ccall(
-            Libc.Libdl.dlsym(model.lib, :ffistan_model_num_free_params),
-            Csize_t,
-            (Ptr{Cvoid},),
-            model_ptr,
+        free_params = Int(
+            ccall(
+                Libc.Libdl.dlsym(model.lib, :ffistan_model_num_free_params),
+                Csize_t,
+                (Ptr{Cvoid},),
+                model_ptr,
+            ),
         )
         if free_params == 0
             error("Model has no parameters to sample")
@@ -197,12 +200,34 @@ function sample(
         num_draws = num_samples + num_warmup * Int(save_warmup)
         out = zeros(Float64, num_params, num_draws, num_chains)
 
-        if save_metric
-            if metric == DENSE
-                metric_out = zeros(Float64, free_params, free_params, num_chains)
+        if metric == DENSE
+            metric_size = (free_params, free_params)
+        else
+            metric_size = (free_params,)
+        end
+
+        if isnothing(init_inv_metric)
+            init_inv_metric = C_NULL
+        else
+            inv_metric_dims = size(init_inv_metric)
+            if inv_metric_dims == metric_size
+                init_inv_metric = repeat(
+                    init_inv_metric,
+                    outer = (ntuple(_ -> 1, length(inv_metric_dims))..., num_chains),
+                )
+            elseif inv_metric_dims == (metric_size..., num_chains)
+                # good to go
             else
-                metric_out = zeros(Float64, free_params, num_chains)
+                with_chains = (metric_size..., num_chains)
+                error(
+                    "Invalid initial metric size. Expected a $metric_size or" *
+                    " $with_chains matrix",
+                )
             end
+        end
+
+        if save_metric
+            metric_out = zeros(Float64, metric_size..., num_chains)
         else
             metric_out = C_NULL
         end
@@ -221,6 +246,7 @@ function sample(
                 Cint,
                 Cint,
                 HMCMetric,
+                Ptr{Cdouble},
                 Cint, # really bool
                 Cdouble,
                 Cdouble,
@@ -248,6 +274,7 @@ function sample(
             num_warmup,
             num_samples,
             metric,
+            init_inv_metric,
             Int32(adapt),
             delta,
             gamma,

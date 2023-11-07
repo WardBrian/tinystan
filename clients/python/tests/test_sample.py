@@ -265,6 +265,15 @@ def test_bad_initial_metric(gaussian_model):
             data, metric=ffistan.HMCMetric.DENSE, init_inv_metric=np.ones((3, 3)) * 1e20
         )
 
+    metric = np.zeros((2, 3, 3))
+    metric[0, :, :] = 1e20
+    metric[1, :, :] = np.eye(3)
+
+    with pytest.raises(RuntimeError, match="not positive definite"):
+        gaussian_model.sample(
+            data, num_chains=2, metric=ffistan.HMCMetric.DENSE, init_inv_metric=metric
+        )
+
 
 def test_bad_num_warmup(bernoulli_model):
     with pytest.raises(ValueError, match="non-negative"):
