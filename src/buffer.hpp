@@ -119,8 +119,8 @@ class metric_buffer_reader : public stan::io::empty_var_context {
 
  private:
   const double *buf;
-  bool dense;
   size_t size;
+  bool dense;
 };
 
 using var_ctx_ptr = std::unique_ptr<stan::io::var_context>;
