@@ -9,6 +9,8 @@
 #include <mutex>
 #include <stdexcept>
 
+#include "logging.hpp"
+
 class FFIStanError {
  public:
   FFIStanError(const char *msg,
@@ -55,39 +57,63 @@ namespace error {
 
 class error_logger : public stan::callbacks::logger {
  public:
-  error_logger(){};
+  error_logger(bool print_non_errors) : print(print_non_errors){};
   ~error_logger(){};
+
+  void info(const std::string &s) override {
+    if (print && !s.empty()) {
+      io::info(s);
+    }
+  }
+
+  void info(const std::stringstream &s) override {
+    if (print && !s.str().empty()) {
+      io::info(s.str());
+    }
+  }
+
+  void warn(const std::string &s) override {
+    if (print && !s.empty()) {
+      io::warn(s);
+    }
+  }
+
+  void warn(const std::stringstream &s) override {
+    if (print && !s.str().empty()) {
+      io::warn(s.str());
+    }
+  }
 
   void error(const std::string &s) override {
     if (!s.empty()) {
-      std::unique_lock<std::mutex> lock(error_mutex);
+      std::lock_guard<std::mutex> lock(error_mutex);
       last_error << s << "\n";
     }
   }
 
   void error(const std::stringstream &s) override {
     if (!s.str().empty()) {
-      std::unique_lock<std::mutex> lock(error_mutex);
+      std::lock_guard<std::mutex> lock(error_mutex);
       last_error << s.str() << "\n";
     }
   }
 
   void fatal(const std::string &s) override {
     if (!s.empty()) {
-      std::unique_lock<std::mutex> lock(error_mutex);
+      std::lock_guard<std::mutex> lock(error_mutex);
       last_error << s << "\n";
     }
   }
 
   void fatal(const std::stringstream &s) override {
     if (!s.str().empty()) {
-      std::unique_lock<std::mutex> lock(error_mutex);
+      std::lock_guard<std::mutex> lock(error_mutex);
       last_error << s.str() << "\n";
     }
   }
 
   FFIStanError *get_error() {
-    std::unique_lock<std::mutex> lock(error_mutex);
+    std::lock_guard<std::mutex> lock(error_mutex);
     auto err = last_error.str();
     if (err.empty())
       return new FFIStanError("Unknown error");
@@ -98,6 +124,7 @@ class error_logger : public stan::callbacks::logger {
  private:
   std::stringstream last_error;
   std::mutex error_mutex;
+  bool print;
 };
 
 template <typename T>

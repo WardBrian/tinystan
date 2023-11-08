@@ -1,6 +1,7 @@
 import contextlib
 import ctypes
 import subprocess
+import sys
 from enum import Enum
 from typing import Any, Dict, Union
 
@@ -10,8 +11,6 @@ from stanio import dump_stan_json
 
 from .compile import windows_dll_path_setup
 from .output import StanOutput
-
-double_array = ndpointer(dtype=ctypes.c_double, flags=("C_CONTIGUOUS"))
 
 
 def wrapped_ndptr(*args, **kwargs):
@@ -29,9 +28,21 @@ def wrapped_ndptr(*args, **kwargs):
     return type(base.__name__, (base,), {"from_param": classmethod(from_param)})
 
 
+double_array = ndpointer(dtype=ctypes.c_double, flags=("C_CONTIGUOUS"))
 nullable_double_array = wrapped_ndptr(dtype=ctypes.c_double, flags=("C_CONTIGUOUS"))
-
 err_ptr = ctypes.POINTER(ctypes.c_void_p)
+print_callback_type = ctypes.CFUNCTYPE(
+    None, ctypes.POINTER(ctypes.c_char), ctypes.c_size_t, ctypes.c_bool
+)
+
+
+@print_callback_type
+def print_callback(msg, size, is_error):
+    print(
+        ctypes.string_at(msg, size).decode("utf-8"),
+        file=sys.stderr if is_error else sys.stdout,
+    )
+
 
 HMC_SAMPLER_VARIABLES = [
     "lp__",
@@ -86,7 +97,7 @@ def rand_u32():
 
 
 class FFIStanModel:
-    def __init__(self, model):
+    def __init__(self, model, *, capture_stan_prints: bool = True):
         windows_dll_path_setup()
         # TODO dllist warning
 
@@ -218,6 +229,12 @@ class FFIStanModel:
         get_separator.restype = ctypes.c_char
         get_separator.argtypes = []
         self.sep = get_separator()
+
+        if capture_stan_prints:
+            set_print_callback = self._lib.ffistan_set_print_callback
+            set_print_callback.restype = None
+            set_print_callback.argtypes = [print_callback_type]
+            set_print_callback(print_callback)
 
     def _raise_for_error(self, rc: int, err):
         if rc != 0:
