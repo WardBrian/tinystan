@@ -22,6 +22,7 @@
 #include "ffistan.h"
 
 #include "errors.hpp"
+#include "logging.hpp"
 #include "file.hpp"
 #include "buffer.hpp"
 #include "interrupts.hpp"
@@ -60,9 +61,9 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
                    double gamma, double kappa, double t0,
                    unsigned int init_buffer, unsigned int term_buffer,
                    unsigned int window, bool save_warmup, double stepsize,
-                   double stepsize_jitter, int max_depth,
-                   /* currently has no effect */ int refresh, int num_threads,
-                   double *out, double *metric_out, FFIStanError **err) {
+                   double stepsize_jitter, int max_depth, int refresh,
+                   int num_threads, double *out, double *metric_out,
+                   FFIStanError **err) {
   FFISTAN_TRY_CATCH({
     error::check_positive("num_chains", num_chains);
     error::check_positive("id", id);
@@ -111,7 +112,7 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
     auto initial_metrics = io::make_metric_inits(
         num_chains, init_inv_metric, num_model_params, metric_choice);
 
-    error::error_logger logger;
+    error::error_logger logger(refresh != 0);
     interrupt::ffistan_interrupt_handler interrupt;
 
     std::vector<stan::callbacks::writer> null_writers(num_chains);
@@ -215,7 +216,7 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
     auto &model = *ffimodel->model;
 
     io::buffer_writer pathfinder_writer(out);
-    error::error_logger logger;
+    error::error_logger logger(refresh != 0);
 
     interrupt::ffistan_interrupt_handler interrupt;
     stan::callbacks::structured_writer dummy_json_writer;
@@ -287,7 +288,7 @@ int ffistan_optimize(const FFIStanModel *ffimodel, const char *init,
     auto json_init = io::load_data(init);
     auto &model = *ffimodel->model;
     io::buffer_writer sample_writer(out);
-    error::error_logger logger;
+    error::error_logger logger(refresh != 0);
 
     interrupt::ffistan_interrupt_handler interrupt;
     stan::callbacks::writer null_writer;
@@ -386,4 +387,9 @@ void ffistan_stan_version(int *major, int *minor, int *patch) {
   *minor = STAN_MINOR;
   *patch = STAN_PATCH;
 }
+
+void ffistan_set_print_callback(FFISTAN_PRINT_CALLBACK print) {
+  io::user_print_callback = print;
 }
+
+}  // extern "C"

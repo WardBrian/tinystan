@@ -144,6 +144,10 @@ FFIStanErrorType ffistan_get_error_type(const FFIStanError *err);
  */
 void ffistan_free_stan_error(FFIStanError *err);
 
+typedef void (*FFISTAN_PRINT_CALLBACK)(const char *msg, size_t len, bool bad);
+
+void ffistan_set_print_callback(FFISTAN_PRINT_CALLBACK print);
+
 #ifdef __cplusplus
 }
 #endif
