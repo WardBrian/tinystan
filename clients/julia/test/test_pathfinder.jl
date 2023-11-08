@@ -127,8 +127,7 @@
     end
 
     @testset "Model without parameters" begin
-        (names, draws) = pathfinder(empty_model)
-        @test length(names) == 2 # lp, lp_approx
+        @test_throws "no parameters" pathfinder(empty_model)
     end
 
 

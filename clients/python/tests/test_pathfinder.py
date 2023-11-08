@@ -113,8 +113,8 @@ def test_bad_init(bernoulli_model):
 
 
 def test_model_no_params(empty_model):
-    out = empty_model.pathfinder()
-    assert len(out.parameters) == 2  # lp, lp_approx
+    with pytest.raises(ValueError, match="no parameters"):
+        empty_model.pathfinder()
 
 
 @pytest.mark.parametrize(

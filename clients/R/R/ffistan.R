@@ -150,6 +150,11 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
     }
 
     private$with_model(data, seed, {
+        free_params <- private$get_free_params(model)
+        if (free_params == 0) {
+            stop("Model has no parameters")
+        }
+
         params <- c(PATHFINDER_VARIABLES, private$get_parameter_names(model))
         num_params <- length(params)
         output_size <- num_params * num_output

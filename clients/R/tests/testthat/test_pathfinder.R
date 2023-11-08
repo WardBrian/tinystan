@@ -97,7 +97,7 @@ test_that("bad inits handled properly", {
 })
 
 test_that("empty model ok", {
-    expect_no_error(empty_model$pathfinder())
+    expect_error(empty_model$pathfinder(), "no parameters")
 })
 
 test_that("bad args raise errors", {

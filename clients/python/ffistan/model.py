@@ -410,6 +410,10 @@ class FFIStanModel:
         seed = seed or rand_u32()
 
         with self._get_model(data, seed) as model:
+            model_params = self._num_free_params(model)
+            if model_params == 0:
+                raise ValueError("Model has no parameters.")
+
             param_names = PATHFINDER_VARIABLES + self._get_parameter_names(model)
 
             num_params = len(param_names)

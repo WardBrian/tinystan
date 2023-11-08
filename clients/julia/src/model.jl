@@ -110,6 +110,17 @@ function with_model(f, model::FFIStanModel, data::String, seed::UInt32)
     end
 end
 
+function num_free_params(model::FFIStanModel, model_ptr::Ptr{Cvoid})
+    Int(
+        ccall(
+            Libc.Libdl.dlsym(model.lib, :ffistan_model_num_free_params),
+            Csize_t,
+            (Ptr{Cvoid},),
+            model_ptr,
+        ),
+    )
+end
+
 function get_names(model::FFIStanModel, model_ptr::Ptr{Cvoid})
     cstr = ccall(
         Libc.Libdl.dlsym(model.lib, :ffistan_model_param_names),
@@ -183,14 +194,7 @@ function sample(
     end
 
     with_model(model, data, seed) do model_ptr
-        free_params = Int(
-            ccall(
-                Libc.Libdl.dlsym(model.lib, :ffistan_model_num_free_params),
-                Csize_t,
-                (Ptr{Cvoid},),
-                model_ptr,
-            ),
-        )
+        free_params = num_free_params(model, model_ptr)
         if free_params == 0
             error("Model has no parameters to sample")
         end
@@ -348,6 +352,11 @@ function pathfinder(
     end
 
     with_model(model, data, seed) do model_ptr
+        free_params = num_free_params(model, model_ptr)
+        if free_params == 0
+            error("Model has no parameters")
+        end
+
         param_names = cat(PATHFINDER_VARIABLES, get_names(model, model_ptr), dims = 1)
         num_params = length(param_names)
         out = zeros(Float64, num_params, num_output)
