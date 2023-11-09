@@ -3,7 +3,7 @@
 
 #if defined _WIN32 || defined __MINGW32__
 #define FFISTAN_ON_WINDOWS 1
-else
+#else
 #define FFISTAN_ON_WINDOWS 0
 #endif
 
