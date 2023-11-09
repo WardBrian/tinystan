@@ -1,4 +1,3 @@
-#include "defines.h"
 #include "ffistan.h"
 
 // R's .C function can only pass in pointers to C types, so we need to

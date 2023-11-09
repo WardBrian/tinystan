@@ -15,7 +15,21 @@ typedef struct FFIStanError FFIStanError;  // opaque type
 typedef struct FFIStanModel FFIStanModel;  // opaque type
 #endif
 
-#include "defines.h"
+#if defined _WIN32 || defined __MINGW32__
+#define FFISTAN_ON_WINDOWS 1
+#else
+#define FFISTAN_ON_WINDOWS 0
+#endif
+
+#if FFISTAN_ON_WINDOWS
+#ifdef FFISTAN_EXPORT
+#define FFISTAN_PUBLIC __declspec(dllexport)
+#else
+#define FFISTAN_PUBLIC __declspec(dllimport)
+#endif
+#else
+#define FFISTAN_PUBLIC __attribute__((visibility("default")))
+#endif
 
 /**
  * Get the version of the library.

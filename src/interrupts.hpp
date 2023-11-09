@@ -5,7 +5,6 @@
 #include <stan/callbacks/interrupt.hpp>
 #include <csignal>
 
-#include "defines.h"
 #include "errors.hpp"
 
 #if FFISTAN_ON_WINDOWS
