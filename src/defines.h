@@ -8,7 +8,7 @@
 #endif
 
 #if FFISTAN_ON_WINDOWS
-#if FFISTAN_EXPORT
+#ifdef FFISTAN_EXPORT
 #define FFISTAN_PUBLIC __declspec(dllexport)
 #else
 #define FFISTAN_PUBLIC __declspec(dllimport)
