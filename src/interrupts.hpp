@@ -5,12 +5,13 @@
 #include <stan/callbacks/interrupt.hpp>
 #include <csignal>
 
-#if defined _WIN32 || defined __MINGW32__
+#include "defines.h"
+#include "errors.hpp"
+
+#if FFISTAN_ON_WINDOWS
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
-
-#include "errors.hpp"
 
 namespace ffistan {
 namespace interrupt {
@@ -18,7 +19,7 @@ namespace interrupt {
 volatile std::sig_atomic_t interrupted = false;
 
 class ffistan_interrupt_handler : public stan::callbacks::interrupt {
-#if !defined _WIN32 && !defined __MINGW32__  // POSIX signals
+#if !FFISTAN_ON_WINDOWS  // POSIX signals
  public:
   ffistan_interrupt_handler() {
     interrupted = false;
