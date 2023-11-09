@@ -22,8 +22,9 @@ include $(MATH)make/libraries
 include $(MATH)make/dependencies
 
 ## Set -fPIC globally since we're always building a shared library
-CXXFLAGS += -fPIC
+CXXFLAGS += -fPIC -fvisibility=hidden -fvisibility-inlines-hidden
 CXXFLAGS_SUNDIALS += -fPIC
+CPPFLAGS += -DFFISTAN_EXPORT
 
 ifeq ($(OS),Windows_NT)
 	CXXFLAGS += -Wa,-mbig-obj

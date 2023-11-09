@@ -24,5 +24,5 @@
 
 
 ## Other
-- [ ] Set up visibility such that all non-API symbols are hidden
+- [x] Set up visibility such that all non-API symbols are hidden
 - [ ] Look into cmake/clang-cl builds
