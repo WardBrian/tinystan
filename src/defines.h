@@ -1,8 +1,10 @@
 #ifndef FFISTAN_DEFINES_H
 #define FFISTAN_DEFINES_H
 
-#ifndef FFISTAN_ON_WINDOWS
-#define FFISTAN_ON_WINDOWS defined _WIN32 || defined __MINGW32__
+#if defined _WIN32 || defined __MINGW32__
+#define FFISTAN_ON_WINDOWS 1
+else
+#define FFISTAN_ON_WINDOWS 0
 #endif
 
 #if FFISTAN_ON_WINDOWS
