@@ -1,11 +1,11 @@
 test_that("data arguments work", {
 
     out1 <- bernoulli_model$pathfinder(BERNOULLI_DATA)
-    expect_true(mean(out1$draws[, 3]) > 0.2 && mean(out1$draws[, 3]) < 0.3)
+    expect_true(mean(out1$theta) > 0.2 && mean(out1$theta) < 0.3)
 
     data_file <- file.path(stan_folder, "bernoulli", "bernoulli.data.json")
     out2 <- bernoulli_model$pathfinder(data = data_file)
-    expect_true(mean(out2$draws[, 3]) > 0.2 && mean(out2$draws[, 3]) < 0.3)
+    expect_true(mean(out2$theta) > 0.2 && mean(out2$theta) < 0.3)
 
 })
 
@@ -14,11 +14,11 @@ test_that("output sizes are correct", {
 
     out1 <- bernoulli_model$pathfinder(BERNOULLI_DATA, num_paths = 4, num_draws = 101,
         num_multi_draws = 99)
-    expect_equal(dim(out1$draws)[1], 99)
+    expect_equal(posterior::ndraws(out1), 99)
 
     out2 <- bernoulli_model$pathfinder(BERNOULLI_DATA, num_paths = 1, num_draws = 101,
         num_multi_draws = 99)
-    expect_equal(dim(out2$draws)[1], 101)
+    expect_equal(posterior::ndraws(out2), 101)
 
 })
 
@@ -27,27 +27,26 @@ test_that("seed works", {
     out1 <- bernoulli_model$pathfinder(BERNOULLI_DATA, seed = 123)
     out2 <- bernoulli_model$pathfinder(BERNOULLI_DATA, seed = 123)
 
-    expect_equal(out1$draws, out2$draws)
+    expect_equal(out1$theta, out2$theta)
 
     out3 <- bernoulli_model$pathfinder(BERNOULLI_DATA, seed = 456)
-    expect_error(expect_equal(out1$draws, out3$draws))
+    expect_error(expect_equal(out1$theta, out3$theta))
 
 })
 test_that("inits work", {
 
     init1 <- "{\"mu\": -1000}"
     out1 <- multimodal_model$pathfinder(inits = init1)
-    expect_true(all(out1$draws[, 3] < 0))
+    expect_true(all(out1$mu < 0))
 
     init2 <- "{\"mu\": 1000}"
     out2 <- multimodal_model$pathfinder(inits = init2)
-    expect_true(all(out2$draws[, 3] > 0))
+    expect_true(all(out2$mu > 0))
 
     temp_file <- tempfile(fileext = ".json")
     write(init1, temp_file)
     out3 <- multimodal_model$pathfinder(num_paths = 2, inits = c(temp_file, init1))
-    expect_true(all(out3$draws[, 3] < 0))
-
+    expect_true(all(out3$mu < 0))
 })
 
 

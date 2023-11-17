@@ -14,5 +14,6 @@ Suggests:
     testthat (>= 3.0.0)
 Imports:
     R6 (>= 2.4.0),
+    posterior (>= 1.4.0),
     rlang (>= 0.3.0)
 Config/testthat/edition: 3
