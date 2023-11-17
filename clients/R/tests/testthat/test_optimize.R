@@ -4,11 +4,11 @@ ALGORITHMS <- c(ffistan::OptimizationAlgorithm$NEWTON, ffistan::OptimizationAlgo
 test_that("data args work", {
 
     out1 <- bernoulli_model$optimize(BERNOULLI_DATA)
-    expect_true((out1$optimum[2]) > 0.19 && (out1$optimum[2]) < 0.21)
+    expect_true(mean(out1$theta) > 0.19 && mean(out1$theta) < 0.21)
 
     data_file <- file.path(stan_folder, "bernoulli", "bernoulli.data.json")
     out2 <- bernoulli_model$optimize(data = data_file)
-    expect_true(mean(out2$optimum[2]) > 0.19 && mean(out2$optimum[2]) < 0.21)
+    expect_true(mean(out2$theta) > 0.19 && mean(out2$theta) < 0.21)
 
 })
 
@@ -20,10 +20,12 @@ test_that("algorithm and jacobian args work", {
             out <- simple_jacobian_model$optimize(algorithm = algorithm, jacobian = jacobian,
                 seed = 1234)
 
+            sigma <- posterior::extract_variable(out, "sigma")
+
             if (jacobian) {
-                expect_equal(out$optimum[2], 3.3, tolerance = 0.01, ignore_attr = TRUE)
+                expect_equal(sigma, 3.3, tolerance = 0.01, ignore_attr = TRUE)
             } else {
-                expect_equal(out$optimum[2], 3, tolerance = 0.01, ignore_attr = TRUE)
+                expect_equal(sigma, 3, tolerance = 0.01, ignore_attr = TRUE)
             }
 
         }
@@ -36,10 +38,10 @@ test_that("seed works", {
     out1 <- bernoulli_model$optimize(BERNOULLI_DATA, seed = 123)
     out2 <- bernoulli_model$optimize(BERNOULLI_DATA, seed = 123)
 
-    expect_equal(out1$optimum, out2$optimum)
+    expect_equal(out1, out2)
 
     out3 <- bernoulli_model$optimize(BERNOULLI_DATA, seed = 456)
-    expect_error(expect_equal(out1$optimum, out3$optimum))
+    expect_error(expect_equal(out1, out3))
 
 })
 

@@ -2,11 +2,11 @@ test_that("data arguments work", {
 
     out1 <- bernoulli_model$sample(BERNOULLI_DATA, num_warmup = 100, num_samples = 100)
 
-    expect_true(mean(out1$draws[, , 8]) > 0.2 && mean(out1$draws[, , 8]) < 0.3)
+    expect_true(mean(out1$theta) > 0.2 && mean(out1$theta) < 0.3)
 
     data_file <- file.path(stan_folder, "bernoulli", "bernoulli.data.json")
     out2 <- bernoulli_model$sample(data = data_file, num_warmup = 100, num_samples = 100)
-    expect_true(mean(out2$draws[, , 8]) > 0.2 && mean(out2$draws[, , 8]) < 0.3)
+    expect_true(mean(out2$theta) > 0.2 && mean(out2$theta) < 0.3)
 
 })
 
@@ -14,11 +14,11 @@ test_that("save_warmup works", {
 
     out <- bernoulli_model$sample(BERNOULLI_DATA, num_warmup = 12, num_samples = 34,
         save_warmup = FALSE)
-    expect_equal(dim(out$draws)[2], 34)
+    expect_equal(posterior::niterations(out), 34)
 
     out <- bernoulli_model$sample(BERNOULLI_DATA, num_warmup = 12, num_samples = 34,
         save_warmup = TRUE)
-    expect_equal(dim(out$draws)[2], 12 + 34)
+    expect_equal(posterior::niterations(out), 12 + 34)
 
 })
 
@@ -29,12 +29,12 @@ test_that("seed works", {
     out2 <- bernoulli_model$sample(BERNOULLI_DATA, seed = 123, num_warmup = 100,
         num_samples = 100)
 
-    expect_equal(out1$draws, out2$draws)
+    expect_equal(out1, out2)
 
     out3 <- bernoulli_model$sample(BERNOULLI_DATA, seed = 456, num_warmup = 100,
         num_samples = 100)
 
-    expect_error(expect_equal(out1$draws, out3$draws))
+    expect_error(expect_equal(out1, out3))
 
 })
 
@@ -75,9 +75,10 @@ test_that("init_inv_metric is used", {
             adapt = adapt, metric = HMCMetric$DIAGONAL, init_inv_metric = diag_metric,
             save_metric = TRUE, seed = 1234)
 
-        chain_one_divergences <- sum(out_diag$draws[1, , 6])
+        divergent <- out_diag$draws$divergent__
+        chain_one_divergences <- sum(posterior::subset_draws(divergent, chain = 1))
         expect_true(chain_one_divergences > ifelse(adapt, 10, 500))
-        chain_two_divergences <- sum(out_diag$draws[2, , 6])
+        chain_two_divergences <- sum(posterior::subset_draws(divergent, chain = 2))
         expect_true(chain_two_divergences < 10)
         expect_true(chain_two_divergences < chain_one_divergences)
         expect_false(all(diag_metric == t(out_diag$metric)))
@@ -89,9 +90,10 @@ test_that("init_inv_metric is used", {
             adapt = adapt, metric = HMCMetric$DENSE, init_inv_metric = dense_metric,
             save_metric = TRUE, seed = 1234)
 
-        chain_one_divergences <- sum(out_dense$draws[1, , 6])
+        divergent <- out_dense$draws$divergent__
+        chain_one_divergences <- sum(posterior::subset_draws(divergent, chain = 1))
         expect_true(chain_one_divergences > ifelse(adapt, 10, 500))
-        chain_two_divergences <- sum(out_dense$draws[2, , 6])
+        chain_two_divergences <- sum(posterior::subset_draws(divergent, chain = 2))
         expect_true(chain_two_divergences < 10)
         expect_true(chain_two_divergences < chain_one_divergences)
         expect_false(all(dense_metric == aperm(out_dense$metric, c(3, 2, 1))))
@@ -103,20 +105,21 @@ test_that("multiple inits work", {
     init1 <- "{\"mu\": -100}"
     out1 <- multimodal_model$sample(num_chains = 2, num_warmup = 100, num_samples = 100,
         inits = init1)
-    expect_true(all(out1$draws[, , 8] < 0))
+    expect_true(all(out1$mu < 0))
 
     init2 <- "{\"mu\": 100}"
     out2 <- multimodal_model$sample(num_chains = 2, num_warmup = 100, num_samples = 100,
         inits = list(init1, init2))
-    expect_true(all(out2$draws[1, , 8] < 0))
-    expect_true(all(out2$draws[2, , 8] > 0))
+
+    expect_true(all(posterior::subset_draws(out2$mu, chain = 1) < 0))
+    expect_true(all(posterior::subset_draws(out2$mu, chain = 2) > 0))
 
     temp_file <- tempfile(fileext = ".json")
     write(init1, temp_file)
     out3 <- multimodal_model$sample(num_chains = 2, num_warmup = 100, num_samples = 100,
         inits = c(temp_file, init2))
-    expect_true(all(out3$draws[1, , 8] < 0))
-    expect_true(all(out3$draws[2, , 8] > 0))
+    expect_true(all(posterior::subset_draws(out3$mu, chain = 1) < 0))
+    expect_true(all(posterior::subset_draws(out3$mu, chain = 2) > 0))
 
 })
 

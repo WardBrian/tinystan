@@ -109,8 +109,7 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
             err = raw(8), PACKAGE = private$lib_name)
         handle_error(vars$return_code, private$lib_name, vars$err)
         # reshape the output matrix
-        out <- aperm(array(vars$out, dim = c(num_params, num_draws, num_chains),
-            dimnames = list(params, NULL, NULL)), c(3, 2, 1))
+        out <- output_as_rvars(params, num_draws, num_chains, vars$out)
 
         if (save_metric) {
             if (metric == HMCMetric$DENSE) {
@@ -120,10 +119,10 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
                 metric <- aperm(array(vars$metric, dim = c(free_params, num_chains)),
                   c(2, 1))
             }
-            return(list(params = params, draws = out, metric = metric))
+            return(list(draws = out, metric = metric))
         }
 
-        list(params = params, draws = out)
+        out
     })
 }, pathfinder = function(data = "", num_paths = 4, inits = NULL, seed = NULL, id = 1,
     init_radius = 2, num_draws = 1000, max_history_size = 5, init_alpha = 0.001,
@@ -167,10 +166,8 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
             as.integer(num_elbo_draws), as.integer(num_multi_draws), as.integer(refresh),
             as.integer(num_threads), out = double(output_size), err = raw(8), PACKAGE = private$lib_name)
         handle_error(vars$return_code, private$lib_name, vars$err)
-        # reshape the output matrix
-        out <- t(array(vars$out, dim = c(num_params, num_output), dimnames = list(params,
-            NULL)))
-        list(params = params, draws = out)
+
+        output_as_rvars(params, num_output, 1, vars$out)
     })
 }, optimize = function(data = "", init = NULL, seed = NULL, id = 1, init_radius = 2,
     algorithm = OptimizationAlgorithm$LBFGS, jacobian = FALSE, num_iterations = 2000,
@@ -194,10 +191,9 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
             as.double(tol_param), as.integer(refresh), as.integer(num_threads), out = double(output_size),
             err = raw(8), PACKAGE = private$lib_name)
         handle_error(vars$return_code, private$lib_name, vars$err)
-        out <- array(vars$out, dim = c(num_params), dimnames = list(params))
-        list(params = params, optimum = out)
-    })
 
+        output_as_rvars(params, 1, 1, vars$out)
+    })
 }), private = list(lib = NA, lib_name = NA, sep = NA, with_model = function(data,
     seed, block) {
     ffi_ret <- .C("ffistan_create_model_R", model = raw(8), as.character(data), as.integer(seed),

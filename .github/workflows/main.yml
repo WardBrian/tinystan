@@ -136,6 +136,7 @@ jobs:
             any::R6
             any::testthat
             any::devtools
+            any::posterior
 
       - name: Restore Stan
         uses: actions/cache@v3
