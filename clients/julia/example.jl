@@ -7,13 +7,13 @@ data = "./test_models/bernoulli/bernoulli.data.json"
 param_names, draws = sample(model, data)
 println(param_names)
 println(size(draws))
-println(mean(draws, dims = (1, 2))[8])
+println(mean(draws[:, :, param_names.=="theta"]))
 
 param_names, draws = pathfinder(model, data)
 println(param_names)
 println(size(draws))
-println(mean(draws[:, 3]))
+println(mean(draws[:, param_names.=="theta"]))
 
-param_names, draw = optimize(model, data)
+param_names, optimum = optimize(model, data)
 println(param_names)
-println(draw)
+println(optimum[param_names.=="theta"][1])
