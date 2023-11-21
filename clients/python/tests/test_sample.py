@@ -99,6 +99,21 @@ def test_save_metric(gaussian_model):
     )
     assert not hasattr(out_nometric, "metric")
 
+def test_sundials_ode():
+    sir = ffistan.FFIStanModel(str(STAN_FOLDER / "sir" / "sir_model.so"))
+    sir_data = str(STAN_FOLDER / "sir" / "sir.data.json")
+    sir_init = str(STAN_FOLDER / "sir" / "sir.data.json")
+
+    out = sir.sample(
+        data=sir_data,
+        inits=sir_init,
+        num_warmup=200,
+        num_samples=100,
+        num_chains=2,
+        refresh=50,
+    )
+
+    assert 1.8 < out['recovery_time'].mean() < 1.9
 
 @pytest.mark.parametrize("adapt", [True, False], ids=["adapt", "no adapt"])
 def test_init_inv_metric_used(gaussian_model, adapt):

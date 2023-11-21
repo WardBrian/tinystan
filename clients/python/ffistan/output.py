@@ -21,6 +21,13 @@ class StanOutput:
     def __getitem__(self, key: str) -> np.ndarray:
         return self._params[key].extract_reshape(self._data)
 
+    def __repr__(self) -> str:
+        return f"StanOutput(parameters={repr(self.raw_parameters)}, data={repr(self.data)})"
+
+    def __str__(self) -> str:
+        p = '\n\t'.join(self.parameters)
+        return f"StanOutput with parameters:\n\t{p}"
+
     # experimental, copied from cmdstanpy Pathfinder draft
     def create_inits(
         self, *, chains=4, seed=None
