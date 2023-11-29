@@ -11,6 +11,8 @@ OptimizationAlgorithm <- list(NEWTON = 0, BFGS = 1, LBFGS = 2)
 
 OPTIMIZATION_VARIABLES = c("lp__")
 
+# look at https://cran.r-project.org/web/packages/mmap/index.html (GPL-3)
+
 #' @export
 FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(lib) {
     if (.Platform$OS.type == "windows") {

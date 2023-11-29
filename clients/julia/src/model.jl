@@ -1,3 +1,4 @@
+using Mmap
 
 @enum HMCMetric begin
     UNIT = 0
@@ -202,7 +203,10 @@ function sample(
         param_names = cat(HMC_SAMPLER_VARIABLES, get_names(model, model_ptr), dims = 1)
         num_params = length(param_names)
         num_draws = num_samples + num_warmup * Int(save_warmup)
-        out = zeros(Float64, num_params, num_draws, num_chains)
+        # out = zeros(Float64, num_params, num_draws, num_chains)
+
+        file = "out_jl.bin"
+        out = Mmap.mmap(file, Array{Float64,3},(num_params, num_draws, num_chains), grow=true)
 
         if metric == DENSE
             metric_size = (free_params, free_params)

@@ -329,7 +329,14 @@ class FFIStanModel:
 
             num_params = len(param_names)
             num_draws = num_samples + num_warmup * save_warmup
-            out = np.zeros((num_chains, num_draws, num_params), dtype=np.float64)
+            # out = np.zeros((num_chains, num_draws, num_params), dtype=np.float64)
+            file = "out_py.bin"
+            out = np.memmap(
+                file,
+                dtype=np.float64,
+                mode="w+",
+                shape=(num_chains, num_draws, num_params),
+            )
 
             metric_size = (
                 (model_params, model_params)
