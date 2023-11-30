@@ -28,7 +28,7 @@ def test_data(bernoulli_model):
     assert 0.19 < out1["theta"] < 0.21
 
     # data stored in a file
-    data_file = str(STAN_FOLDER / "bernoulli" / "bernoulli.data.json")
+    data_file = STAN_FOLDER / "bernoulli" / "bernoulli.data.json"
     out2 = bernoulli_model.optimize(data=data_file)
     assert 0.19 < out2["theta"] < 0.21
 

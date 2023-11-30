@@ -25,7 +25,7 @@ class StanOutput:
         return f"StanOutput(parameters={repr(self.raw_parameters)}, data={repr(self.data)})"
 
     def __str__(self) -> str:
-        p = '\n\t'.join(self.parameters)
+        p = "\n\t".join(self.parameters)
         return f"StanOutput with parameters:\n\t{p}"
 
     # experimental, copied from cmdstanpy Pathfinder draft

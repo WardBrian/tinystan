@@ -20,7 +20,7 @@ def test_data(bernoulli_model):
     assert 0.2 < out1["theta"].mean() < 0.3
 
     # data stored in a file
-    data_file = str(STAN_FOLDER / "bernoulli" / "bernoulli.data.json")
+    data_file = STAN_FOLDER / "bernoulli" / "bernoulli.data.json"
     out2 = bernoulli_model.pathfinder(data=data_file)
     assert 0.2 < out2["theta"].mean() < 0.3
 

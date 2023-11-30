@@ -21,7 +21,7 @@ def test_data(bernoulli_model):
     assert 0.2 < out1["theta"].mean() < 0.3
 
     # data stored in a file
-    data_file = str(STAN_FOLDER / "bernoulli" / "bernoulli.data.json")
+    data_file = STAN_FOLDER / "bernoulli" / "bernoulli.data.json"
     out2 = bernoulli_model.sample(data=data_file)
     assert 0.2 < out2["theta"].mean() < 0.3
 
@@ -99,10 +99,11 @@ def test_save_metric(gaussian_model):
     )
     assert not hasattr(out_nometric, "metric")
 
+
 def test_sundials_ode():
-    sir = ffistan.FFIStanModel(str(STAN_FOLDER / "sir" / "sir_model.so"))
-    sir_data = str(STAN_FOLDER / "sir" / "sir.data.json")
-    sir_init = str(STAN_FOLDER / "sir" / "sir.data.json")
+    sir = ffistan.FFIStanModel(STAN_FOLDER / "sir" / "sir_model.so")
+    sir_data = STAN_FOLDER / "sir" / "sir.data.json"
+    sir_init = STAN_FOLDER / "sir" / "sir.data.json"
 
     out = sir.sample(
         data=sir_data,
@@ -113,7 +114,8 @@ def test_sundials_ode():
         refresh=50,
     )
 
-    assert 1.8 < out['recovery_time'].mean() < 1.9
+    assert 1.8 < out["recovery_time"].mean() < 1.9
+
 
 @pytest.mark.parametrize("adapt", [True, False], ids=["adapt", "no adapt"])
 def test_init_inv_metric_used(gaussian_model, adapt):

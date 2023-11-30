@@ -3,6 +3,7 @@ import ctypes
 import subprocess
 import sys
 from enum import Enum
+from os import PathLike, fspath
 from typing import Any, Dict, Union
 
 import numpy as np
@@ -85,8 +86,10 @@ _exception_types = [RuntimeError, ValueError, KeyboardInterrupt]
 
 
 # also allow inits from a StanOutput
-def encode_stan_json(data: Union[str, Dict[str, Any]]) -> bytes:
+def encode_stan_json(data: Union[str, PathLike, Dict[str, Any]]) -> bytes:
     """Turn the provided data into something we can send to C++."""
+    if isinstance(data, PathLike):
+        return fspath(data).encode()
     if isinstance(data, str):
         return data.encode()
     return dump_stan_json(data).encode()
@@ -97,10 +100,13 @@ def rand_u32():
 
 
 class FFIStanModel:
-    def __init__(self, model, *, capture_stan_prints: bool = True):
+    def __init__(
+        self, model: Union[str, PathLike], *, capture_stan_prints: bool = True
+    ):
         windows_dll_path_setup()
         # TODO dllist warning
 
+        model = fspath(model)
         if model.endswith(".stan"):
             libname = model[:-5] + "_model.so"
             subprocess.run(["make", libname])

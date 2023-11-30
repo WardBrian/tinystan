@@ -25,7 +25,7 @@ def temp_json():
 def model_fixture(name):
     @pytest.fixture(scope="module", name=f"{name}_model")
     def fix():
-        yield ffistan.FFIStanModel(str(STAN_FOLDER / name / f"{name}_model.so"))
+        yield ffistan.FFIStanModel(STAN_FOLDER / name / f"{name}_model.so")
 
     return fix
 
