@@ -2,6 +2,7 @@ import contextlib
 import ctypes
 import subprocess
 import sys
+from calendar import c
 from enum import Enum
 from os import PathLike, fspath
 from typing import Any, Dict, Union
@@ -191,6 +192,8 @@ class FFIStanModel:
             ctypes.c_int,  # num_iterations
             ctypes.c_int,  # num_elbo_draws
             ctypes.c_int,  # num_multi_draws
+            ctypes.c_bool,  # calculate_lp
+            ctypes.c_bool,  # psis_resample
             ctypes.c_int,  # refresh
             ctypes.c_int,  # num_threads
             double_array,  # output samples
@@ -418,6 +421,8 @@ class FFIStanModel:
         num_iterations=1000,
         num_elbo_draws=100,
         num_multi_draws=1000,
+        calculate_lp=True,
+        psis_resample=True,
         refresh=0,
         num_threads=-1,
     ):
@@ -428,7 +433,10 @@ class FFIStanModel:
         if num_multi_draws < 1:
             raise ValueError("num_multi_draws must be at least 1")
 
-        output_size = num_draws if num_paths == 1 else num_multi_draws
+        if calculate_lp and psis_resample:
+            output_size = num_draws if num_paths == 1 else num_multi_draws
+        else:
+            output_size = num_draws * num_paths
 
         seed = seed or rand_u32()
 
@@ -461,6 +469,8 @@ class FFIStanModel:
                 num_iterations,
                 num_elbo_draws,
                 num_multi_draws,
+                calculate_lp,
+                psis_resample,
                 refresh,
                 num_threads,
                 out,

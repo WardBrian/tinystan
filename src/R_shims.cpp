@@ -63,13 +63,14 @@ FFISTAN_PUBLIC void ffistan_pathfinder_R(
     int* num_draws, int* max_history_size, double* init_alpha, double* tol_obj,
     double* tol_rel_obj, double* tol_grad, double* tol_rel_grad,
     double* tol_param, int* num_iterations, int* num_elbo_draws,
-    int* num_multi_draws, int* refresh, int* num_threads, double* out,
-    FFIStanError** err) {
+    int* num_multi_draws, int* calculate_lp, int* psis_resample, int* refresh,
+    int* num_threads, double* out, FFIStanError** err) {
   *return_code = ffistan_pathfinder(
       *model, *num_paths, *inits, *seed, *id, *init_radius, *num_draws,
       *max_history_size, *init_alpha, *tol_obj, *tol_rel_obj, *tol_grad,
       *tol_rel_grad, *tol_param, *num_iterations, *num_elbo_draws,
-      *num_multi_draws, *refresh, *num_threads, out, err);
+      *num_multi_draws, (*calculate_lp != 0), (*psis_resample != 0), *refresh,
+      *num_threads, out, err);
 }
 
 FFISTAN_PUBLIC void ffistan_optimize_R(

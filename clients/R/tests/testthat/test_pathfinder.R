@@ -20,6 +20,25 @@ test_that("output sizes are correct", {
         num_multi_draws = 99)
     expect_equal(posterior::ndraws(out2), 101)
 
+    out3 <- bernoulli_model$pathfinder(BERNOULLI_DATA, num_paths = 2, num_draws = 101,
+        num_multi_draws = 1, calculate_lp = FALSE)
+    expect_equal(posterior::ndraws(out3), 2 * 101)
+
+    out4 <- bernoulli_model$pathfinder(BERNOULLI_DATA, num_paths = 3, num_draws = 101,
+        num_multi_draws = 1, psis_resample = FALSE)
+    expect_equal(posterior::ndraws(out4), 3 * 101)
+})
+
+test_that("calculate_lp works", {
+    out <- bernoulli_model$pathfinder(BERNOULLI_DATA, num_paths = 2, calculate_lp = FALSE)
+
+    expect_gt(sum(is.nan(out$lp__)), 0)
+    expect_lt(sum(is.nan(out$lp__)), 2000)
+
+    out_single <- bernoulli_model$pathfinder(BERNOULLI_DATA, num_paths = 1, calculate_lp = FALSE)
+
+    expect_gt(sum(is.nan(out_single$lp__)), 0)
+    expect_lt(sum(is.nan(out_single$lp__)), 1000)
 })
 
 test_that("seed works", {
