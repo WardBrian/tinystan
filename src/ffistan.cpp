@@ -190,7 +190,8 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
                        double init_alpha, double tol_obj, double tol_rel_obj,
                        double tol_grad, double tol_rel_grad, double tol_param,
                        int num_iterations, int num_elbo_draws,
-                       int num_multi_draws, int refresh, int num_threads,
+                       int num_multi_draws, bool calculate_lp,
+                       bool psis_resample, int refresh, int num_threads,
                        double *out, FFIStanError **err) {
   FFISTAN_TRY_CATCH({
     // argument validation
@@ -231,7 +232,8 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
           model, *(json_inits[0]), seed, id, init_radius, max_history_size,
           init_alpha, tol_obj, tol_rel_obj, tol_grad, tol_rel_grad, tol_param,
           num_iterations, num_elbo_draws, num_draws, save_iterations, refresh,
-          interrupt, logger, null_writer, pathfinder_writer, dummy_json_writer);
+          interrupt, logger, null_writer, pathfinder_writer, dummy_json_writer,
+          calculate_lp);
     } else {
       std::vector<stan::callbacks::writer> null_writers(num_paths);
       std::vector<stan::callbacks::structured_writer> null_structured_writers(
@@ -242,7 +244,7 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
           num_iterations, num_elbo_draws, num_draws, num_multi_draws, num_paths,
           save_iterations, refresh, interrupt, logger, null_writers,
           null_writers, null_structured_writers, pathfinder_writer,
-          dummy_json_writer);
+          dummy_json_writer, calculate_lp, psis_resample);
     }
 
     if (return_code != 0) {

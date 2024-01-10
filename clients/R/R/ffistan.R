@@ -128,7 +128,7 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
     init_radius = 2, num_draws = 1000, max_history_size = 5, init_alpha = 0.001,
     tol_obj = 1e-12, tol_rel_obj = 10000, tol_grad = 1e-08, tol_rel_grad = 1e+07,
     tol_param = 1e-08, num_iterations = 1000, num_elbo_draws = 100, num_multi_draws = 1000,
-    refresh = 0, num_threads = -1) {
+    calculate_lp = TRUE, psis_resample = TRUE, refresh = 0, num_threads = -1) {
     if (num_draws < 1) {
         stop("num_draws must be at least 1")
     }
@@ -139,10 +139,14 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
         stop("num_multi_draws must be at least 1")
     }
 
-    if (num_paths == 1) {
-        num_output <- num_draws
+    if (calculate_lp && psis_resample) {
+        if (num_paths == 1) {
+            num_output <- num_draws
+        } else {
+            num_output <- num_multi_draws
+        }
     } else {
-        num_output <- num_multi_draws
+        num_output <- num_draws * num_paths
     }
     if (is.null(seed)) {
         seed <- as.integer(runif(1, min = 0, max = (2^31)))
@@ -163,8 +167,9 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
             as.integer(id), as.double(init_radius), as.integer(num_draws), as.integer(max_history_size),
             as.double(init_alpha), as.double(tol_obj), as.double(tol_rel_obj), as.double(tol_grad),
             as.double(tol_rel_grad), as.double(tol_param), as.integer(num_iterations),
-            as.integer(num_elbo_draws), as.integer(num_multi_draws), as.integer(refresh),
-            as.integer(num_threads), out = double(output_size), err = raw(8), PACKAGE = private$lib_name)
+            as.integer(num_elbo_draws), as.integer(num_multi_draws), as.integer(calculate_lp),
+            as.integer(psis_resample), as.integer(refresh), as.integer(num_threads),
+            out = double(output_size), err = raw(8), PACKAGE = private$lib_name)
         handle_error(vars$return_code, private$lib_name, vars$err)
 
         output_as_rvars(params, num_output, 1, vars$out)

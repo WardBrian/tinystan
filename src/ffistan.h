@@ -115,8 +115,9 @@ FFISTAN_PUBLIC int ffistan_pathfinder(
     unsigned int seed, unsigned int id, double init_radius, int num_draws,
     /* tuning params */ int max_history_size, double init_alpha, double tol_obj,
     double tol_rel_obj, double tol_grad, double tol_rel_grad, double tol_param,
-    int num_iterations, int num_elbo_draws, int num_multi_draws, int refresh,
-    int num_threads, double *out, FFIStanError **err);
+    int num_iterations, int num_elbo_draws, int num_multi_draws,
+    bool calculate_lp, bool psis_resample, int refresh, int num_threads,
+    double *out, FFIStanError **err);
 
 enum FFIStanOptimizationAlgorithm { newton = 0, bfgs = 1, lbfgs = 2 };
 

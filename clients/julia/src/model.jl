@@ -328,6 +328,8 @@ function pathfinder(
     num_iterations::Int = 1000,
     num_elbo_draws::Int = 100,
     num_multi_draws::Int = 1000,
+    calculate_lp::Bool = true,
+    psis_resample::Bool = true,
     refresh::Int = 0,
     num_threads::Int = -1,
 )
@@ -341,10 +343,15 @@ function pathfinder(
         error("num_multi_draws must be at least 1")
     end
 
-    num_output = if num_paths == 1
-        num_draws
+
+    num_output = if calculate_lp && psis_resample
+        if num_paths == 1
+            num_draws
+        else
+            num_multi_draws
+        end
     else
-        num_multi_draws
+        num_draws * num_paths
     end
 
     if seed === nothing
@@ -385,6 +392,8 @@ function pathfinder(
                 Cint,
                 Cint,
                 Cint,
+                Cint,
+                Cint,
                 Ref{Cdouble},
                 Ref{Ptr{Cvoid}},
             ),
@@ -405,6 +414,8 @@ function pathfinder(
             num_iterations,
             num_elbo_draws,
             num_multi_draws,
+            Int32(calculate_lp),
+            Int32(psis_resample),
             refresh,
             num_threads,
             out,

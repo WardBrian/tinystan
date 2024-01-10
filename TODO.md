@@ -6,6 +6,7 @@
 - [ ] Version checking
 - [ ] Fixed param sampler for 0 dimension parameters?
 - [ ] Add wrapper around generate quantities method?
+- [x] Pathfinder: expose the no lp/no PSIS version
 - [x] Add ability to interrupt the algorithms during runs (Ctrl+C)
     - probably tricky to do in a way that works for all languages
 - [x] Ability to output metric

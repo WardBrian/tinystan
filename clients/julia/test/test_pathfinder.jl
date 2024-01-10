@@ -32,6 +32,38 @@
         )
         @test size(draws2, 1) == 101
 
+        (_, draws3) = pathfinder(
+            bernoulli_model,
+            BERNOULLI_DATA,
+            num_paths = 2,
+            num_draws = 101,
+            num_multi_draws = 1,
+            calculate_lp = false,
+        )
+        @test size(draws3, 1) == 2 * 101
+
+
+        (_, draws4) = pathfinder(
+            bernoulli_model,
+            BERNOULLI_DATA,
+            num_paths = 3,
+            num_draws = 101,
+            num_multi_draws = 1,
+            psis_resample = false,
+        )
+        @test size(draws4, 1) == 3 * 101
+    end
+
+    @testset "Calculate LP" begin
+        (names, draws) =
+            pathfinder(bernoulli_model, BERNOULLI_DATA, num_paths = 2, calculate_lp = false)
+        @test sum(isnan.(draws[:, names.=="lp__"])) > 0
+        @test sum(isnan.(draws[:, names.=="lp__"])) < 2000
+
+        (names, draws_single) =
+            pathfinder(bernoulli_model, BERNOULLI_DATA, num_paths = 1, calculate_lp = false)
+        @test sum(isnan.(draws_single[:, names.=="lp__"])) > 0
+        @test sum(isnan.(draws_single[:, names.=="lp__"])) < 1000
     end
 
     @testset "Seed" begin

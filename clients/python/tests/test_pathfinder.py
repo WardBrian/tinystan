@@ -48,6 +48,38 @@ def test_output_sizes(bernoulli_model):
     )
     assert out2["theta"].shape == (101,)
 
+    out3 = bernoulli_model.pathfinder(
+        BERNOULLI_DATA,
+        num_paths=2,
+        num_draws=101,
+        num_multi_draws=1,
+        calculate_lp=False,
+    )
+
+    assert out3["theta"].shape == (2 * 101,)
+
+    out4 = bernoulli_model.pathfinder(
+        BERNOULLI_DATA,
+        num_paths=3,
+        num_draws=101,
+        num_multi_draws=1,
+        psis_resample=False,
+    )
+
+    assert out4["theta"].shape == (3 * 101,)
+
+
+def test_calculate_lp(bernoulli_model):
+    out = bernoulli_model.pathfinder(BERNOULLI_DATA, num_paths=2, calculate_lp=False)
+    assert np.sum(np.isnan(out["lp__"])) > 0
+    assert np.sum(np.isnan(out["lp__"])) < 2000  # some calculations still needed
+
+    out_single = bernoulli_model.pathfinder(
+        BERNOULLI_DATA, num_paths=1, calculate_lp=False
+    )
+    assert np.sum(np.isnan(out_single["lp__"])) > 0
+    assert np.sum(np.isnan(out_single["lp__"])) < 1000
+
 
 def test_inits(multimodal_model, temp_json):
     # well-separated mixture of gaussians

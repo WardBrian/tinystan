@@ -37,7 +37,7 @@ class buffer_writer : public stan::callbacks::writer {
   }
 
   // needed for pathfinder - transposed order per spec
-  void operator()(const Eigen::MatrixXd &m) override {
+  void operator()(const Eigen::Ref<Eigen::Matrix<double, -1, -1>> &m) override {
     // copy into buffer
     Eigen::MatrixXd mT = m.transpose();
     Eigen::Map<Eigen::MatrixXd>(buf + pos, mT.rows(), mT.cols()) = mT;
