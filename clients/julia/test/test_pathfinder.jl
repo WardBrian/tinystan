@@ -28,30 +28,40 @@
             BERNOULLI_DATA,
             num_paths = 1,
             num_draws = 101,
-            num_multi_draws = 99,
+            num_multi_draws = 103,
         )
-        @test size(draws2, 1) == 101
+        @test size(draws2, 1) == 103
 
         (_, draws3) = pathfinder(
             bernoulli_model,
             BERNOULLI_DATA,
             num_paths = 2,
-            num_draws = 101,
+            num_draws = 105,
             num_multi_draws = 1,
             calculate_lp = false,
         )
-        @test size(draws3, 1) == 2 * 101
+        @test size(draws3, 1) == 2 * 105
 
 
         (_, draws4) = pathfinder(
             bernoulli_model,
             BERNOULLI_DATA,
             num_paths = 3,
-            num_draws = 101,
+            num_draws = 107,
             num_multi_draws = 1,
             psis_resample = false,
         )
-        @test size(draws4, 1) == 3 * 101
+        @test size(draws4, 1) == 3 * 107
+
+        (_, draws5) = pathfinder(
+            bernoulli_model,
+            BERNOULLI_DATA,
+            num_paths = 1,
+            num_draws = 109,
+            num_multi_draws = 1,
+            psis_resample = false,
+        )
+        @test size(draws5, 1) == 109
     end
 
     @testset "Calculate LP" begin

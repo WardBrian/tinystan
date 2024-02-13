@@ -140,11 +140,7 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
     }
 
     if (calculate_lp && psis_resample) {
-        if (num_paths == 1) {
-            num_output <- num_draws
-        } else {
-            num_output <- num_multi_draws
-        }
+        num_output <- num_multi_draws
     } else {
         num_output <- num_draws * num_paths
     }

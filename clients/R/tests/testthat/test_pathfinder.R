@@ -17,16 +17,20 @@ test_that("output sizes are correct", {
     expect_equal(posterior::ndraws(out1), 99)
 
     out2 <- bernoulli_model$pathfinder(BERNOULLI_DATA, num_paths = 1, num_draws = 101,
-        num_multi_draws = 99)
-    expect_equal(posterior::ndraws(out2), 101)
+        num_multi_draws = 103)
+    expect_equal(posterior::ndraws(out2), 103)
 
-    out3 <- bernoulli_model$pathfinder(BERNOULLI_DATA, num_paths = 2, num_draws = 101,
+    out3 <- bernoulli_model$pathfinder(BERNOULLI_DATA, num_paths = 2, num_draws = 105,
         num_multi_draws = 1, calculate_lp = FALSE)
-    expect_equal(posterior::ndraws(out3), 2 * 101)
+    expect_equal(posterior::ndraws(out3), 2 * 105)
 
-    out4 <- bernoulli_model$pathfinder(BERNOULLI_DATA, num_paths = 3, num_draws = 101,
+    out4 <- bernoulli_model$pathfinder(BERNOULLI_DATA, num_paths = 3, num_draws = 107,
         num_multi_draws = 1, psis_resample = FALSE)
-    expect_equal(posterior::ndraws(out4), 3 * 101)
+    expect_equal(posterior::ndraws(out4), 3 * 107)
+
+    out5 <- bernoulli_model$pathfinder(BERNOULLI_DATA, num_paths = 1, num_draws = 109,
+        num_multi_draws = 1, psis_resample = FALSE)
+    expect_equal(posterior::ndraws(out5), 109)
 })
 
 test_that("calculate_lp works", {

@@ -438,7 +438,7 @@ class FFIStanModel:
             raise ValueError("num_multi_draws must be at least 1")
 
         if calculate_lp and psis_resample:
-            output_size = num_draws if num_paths == 1 else num_multi_draws
+            output_size = num_multi_draws
         else:
             output_size = num_draws * num_paths
 

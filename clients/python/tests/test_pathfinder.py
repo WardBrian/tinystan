@@ -44,29 +44,40 @@ def test_output_sizes(bernoulli_model):
     assert out1["theta"].shape == (99,)
 
     out2 = bernoulli_model.pathfinder(
-        BERNOULLI_DATA, num_paths=1, num_draws=101, num_multi_draws=99
+        BERNOULLI_DATA, num_paths=1, num_draws=103, num_multi_draws=104
     )
-    assert out2["theta"].shape == (101,)
+    assert out2["theta"].shape == (104,)
 
     out3 = bernoulli_model.pathfinder(
         BERNOULLI_DATA,
         num_paths=2,
-        num_draws=101,
+        num_draws=105,
         num_multi_draws=1,
         calculate_lp=False,
     )
 
-    assert out3["theta"].shape == (2 * 101,)
+    assert out3["theta"].shape == (2 * 105,)
 
     out4 = bernoulli_model.pathfinder(
         BERNOULLI_DATA,
         num_paths=3,
-        num_draws=101,
+        num_draws=107,
         num_multi_draws=1,
         psis_resample=False,
     )
 
-    assert out4["theta"].shape == (3 * 101,)
+    assert out4["theta"].shape == (3 * 107,)
+
+    out5 = bernoulli_model.pathfinder(
+        BERNOULLI_DATA,
+        num_paths=1,
+        num_draws=109,
+        num_multi_draws=1,
+        psis_resample=False,
+    )
+
+    assert out5["theta"].shape == (109,)
+
 
 
 def test_calculate_lp(bernoulli_model):

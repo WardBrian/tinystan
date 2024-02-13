@@ -347,11 +347,7 @@ function pathfinder(
 
 
     num_output = if calculate_lp && psis_resample
-        if num_paths == 1
-            num_draws
-        else
-            num_multi_draws
-        end
+        num_multi_draws
     else
         num_draws * num_paths
     end

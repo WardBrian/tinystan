@@ -232,7 +232,7 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
 
     int return_code = 0;
 
-    if (num_paths == 1) {
+    if (num_paths == 1 && psis_resample == false) {
       stan::callbacks::writer null_writer;
       return_code = stan::services::pathfinder::pathfinder_lbfgs_single(
           model, *(json_inits[0]), seed, id, init_radius, max_history_size,
