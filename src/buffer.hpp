@@ -128,11 +128,11 @@ using var_ctx_ptr = std::unique_ptr<stan::io::var_context>;
 var_ctx_ptr default_metric(size_t num_params, FFIStanMetric metric_choice) {
   switch (metric_choice) {
     case (FFIStanMetric::dense):
-      return var_ctx_ptr(new stan::io::dump(
+      return var_ctx_ptr(new stan::io::array_var_context(
           stan::services::util::create_unit_e_dense_inv_metric(num_params)));
 
     case (FFIStanMetric::diagonal):
-      return var_ctx_ptr(new stan::io::dump(
+      return var_ctx_ptr(new stan::io::array_var_context(
           stan::services::util::create_unit_e_diag_inv_metric(num_params)));
 
     default:
