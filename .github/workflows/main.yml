@@ -169,8 +169,8 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           cd clients/R
-          Rscript -e 'install.packages(getwd(), repos=NULL, type=\"source\")'
-          Rscript -e 'devtools::test(reporter = c(\"summary\", \"fail\"))'
+          Rscript -e 'install.packages(getwd(), repos=NULL, type="source")'
+          Rscript -e 'devtools::test(reporter = c("summary", "fail"))'
 
       - name: Run example
         run: |
