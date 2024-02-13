@@ -108,7 +108,7 @@ FFISTAN_PUBLIC int ffistan_sample(
     double kappa, double t0, unsigned int init_buffer, unsigned int term_buffer,
     unsigned int window, bool save_warmup, double stepsize,
     double stepsize_jitter, int max_depth, int refresh, int num_threads,
-    double *out, double *metric_out, FFIStanError **err);
+    double *out, size_t out_size, double *metric_out, FFIStanError **err);
 
 FFISTAN_PUBLIC int ffistan_pathfinder(
     const FFIStanModel *ffimodel, size_t num_paths, const char *inits,
@@ -117,7 +117,7 @@ FFISTAN_PUBLIC int ffistan_pathfinder(
     double tol_rel_obj, double tol_grad, double tol_rel_grad, double tol_param,
     int num_iterations, int num_elbo_draws, int num_multi_draws,
     bool calculate_lp, bool psis_resample, int refresh, int num_threads,
-    double *out, FFIStanError **err);
+    double *out, size_t out_size, FFIStanError **err);
 
 enum FFIStanOptimizationAlgorithm { newton = 0, bfgs = 1, lbfgs = 2 };
 
@@ -127,7 +127,8 @@ FFISTAN_PUBLIC int ffistan_optimize(
     int num_iterations, bool jacobian,
     /* tuning params */ int max_history_size, double init_alpha, double tol_obj,
     double tol_rel_obj, double tol_grad, double tol_rel_grad, double tol_param,
-    int refresh, int num_threads, double *out, FFIStanError **err);
+    int refresh, int num_threads, double *out, size_t out_size,
+    FFIStanError **err);
 
 /**
  * Get the error message from an error object.

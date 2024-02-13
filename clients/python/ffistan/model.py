@@ -168,6 +168,7 @@ class FFIStanModel:
             ctypes.c_int,  # refresh
             ctypes.c_int,  # num_threads
             double_array,
+            ctypes.c_size_t,  # buffer size
             nullable_double_array,  # metric out
             err_ptr,
         ]
@@ -197,6 +198,7 @@ class FFIStanModel:
             ctypes.c_int,  # refresh
             ctypes.c_int,  # num_threads
             double_array,  # output samples
+            ctypes.c_size_t,  # buffer size
             err_ptr,
         ]
 
@@ -221,6 +223,7 @@ class FFIStanModel:
             ctypes.c_int,  # refresh
             ctypes.c_int,  # num_threads
             double_array,
+            ctypes.c_size_t,  # buffer size
             err_ptr,
         ]
 
@@ -391,6 +394,7 @@ class FFIStanModel:
                 refresh,
                 num_threads,
                 out,
+                out.size,
                 metric_out,
                 err,
             )
@@ -474,6 +478,7 @@ class FFIStanModel:
                 refresh,
                 num_threads,
                 out,
+                out.size,
                 err,
             )
             self._raise_for_error(rc, err)
@@ -532,6 +537,7 @@ class FFIStanModel:
                 refresh,
                 num_threads,
                 out,
+                out.size,
                 err,
             )
             self._raise_for_error(rc, err)

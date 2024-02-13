@@ -62,8 +62,8 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
                    unsigned int init_buffer, unsigned int term_buffer,
                    unsigned int window, bool save_warmup, double stepsize,
                    double stepsize_jitter, int max_depth, int refresh,
-                   int num_threads, double *out, double *metric_out,
-                   FFIStanError **err) {
+                   int num_threads, double *out, size_t out_size,
+                   double *metric_out, FFIStanError **err) {
   FFISTAN_TRY_CATCH({
     error::check_positive("num_chains", num_chains);
     error::check_positive("id", id);
@@ -89,11 +89,17 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
     // all HMC has 7 algorithm params
     int num_params = ffimodel->num_params + 7;
     int draws_offset = num_params * (num_samples + num_warmup * save_warmup);
+    if (out_size < num_chains * draws_offset) {
+      std::stringstream ss;
+      ss << "Output buffer too small. Expected at least " << num_chains
+         << " chains of " << draws_offset << " doubles, got " << out_size;
+      throw std::runtime_error(ss.str());
+    }
 
     std::vector<io::buffer_writer> sample_writers;
     sample_writers.reserve(num_chains);
     for (size_t i = 0; i < num_chains; ++i) {
-      sample_writers.emplace_back(out + draws_offset * i);
+      sample_writers.emplace_back(out + draws_offset * i, draws_offset);
     }
 
     std::vector<io::metric_buffer_writer> metric_writers;
@@ -192,7 +198,7 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
                        int num_iterations, int num_elbo_draws,
                        int num_multi_draws, bool calculate_lp,
                        bool psis_resample, int refresh, int num_threads,
-                       double *out, FFIStanError **err) {
+                       double *out, size_t out_size, FFIStanError **err) {
   FFISTAN_TRY_CATCH({
     // argument validation
     error::check_positive("num_paths", num_paths);
@@ -216,7 +222,7 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
 
     auto &model = *ffimodel->model;
 
-    io::buffer_writer pathfinder_writer(out);
+    io::buffer_writer pathfinder_writer(out, out_size);
     error::error_logger logger(refresh != 0);
 
     interrupt::ffistan_interrupt_handler interrupt;
@@ -266,7 +272,7 @@ int ffistan_optimize(const FFIStanModel *ffimodel, const char *init,
                      /* tuning params */ int max_history_size,
                      double init_alpha, double tol_obj, double tol_rel_obj,
                      double tol_grad, double tol_rel_grad, double tol_param,
-                     int refresh, int num_threads, double *out,
+                     int refresh, int num_threads, double *out, size_t out_size,
                      FFIStanError **err) {
   FFISTAN_TRY_CATCH({
     error::check_positive("id", id);
@@ -289,7 +295,7 @@ int ffistan_optimize(const FFIStanModel *ffimodel, const char *init,
 
     auto json_init = io::load_data(init);
     auto &model = *ffimodel->model;
-    io::buffer_writer sample_writer(out);
+    io::buffer_writer sample_writer(out, out_size);
     error::error_logger logger(refresh != 0);
 
     interrupt::ffistan_interrupt_handler interrupt;

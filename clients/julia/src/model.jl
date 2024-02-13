@@ -266,6 +266,7 @@ function sample(
                 Cint,
                 Cint,
                 Ref{Cdouble},
+                Csize_t,
                 Ptr{Cdouble},
                 Ref{Ptr{Cvoid}},
             ),
@@ -294,6 +295,7 @@ function sample(
             refresh,
             num_threads,
             out,
+            length(out),
             metric_out,
             err,
         )
@@ -395,6 +397,7 @@ function pathfinder(
                 Cint,
                 Cint,
                 Ref{Cdouble},
+                Csize_t,
                 Ref{Ptr{Cvoid}},
             ),
             model_ptr,
@@ -419,6 +422,7 @@ function pathfinder(
             refresh,
             num_threads,
             out,
+            length(out),
             err,
         )
         raise_for_error(model.lib, return_code, err)
@@ -480,6 +484,7 @@ function optimize(
                 Cint,
                 Cint,
                 Ref{Cdouble},
+                Csize_t,
                 Ref{Ptr{Cvoid}},
             ),
             model_ptr,
@@ -504,6 +509,7 @@ function optimize(
             refresh,
             num_threads,
             out,
+            length(out),
             err,
         )
         raise_for_error(model.lib, return_code, err)

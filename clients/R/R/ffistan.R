@@ -105,8 +105,8 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
             as.double(t0), as.integer(init_buffer), as.integer(term_buffer), as.integer(window),
             as.logical(save_warmup), as.double(stepsize), as.double(stepsize_jitter),
             as.integer(max_depth), as.integer(refresh), as.integer(num_threads),
-            out = double(output_size), save_metric = as.logical(save_metric), metric = double(metric_size),
-            err = raw(8), PACKAGE = private$lib_name)
+            out = double(output_size), as.integer(output_size), save_metric = as.logical(save_metric),
+            metric = double(metric_size), err = raw(8), PACKAGE = private$lib_name)
         handle_error(vars$return_code, private$lib_name, vars$err)
         # reshape the output matrix
         out <- output_as_rvars(params, num_draws, num_chains, vars$out)
@@ -169,7 +169,7 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
             as.double(tol_rel_grad), as.double(tol_param), as.integer(num_iterations),
             as.integer(num_elbo_draws), as.integer(num_multi_draws), as.integer(calculate_lp),
             as.integer(psis_resample), as.integer(refresh), as.integer(num_threads),
-            out = double(output_size), err = raw(8), PACKAGE = private$lib_name)
+            out = double(output_size), as.integer(output_size), err = raw(8), PACKAGE = private$lib_name)
         handle_error(vars$return_code, private$lib_name, vars$err)
 
         output_as_rvars(params, num_output, 1, vars$out)
@@ -194,7 +194,7 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
             as.integer(max_history_size), as.double(init_alpha), as.double(tol_obj),
             as.double(tol_rel_obj), as.double(tol_grad), as.double(tol_rel_grad),
             as.double(tol_param), as.integer(refresh), as.integer(num_threads), out = double(output_size),
-            err = raw(8), PACKAGE = private$lib_name)
+            as.integer(output_size), err = raw(8), PACKAGE = private$lib_name)
         handle_error(vars$return_code, private$lib_name, vars$err)
 
         output_as_rvars(params, 1, 1, vars$out)

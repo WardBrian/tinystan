@@ -8,6 +8,7 @@
 #include <stan/services/util/create_unit_e_dense_inv_metric.hpp>
 #include <stan/services/util/create_unit_e_diag_inv_metric.hpp>
 #include <stan/io/var_context.hpp>
+#include <stan/io/array_var_context.hpp>
 #include <stan/io/empty_var_context.hpp>
 
 #include <vector>
@@ -20,17 +21,23 @@ namespace io {
 
 /*
  * Shim between the Stan callbacks that are used for outputting
- * and the simple buffer interface we provide. These do _not_ perform any bounds
- * checking, it is assumed the interface code properly sized the buffer.
+ * and the simple buffer interface we provide.
+ * Bounds checking is primarily for debugging and can be disabled
+ * by defining `FFISTAN_NO_BOUNDS_CHECK` at compile time.
  */
 
 class buffer_writer : public stan::callbacks::writer {
  public:
-  buffer_writer(double *buf) : buf(buf), pos(0){};
+  buffer_writer(double *buf, size_t max) : buf(buf), pos(0), size(max){};
   virtual ~buffer_writer(){};
 
   // primary way of writing draws
   void operator()(const std::vector<double> &v) override {
+#ifndef FFISTAN_NO_BOUNDS_CHECK
+    if (pos + v.size() > size) {
+      throw std::runtime_error("Buffer overflow");
+    }
+#endif
     for (auto d : v) {
       buf[pos++] = d;
     }
@@ -38,6 +45,11 @@ class buffer_writer : public stan::callbacks::writer {
 
   // needed for pathfinder - transposed order per spec
   void operator()(const Eigen::Ref<Eigen::Matrix<double, -1, -1>> &m) override {
+#ifndef FFISTAN_NO_BOUNDS_CHECK
+    if (pos + m.size() > size) {
+      throw std::runtime_error("Buffer overflow");
+    }
+#endif
     // copy into buffer
     Eigen::MatrixXd mT = m.transpose();
     Eigen::Map<Eigen::MatrixXd>(buf + pos, mT.rows(), mT.cols()) = mT;
@@ -49,6 +61,7 @@ class buffer_writer : public stan::callbacks::writer {
  private:
   double *buf;
   size_t pos;
+  size_t size;
 };
 
 class metric_buffer_writer : public stan::callbacks::structured_writer {
