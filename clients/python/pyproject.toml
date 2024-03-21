@@ -16,7 +16,7 @@ classifiers = [
 dynamic = ["version"]
 
 [tool.setuptools.dynamic]
-version = { attr = "ffistan.__version__" }
+version = { attr = "ffistan.__version.__version__" }
 
 [tool.setuptools]
 packages = ["ffistan"]
