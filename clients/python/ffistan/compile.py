@@ -133,7 +133,7 @@ def compile_model(
         )
 
         raise RuntimeError(error)
-    return output
+    return os.fspath(output)
 
 
 def windows_dll_path_setup() -> None:
