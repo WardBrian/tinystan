@@ -52,7 +52,7 @@ jobs:
       - name: Update Julia artifact
         if: ${{ !inputs.is_rerun }}
         run: |
-          julia ./julia/updateArtifacts.jl tinystan-${{ inputs.new_version }}.tar.gz "v${{ inputs.new_version }}"
+          julia ./clients/julia/updateArtifacts.jl tinystan-${{ inputs.new_version }}.tar.gz "v${{ inputs.new_version }}"
 
       - name: Setup git identity
         run: |
