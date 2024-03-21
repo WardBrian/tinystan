@@ -78,6 +78,13 @@ def test_output_sizes(bernoulli_model):
 
     assert out5["theta"].shape == (109,)
 
+    # currently Stan bug https://github.com/stan-dev/stan/issues/3268
+    # out4 = bernoulli_model.pathfinder(
+    #     BERNOULLI_DATA,
+    #     num_paths=1,
+    #     num_draws=1,
+    #     psis_resample=False,
+    # )
 
 
 def test_calculate_lp(bernoulli_model):

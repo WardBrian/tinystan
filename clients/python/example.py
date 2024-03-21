@@ -1,7 +1,7 @@
 import ffistan
 
 if __name__ == "__main__":
-    model = ffistan.FFIStanModel("./test_models/bernoulli/bernoulli.stan")
+    model = ffistan.Model("./test_models/bernoulli/bernoulli.stan")
     data = "./test_models/bernoulli/bernoulli.data.json"
 
     pf = model.pathfinder(data)

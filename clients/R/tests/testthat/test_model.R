@@ -3,7 +3,7 @@ stan_folder <- file.path("..", "..", "..", "..", "test_models")
 bernoulli_file <- file.path(stan_folder, "bernoulli", "bernoulli_model.so")
 
 test_that("model loads", {
-    suppressWarnings(model <- FFIStanModel$new(bernoulli_file))
+    suppressWarnings(model <- StanModel$new(bernoulli_file))
 
     expect_true(!is.null(model))
 })

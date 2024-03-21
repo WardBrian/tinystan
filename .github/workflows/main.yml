@@ -49,13 +49,13 @@ jobs:
       - name: Build test models (Unix)
         if: matrix.os != 'windows-latest' && steps.test-models.outputs.cache-hit != 'true'
         run: |
-          make O=2 test_models -j2
+          make O=2 test_models -j4
         shell: bash
 
       - name: Build test models (Windows)
         if: matrix.os == 'windows-latest' && steps.test-models.outputs.cache-hit != 'true'
         run: |
-          mingw32-make.exe O=2 test_models -j2
+          mingw32-make.exe O=2 test_models -j4
         shell: pwsh
 
   python:
@@ -151,30 +151,28 @@ jobs:
           path: ./test_models/
           key: ${{ hashFiles('**/*.stan', 'src/*', 'stan/src/stan/version.hpp', 'Makefile') }}-${{ matrix.os }}-v${{ env.CACHE_VERSION }}
 
-      # needed for R tests until they have compilation utilities and can set this themselves.
-      - name: Set up TBB
-        if: matrix.os == 'windows-latest'
-        run: |
-          Add-Content $env:GITHUB_PATH "$(pwd)/stan/lib/stan_math/lib/tbb"
-
       - name: Run tests
         if: matrix.os != 'windows-latest'
         run: |
           cd clients/R
           Rscript -e "install.packages(getwd(), repos=NULL, type=\"source\")"
           Rscript -e "devtools::test(reporter = c(\"summary\", \"fail\"))"
-
+          Rscript example.R
+        env:
+          FFISTAN: ${{ github.workspace }}
 
       - name: Run tests (windows)
         if: matrix.os == 'windows-latest'
         run: |
           cd clients/R
-          Rscript -e 'install.packages(getwd(), repos=NULL, type="source")'
           Rscript -e 'devtools::test(reporter = c("summary", "fail"))'
-
-      - name: Run example
-        run: |
-          Rscript clients/R/example.R
+          if (!$LASTEXITCODE.Equals(0)) {exit $LASTEXITCODE}
+          Rscript -e 'install.packages(getwd(), repos=NULL, type="source")'
+          if (!$LASTEXITCODE.Equals(0)) {exit $LASTEXITCODE}
+          Rscript example.R
+          if (!$LASTEXITCODE.Equals(0)) {exit $LASTEXITCODE}
+        env:
+          FFISTAN: ${{ github.workspace }}
 
   julia:
     needs: [build]
@@ -214,8 +212,6 @@ jobs:
           cd clients/julia/
           julia --project=. -e "using Pkg; Pkg.instantiate()"
           julia --project=. -e "using FFIStan"
-        env:
-          FFISTAN: ${{ github.workspace }}
 
       - name: Run tests
         run: |

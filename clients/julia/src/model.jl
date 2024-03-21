@@ -27,19 +27,31 @@ const OPTIMIZE_VARIABLES = ["lp__"]
 
 const exceptions = [ErrorException, ArgumentError, _ -> InterruptException()]
 
-mutable struct FFIStanModel
+mutable struct Model
     lib::Ptr{Nothing}
     const sep::Char
 
-    function FFIStanModel(model::String)
+    function Model(
+        model::String;
+        stanc_args::AbstractVector{String} = String[],
+        make_args::AbstractVector{String} = String[],
+        warn::Bool = true,
+    )
         if endswith(model, ".stan")
-            libname = model[1:end-5] * "_model.so"
-            run(`make $libname`)
-            lib = Libc.Libdl.dlopen(libname)
+            libname = compile_model(model; stanc_args, make_args)
         else
-            lib = Libc.Libdl.dlopen(model)
+            libname = model
         end
 
+        if warn && in(abspath(libname), Libc.Libdl.dllist())
+            @warn "Loading a shared object '" *
+                  libname *
+                  "' which is already loaded.\n" *
+                  "If the file has changed since the last time it was loaded, this load may not update the library!"
+        end
+
+        windows_dll_path_setup()
+        lib = Libc.Libdl.dlopen(libname)
         sep = Char(ccall(Libc.Libdl.dlsym(lib, :ffistan_separator_char), Cchar, ()))
 
         new(lib, sep)
@@ -85,7 +97,7 @@ function encode_inits(sep::Char, inits::Union{String,Vector{String},Nothing})
     end
 end
 
-function with_model(f, model::FFIStanModel, data::String, seed::UInt32)
+function with_model(f, model::Model, data::String, seed::UInt32)
     err = Ref{Ptr{Cvoid}}()
     model_ptr = ccall(
         Libc.Libdl.dlsym(model.lib, :ffistan_create_model),
@@ -110,7 +122,7 @@ function with_model(f, model::FFIStanModel, data::String, seed::UInt32)
     end
 end
 
-function num_free_params(model::FFIStanModel, model_ptr::Ptr{Cvoid})
+function num_free_params(model::Model, model_ptr::Ptr{Cvoid})
     Int(
         ccall(
             Libc.Libdl.dlsym(model.lib, :ffistan_model_num_free_params),
@@ -121,7 +133,7 @@ function num_free_params(model::FFIStanModel, model_ptr::Ptr{Cvoid})
     )
 end
 
-function get_names(model::FFIStanModel, model_ptr::Ptr{Cvoid})
+function get_names(model::Model, model_ptr::Ptr{Cvoid})
     cstr = ccall(
         Libc.Libdl.dlsym(model.lib, :ffistan_model_param_names),
         Cstring,
@@ -135,7 +147,7 @@ function get_names(model::FFIStanModel, model_ptr::Ptr{Cvoid})
     string.(split(unsafe_string(cstr), ','))
 end
 
-function api_version(model::FFIStanModel)
+function api_version(model::Model)
     major, minor, patch = Ref{Cint}(), Ref{Cint}(), Ref{Cint}()
     cstr = ccall(
         Libc.Libdl.dlsym(model.lib, :ffistan_api_version),
@@ -151,7 +163,7 @@ end
 # algorithms
 
 function sample(
-    model::FFIStanModel,
+    model::Model,
     data::String = "",
     ;
     num_chains::Int = 4,
@@ -311,7 +323,7 @@ function sample(
 end
 
 function pathfinder(
-    model::FFIStanModel,
+    model::Model,
     data::String = "",
     ;
     num_paths::Int = 4,
@@ -428,7 +440,7 @@ function pathfinder(
 end
 
 function optimize(
-    model::FFIStanModel,
+    model::Model,
     data::String = "",
     ;
     init::Union{String,Nothing} = nothing,

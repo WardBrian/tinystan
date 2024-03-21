@@ -1,7 +1,7 @@
 using Statistics
 using FFIStan
 
-model = FFIStanModel("./test_models/bernoulli/bernoulli.stan")
+model = Model("./test_models/bernoulli/bernoulli.stan")
 data = "./test_models/bernoulli/bernoulli.data.json"
 
 param_names, draws = sample(model, data)
