@@ -1,11 +1,12 @@
 # TODO items
 
 ## Features
-- [ ] Add nicer ability to build models from source in the languages
-    - [ ] download source if needed, similar to bridgestan
+- [x] Add nicer ability to build models from source in the languages
+    - [x] download source if needed, similar to bridgestan
     - [ ] Version checking
 - [ ] Fixed param sampler for 0 dimension parameters?
 - [ ] Add wrapper around generate quantities method?
+- [ ] Add wraper around laplace sampling?
 - [x] Pathfinder: expose the no lp/no PSIS version
   - [x] Pathfinder: now change single-path behavior to run PSIS?
 - [x] Add ability to interrupt the algorithms during runs (Ctrl+C)
@@ -27,4 +28,5 @@
 
 ## Other
 - [x] Set up visibility such that all non-API symbols are hidden
+- [x] Rename
 - [ ] Look into cmake/clang-cl builds

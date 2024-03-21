@@ -37,6 +37,11 @@ mutable struct Model
         make_args::AbstractVector{String} = String[],
         warn::Bool = true,
     )
+
+        if !isfile(model)
+            throw(SystemError("File not found: $model"))
+        end
+
         if endswith(model, ".stan")
             libname = compile_model(model; stanc_args, make_args)
         else
