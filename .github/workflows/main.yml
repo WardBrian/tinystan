@@ -163,18 +163,22 @@ jobs:
           cd clients/R
           Rscript -e "install.packages(getwd(), repos=NULL, type=\"source\")"
           Rscript -e "devtools::test(reporter = c(\"summary\", \"fail\"))"
-
+          Rscript example.R
+        env:
+          BRIDGESTAN: ${{ github.workspace }}
 
       - name: Run tests (windows)
         if: matrix.os == 'windows-latest'
         run: |
           cd clients/R
-          Rscript -e 'install.packages(getwd(), repos=NULL, type="source")'
           Rscript -e 'devtools::test(reporter = c("summary", "fail"))'
-
-      - name: Run example
-        run: |
-          Rscript clients/R/example.R
+          if (!$LASTEXITCODE.Equals(0)) {exit $LASTEXITCODE}
+          Rscript -e 'install.packages(getwd(), repos=NULL, type="source")'
+          if (!$LASTEXITCODE.Equals(0)) {exit $LASTEXITCODE}
+          Rscript example.R
+          if (!$LASTEXITCODE.Equals(0)) {exit $LASTEXITCODE}
+        env:
+          FFISTAN: ${{ github.workspace }}
 
   julia:
     needs: [build]
@@ -214,8 +218,6 @@ jobs:
           cd clients/julia/
           julia --project=. -e "using Pkg; Pkg.instantiate()"
           julia --project=. -e "using FFIStan"
-        env:
-          FFISTAN: ${{ github.workspace }}
 
       - name: Run tests
         run: |
