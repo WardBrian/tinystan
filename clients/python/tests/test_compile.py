@@ -11,7 +11,7 @@ STAN_FOLDER = Path(__file__).parent.parent.parent.parent / "test_models"
 
 @mock.patch.dict(os.environ, {"TINYSTAN": ""})
 def test_download_tinystan():
-    tinystan.compile.get_tinystan_path(tinystan.compile.get_tinystan_path())
+    tinystan.compile.verify_tinystan_path(tinystan.compile.get_tinystan_path())
 
 
 def test_compile_good():
