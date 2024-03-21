@@ -23,6 +23,6 @@ data = Dict(
     ),
 )
 
-open("julia/Artifacts.toml", "w") do io
+open("clients/julia/Artifacts.toml", "w") do io
     TOML.print(io, data)
 end
