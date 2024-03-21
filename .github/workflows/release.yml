@@ -44,9 +44,6 @@ jobs:
           sed -i 's/#define TINYSTAN_MINOR .*/#define TINYSTAN_MINOR '"$(echo ${{ inputs.new_version }} | cut -d. -f2)"'/' src/version.hpp
           sed -i 's/#define TINYSTAN_PATCH .*/#define TINYSTAN_PATCH '"$(echo ${{ inputs.new_version }} | cut -d. -f3)"'/' src/version.hpp
 
-          cd docs/
-          python add_version.py "v${{ inputs.new_version }}"
-
       - name: Create tarball
         run: |
           tar --exclude-vcs --exclude='clients' -chzvf tinystan-${{ inputs.new_version }}.tar.gz --transform 's,^,tinystan-${{ inputs.new_version }}/,' *
@@ -111,11 +108,3 @@ jobs:
       #     sha: ${{ steps.commit.outputs.sha }}
       #     body: |
       #       @JuliaRegistrator register subdir=clients/julia
-
-  # docs:
-  #   name: Build release docs
-  #   needs: release
-  #   uses: roualdes/tinystan/.github/workflows/docs.yaml@main
-  #   with:
-  #     version: "v${{ inputs.new_version }}"
-  #   secrets: inherit
