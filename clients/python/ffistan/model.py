@@ -1,17 +1,19 @@
 import contextlib
 import ctypes
-import subprocess
 import sys
+import warnings
 from enum import Enum
 from os import PathLike, fspath
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Union
 
 import numpy as np
+from dllist import dllist
 from numpy.ctypeslib import ndpointer
 from stanio import dump_stan_json
 
-from .compile import windows_dll_path_setup
+from .compile import compile_model, windows_dll_path_setup
 from .output import StanOutput
+from .util import validate_readable
 
 
 def wrapped_ndptr(*args, **kwargs):
@@ -89,6 +91,7 @@ _exception_types = [RuntimeError, ValueError, KeyboardInterrupt]
 def encode_stan_json(data: Union[str, PathLike, Dict[str, Any]]) -> bytes:
     """Turn the provided data into something we can send to C++."""
     if isinstance(data, PathLike):
+        validate_readable(data)
         return fspath(data).encode()
     if isinstance(data, str):
         return data.encode()
@@ -99,20 +102,34 @@ def rand_u32():
     return np.random.randint(0, 2**32 - 1, dtype=np.uint32)
 
 
-class FFIStanModel:
+class Model:
     def __init__(
-        self, model: Union[str, PathLike], *, capture_stan_prints: bool = True
+        self,
+        model: Union[str, PathLike],
+        *,
+        capture_stan_prints: bool = True,
+        stanc_args: List[str] = [],
+        make_args: List[str] = [],
+        warn: bool = True,
     ):
         windows_dll_path_setup()
-        # TODO dllist warning
 
         model = fspath(model)
         if model.endswith(".stan"):
-            libname = model[:-5] + "_model.so"
-            subprocess.run(["make", libname])
-            self._lib = ctypes.CDLL(libname)
+            self.lib_path = compile_model(
+                model, stanc_args=stanc_args, make_args=make_args
+            )
         else:
-            self._lib = ctypes.CDLL(model)
+            self.lib_path = model
+
+        if warn and self.lib_path in dllist():
+            warnings.warn(
+                f"Loading a shared object {self.lib_path} that has already been loaded.\n"
+                "If the file has changed since the last time it was loaded, this load may "
+                "not update the library!"
+            )
+
+        self._lib = ctypes.CDLL(self.lib_path)
 
         self._create_model = self._lib.ffistan_create_model
         self._create_model.restype = ctypes.c_void_p

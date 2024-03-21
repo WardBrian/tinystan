@@ -12,7 +12,11 @@ OptimizationAlgorithm <- list(NEWTON = 0, BFGS = 1, LBFGS = 2)
 OPTIMIZATION_VARIABLES = c("lp__")
 
 #' @export
-FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(lib) {
+StanModel <- R6::R6Class("StanModel", public = list(initialize = function(lib, stanc_args = NULL,
+    make_args = NULL, warn = TRUE) {
+    if (tools::file_ext(lib) == "stan") {
+        lib <- compile_model(lib, stanc_args, make_args)
+    }
     if (.Platform$OS.type == "windows") {
         lib_old <- lib
         lib <- paste0(tools::file_path_sans_ext(lib), ".dll")
@@ -21,7 +25,7 @@ FFIStanModel <- R6::R6Class("FFIStanModel", public = list(initialize = function(
 
     private$lib <- tools::file_path_as_absolute(lib)
     private$lib_name <- tools::file_path_sans_ext(basename(lib))
-    if (is.loaded("ffistan_create_model_R", PACKAGE = private$lib_name)) {
+    if (warn && is.loaded("ffistan_create_model_R", PACKAGE = private$lib_name)) {
         warning(paste0("Loading a shared object '", lib, "' which is already loaded.\n",
             "If the file has changed since the last time it was loaded, this load may not update the library!"))
     }

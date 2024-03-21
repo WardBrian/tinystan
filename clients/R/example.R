@@ -1,6 +1,6 @@
 library(ffistan)
 
-model <- FFIStanModel$new("./test_models/bernoulli/bernoulli_model.so")
+model <- StanModel$new("./test_models/bernoulli/bernoulli_model.so")
 data <- "./test_models/bernoulli/bernoulli.data.json"
 
 fit <- model$sample(data)
