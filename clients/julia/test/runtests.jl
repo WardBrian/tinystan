@@ -18,8 +18,8 @@ const STAN_FOLDER = joinpath(@__DIR__, "..", "..", "..", "test_models")
     bernoulli_model = Model(joinpath(STAN_FOLDER, "bernoulli", "bernoulli_model.so"))
     BERNOULLI_DATA = "{\"N\": 10, \"y\": [0,1,0,0,0,0,0,0,0,1]}"
 
-    # include("test_model.jl")
-    # include("test_sample.jl")
-    # include("test_pathfinder.jl")
-    # include("test_optimize.jl")
+    include("test_model.jl")
+    include("test_sample.jl")
+    include("test_pathfinder.jl")
+    include("test_optimize.jl")
 end
