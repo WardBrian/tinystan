@@ -2,7 +2,6 @@ import contextlib
 import ctypes
 import subprocess
 import sys
-from calendar import c
 from enum import Enum
 from os import PathLike, fspath
 from typing import Any, Dict, Union

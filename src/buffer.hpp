@@ -35,7 +35,7 @@ class buffer_writer : public stan::callbacks::writer {
   void operator()(const std::vector<double> &v) override {
 #ifndef FFISTAN_NO_BOUNDS_CHECK
     if (pos + v.size() > size) {
-      throw std::runtime_error("Buffer overflow");
+      throw std::runtime_error("Buffer overflow. Please report a bug!");
     }
 #endif
     for (auto d : v) {
@@ -47,7 +47,7 @@ class buffer_writer : public stan::callbacks::writer {
   void operator()(const Eigen::Ref<Eigen::Matrix<double, -1, -1>> &m) override {
 #ifndef FFISTAN_NO_BOUNDS_CHECK
     if (pos + m.size() > size) {
-      throw std::runtime_error("Buffer overflow");
+      throw std::runtime_error("Buffer overflow. Please report a bug!");
     }
 #endif
     // copy into buffer

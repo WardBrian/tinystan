@@ -2,8 +2,8 @@
 
 ## Features
 - [ ] Add nicer ability to build models from source in the languages
-    - download source if needed, similar to bridgestan
-- [ ] Version checking
+    - [ ] download source if needed, similar to bridgestan
+    - [ ] Version checking
 - [ ] Fixed param sampler for 0 dimension parameters?
 - [ ] Add wrapper around generate quantities method?
 - [x] Pathfinder: expose the no lp/no PSIS version
