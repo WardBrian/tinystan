@@ -1,5 +1,5 @@
-#ifndef FFISTAN_BUFFER_HPP
-#define FFISTAN_BUFFER_HPP
+#ifndef TINYSTAN_BUFFER_HPP
+#define TINYSTAN_BUFFER_HPP
 
 #include <stan/math/prim/fun/Eigen.hpp>
 #include <stan/callbacks/writer.hpp>
@@ -16,14 +16,14 @@
 #include <stdexcept>
 #include <string>
 
-namespace ffistan {
+namespace tinystan {
 namespace io {
 
 /*
  * Shim between the Stan callbacks that are used for outputting
  * and the simple buffer interface we provide.
  * Bounds checking is primarily for debugging and can be disabled
- * by defining `FFISTAN_NO_BOUNDS_CHECK` at compile time.
+ * by defining `TINYSTAN_NO_BOUNDS_CHECK` at compile time.
  */
 
 class buffer_writer : public stan::callbacks::writer {
@@ -33,7 +33,7 @@ class buffer_writer : public stan::callbacks::writer {
 
   // primary way of writing draws
   void operator()(const std::vector<double> &v) override {
-#ifndef FFISTAN_NO_BOUNDS_CHECK
+#ifndef TINYSTAN_NO_BOUNDS_CHECK
     if (pos + v.size() > size) {
       throw std::runtime_error("Buffer overflow. Please report a bug!");
     }
@@ -45,7 +45,7 @@ class buffer_writer : public stan::callbacks::writer {
 
   // needed for pathfinder - transposed order per spec
   void operator()(const Eigen::Ref<Eigen::Matrix<double, -1, -1>> &m) override {
-#ifndef FFISTAN_NO_BOUNDS_CHECK
+#ifndef TINYSTAN_NO_BOUNDS_CHECK
     if (pos + m.size() > size) {
       throw std::runtime_error("Buffer overflow. Please report a bug!");
     }
@@ -96,8 +96,8 @@ class metric_buffer_writer : public stan::callbacks::structured_writer {
 class metric_buffer_reader : public stan::io::empty_var_context {
  public:
   metric_buffer_reader(const double *buf, size_t size,
-                       FFIStanMetric metric_choice)
-      : buf(buf), size(size), dense(metric_choice == FFIStanMetric::dense){};
+                       TinyStanMetric metric_choice)
+      : buf(buf), size(size), dense(metric_choice == TinyStanMetric::dense){};
   virtual ~metric_buffer_reader(){};
 
   bool contains_r(const std::string &name) const override {
@@ -138,13 +138,13 @@ class metric_buffer_reader : public stan::io::empty_var_context {
 
 using var_ctx_ptr = std::unique_ptr<stan::io::var_context>;
 
-var_ctx_ptr default_metric(size_t num_params, FFIStanMetric metric_choice) {
+var_ctx_ptr default_metric(size_t num_params, TinyStanMetric metric_choice) {
   switch (metric_choice) {
-    case (FFIStanMetric::dense):
+    case (TinyStanMetric::dense):
       return var_ctx_ptr(new stan::io::array_var_context(
           stan::services::util::create_unit_e_dense_inv_metric(num_params)));
 
-    case (FFIStanMetric::diagonal):
+    case (TinyStanMetric::diagonal):
       return var_ctx_ptr(new stan::io::array_var_context(
           stan::services::util::create_unit_e_diag_inv_metric(num_params)));
 
@@ -155,7 +155,7 @@ var_ctx_ptr default_metric(size_t num_params, FFIStanMetric metric_choice) {
 
 std::vector<var_ctx_ptr> make_metric_inits(size_t num_chains, const double *buf,
                                            size_t num_params,
-                                           FFIStanMetric metric_choice) {
+                                           TinyStanMetric metric_choice) {
   std::vector<var_ctx_ptr> metrics;
   metrics.reserve(num_chains);
   if (buf == nullptr) {
@@ -164,7 +164,7 @@ std::vector<var_ctx_ptr> make_metric_inits(size_t num_chains, const double *buf,
           std::move(default_metric(num_params, metric_choice)));
     }
   } else {
-    int metric_size = metric_choice == FFIStanMetric::dense
+    int metric_size = metric_choice == TinyStanMetric::dense
                           ? num_params * num_params
                           : num_params;
     for (size_t i = 0; i < num_chains; ++i) {
@@ -176,6 +176,6 @@ std::vector<var_ctx_ptr> make_metric_inits(size_t num_chains, const double *buf,
 }
 
 }  // namespace io
-}  // namespace ffistan
+}  // namespace tinystan
 
 #endif

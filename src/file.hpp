@@ -1,5 +1,5 @@
-#ifndef FFISTAN_FILE_HPP
-#define FFISTAN_FILE_HPP
+#ifndef TINYSTAN_FILE_HPP
+#define TINYSTAN_FILE_HPP
 
 #include <stan/io/ends_with.hpp>
 #include <stan/io/json/json_data.hpp>
@@ -12,7 +12,7 @@
 #include <fstream>
 #include <string>
 
-namespace ffistan {
+namespace tinystan {
 namespace io {
 
 using var_ctx_ptr = std::unique_ptr<stan::io::var_context>;
@@ -66,5 +66,5 @@ std::vector<var_ctx_ptr> load_inits(int num_chains, const char *inits_char) {
 }
 
 }  // namespace io
-}  // namespace ffistan
+}  // namespace tinystan
 #endif

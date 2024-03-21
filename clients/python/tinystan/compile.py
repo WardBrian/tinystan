@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import List, Union
 
 from .__version import __version__
-from .download import CURRENT_FFISTAN, HOME_FFISTAN, get_ffistan_src
+from .download import CURRENT_TINYSTAN, HOME_TINYSTAN, get_tinystan_src
 from .util import validate_readable
 
 IS_WINDOWS = platform.system() == "Windows"
@@ -17,61 +17,61 @@ MAKE = os.getenv(
 WINDOWS_PATH_SET = False
 
 
-def verify_ffistan_path(path: str) -> None:
+def verify_tinystan_path(path: str) -> None:
     folder = Path(path).resolve()
     if not folder.exists():
         raise ValueError(
-            f"FFIStan folder '{folder}' does not exist!\n"
-            "If you need to set a different location, call 'set_ffistan_path()'"
+            f"TinyStan folder '{folder}' does not exist!\n"
+            "If you need to set a different location, call 'set_tinystan_path()'"
         )
     makefile = folder / "Makefile"
     if not makefile.exists():
         raise ValueError(
-            f"FFIStan folder '{folder}' does not "
+            f"TinyStan folder '{folder}' does not "
             "contain file 'Makefile', please ensure it is built properly!\n"
-            "If you need to set a different location, call 'set_ffistan_path()'"
+            "If you need to set a different location, call 'set_tinystan_path()'"
         )
 
 
-def set_ffistan_path(path: str) -> None:
+def set_tinystan_path(path: str) -> None:
     """
-    Set the path to FFIStan.
+    Set the path to TinyStan.
 
     This should point to the top-level folder of the repository.
     """
     path = os.path.abspath(path)
-    verify_ffistan_path(path)
-    os.environ["FFISTAN"] = path
+    verify_tinystan_path(path)
+    os.environ["TINYSTAN"] = path
 
 
-def get_ffistan_path() -> str:
+def get_tinystan_path() -> str:
     """
-    Get the path to FFIStan.
+    Get the path to TinyStan.
 
     By default this is set to the value of the environment
-    variable ``FFISTAN``.
+    variable ``TINYSTAN``.
 
     If there is no path set, this function will download
-    a matching version of FFIStan to a folder called
-    ``.ffistan`` in the user's home directory.
+    a matching version of TinyStan to a folder called
+    ``.tinystan`` in the user's home directory.
 
-    See also :func:`set_ffistan_path`
+    See also :func:`set_tinystan_path`
     """
-    path = os.getenv("FFISTAN", "")
+    path = os.getenv("TINYSTAN", "")
     if path == "":
         try:
-            path = os.fspath(CURRENT_FFISTAN)
-            verify_ffistan_path(path)
+            path = os.fspath(CURRENT_TINYSTAN)
+            verify_tinystan_path(path)
         except ValueError:
             print(
-                "FFIStan not found at location specified by $FFISTAN "
+                "TinyStan not found at location specified by $TINYSTAN "
                 f"environment variable, downloading version {__version__} to {path}"
             )
-            get_ffistan_src()
-            num_files = len(list(HOME_FFISTAN.iterdir()))
+            get_tinystan_src()
+            num_files = len(list(HOME_TINYSTAN.iterdir()))
             if num_files >= 5:
                 warnings.warn(
-                    f"Found {num_files} different versions of FFIStan in {HOME_FFISTAN}. "
+                    f"Found {num_files} different versions of TinyStan in {HOME_TINYSTAN}. "
                     "Consider deleting old versions to save space."
                 )
             print("Done!")
@@ -91,11 +91,11 @@ def compile_model(
     make_args: List[str] = [],
 ) -> Path:
     """
-    Run FFIStan's Makefile on a ``.stan`` file, creating the ``.so``
+    Run TinyStan's Makefile on a ``.stan`` file, creating the ``.so``
     used by the StanModel class.
 
-    This function checks that the path to FFIStan is valid and will
-    error if not. This can be set with :func:`set_ffistan_path`.
+    This function checks that the path to TinyStan is valid and will
+    error if not. This can be set with :func:`set_tinystan_path`.
 
     :param stan_file: A path to a Stan model file.
     :param stanc_args: A list of arguments to pass to stanc3.
@@ -105,11 +105,11 @@ def compile_model(
         passed here will take precedent.
     :raises FileNotFoundError or PermissionError: If `stan_file` does not exist
         or is not readable.
-    :raises ValueError: If FFIStan cannot be located.
+    :raises ValueError: If TinyStan cannot be located.
     :raises RuntimeError: If compilation fails.
     """
     validate_readable(stan_file)
-    verify_ffistan_path(get_ffistan_path())
+    verify_tinystan_path(get_tinystan_path())
     file_path = Path(stan_file).resolve()
 
     if file_path.suffix != ".stan":
@@ -123,7 +123,7 @@ def compile_model(
         + [os.fspath(output)]
     )
     proc = subprocess.run(
-        cmd, cwd=get_ffistan_path(), capture_output=True, text=True, check=False
+        cmd, cwd=get_tinystan_path(), capture_output=True, text=True, check=False
     )
 
     if proc.returncode:
@@ -150,7 +150,7 @@ def windows_dll_path_setup() -> None:
             try:
                 tbb_path = os.path.abspath(
                     os.path.join(
-                        get_ffistan_path(), "stan", "lib", "stan_math", "lib", "tbb"
+                        get_tinystan_path(), "stan", "lib", "stan_math", "lib", "tbb"
                     )
                 )
                 os.environ["PATH"] = tbb_path + ";" + os.environ["PATH"]
@@ -158,7 +158,7 @@ def windows_dll_path_setup() -> None:
                 WINDOWS_PATH_SET = True
             except:
                 warnings.warn(
-                    "Unable to set path to TBB's DLL. Loading FFIStan models may fail. "
+                    "Unable to set path to TBB's DLL. Loading TinyStan models may fail. "
                     f"Tried path '{tbb_path}'",
                     RuntimeWarning,
                 )
@@ -181,7 +181,7 @@ def windows_dll_path_setup() -> None:
         except:
             # no default location
             warnings.warn(
-                "Unable to find MinGW's DLL location. Loading FFIStan models may fail.",
+                "Unable to find MinGW's DLL location. Loading TinyStan models may fail.",
                 RuntimeWarning,
             )
             WINDOWS_PATH_SET = False

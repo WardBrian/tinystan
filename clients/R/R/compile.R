@@ -2,51 +2,51 @@ IS_WINDOWS <- isTRUE(.Platform$OS.type == "windows")
 MAKE <- Sys.getenv("MAKE", ifelse(IS_WINDOWS, "mingw32-make", "make"))
 
 
-verify_ffistan_path <- function(path) {
+verify_tinystan_path <- function(path) {
     suppressWarnings({
         folder <- normalizePath(path)
     })
     if (!dir.exists(folder)) {
-        stop(paste0("FFIStan folder '", folder, "' does not exist!\n", "If you need to set a different location, call 'set_ffistan_path()'"))
+        stop(paste0("TinyStan folder '", folder, "' does not exist!\n", "If you need to set a different location, call 'set_tinystan_path()'"))
     }
     makefile <- file.path(folder, "Makefile")
     if (!file.exists(makefile)) {
-        stop(paste0("FFIStan folder '", folder, "' does not contain file 'Makefile',",
-            " please ensure it is built properly!\n", "If you need to set a different location, call 'set_ffistan_path()'"))
+        stop(paste0("TinyStan folder '", folder, "' does not contain file 'Makefile',",
+            " please ensure it is built properly!\n", "If you need to set a different location, call 'set_tinystan_path()'"))
     }
 }
 
-#' @title Function `set_ffistan_path()`
-#' @description Set the path to FFIStan.
+#' @title Function `set_tinystan_path()`
+#' @description Set the path to TinyStan.
 #' @details This should point to the top-level folder of the repository.
 #' @export
-set_ffistan_path <- function(path) {
-    verify_ffistan_path(path)
-    Sys.setenv(FFISTAN = normalizePath(path))
+set_tinystan_path <- function(path) {
+    verify_tinystan_path(path)
+    Sys.setenv(TINYSTAN = normalizePath(path))
 }
 
-#' Get the path to FFIStan.
+#' Get the path to TinyStan.
 #'
 #' By default this is set to the value of the environment
-#' variable `FFISTAN`.
+#' variable `TINYSTAN`.
 #'
 #' If there is no path set, this function will download
-#' a matching version of FFIStan to a folder called
-#' `.ffistan` in the user's home directory.
+#' a matching version of TinyStan to a folder called
+#' `.tinystan` in the user's home directory.
 #'
-#' @seealso [set_ffistan_path]
-get_ffistan_path <- function() {
+#' @seealso [set_tinystan_path]
+get_tinystan_path <- function() {
     # try to get from environment
-    path <- Sys.getenv("FFISTAN", unset = "")
+    path <- Sys.getenv("TINYSTAN", unset = "")
     if (path == "") {
-        path <- CURRENT_FFISTAN
+        path <- CURRENT_TINYSTAN
         tryCatch({
-            verify_ffistan_path(path)
+            verify_tinystan_path(path)
         }, error = function(e) {
-            print(paste0("FFIStan not found at location specified by $FFISTAN ",
-                "environment variable, downloading version ", packageVersion("ffistan"),
+            print(paste0("TinyStan not found at location specified by $TINYSTAN ",
+                "environment variable, downloading version ", packageVersion("tinystan"),
                 " to ", path))
-            get_ffistan_src()
+            get_tinystan_src()
         })
     }
 
@@ -56,10 +56,10 @@ get_ffistan_path <- function() {
 
 #' @title Function `compile_model()`
 #' @description Compiles a Stan model.
-#' @details Run FFIStan's Makefile on a `.stan` file, creating
+#' @details Run TinyStan's Makefile on a `.stan` file, creating
 #' the `.so` used by the StanModel class.
-#' This function checks that the path to FFIStan is valid
-#' and will error if not. This can be set with `set_ffistan_path`.
+#' This function checks that the path to TinyStan is valid
+#' and will error if not. This can be set with `set_tinystan_path`.
 #'
 #' @param stan_file A path to a Stan model file.
 #' @param stanc_arg A vector of arguments to pass to stanc3.
@@ -70,10 +70,10 @@ get_ffistan_path <- function() {
 #' in `make/local`, the versions passed here will take precedent.
 #' @return Path to the compiled model.
 #'
-#' @seealso [ffistan::set_ffistan_path()]
+#' @seealso [tinystan::set_tinystan_path()]
 #' @export
 compile_model <- function(stan_file, stanc_args = NULL, make_args = NULL) {
-    verify_ffistan_path(get_ffistan_path())
+    verify_tinystan_path(get_tinystan_path())
     suppressWarnings({
         file_path <- normalizePath(stan_file)
     })
@@ -87,7 +87,7 @@ compile_model <- function(stan_file, stanc_args = NULL, make_args = NULL) {
     output <- paste0(tools::file_path_sans_ext(file_path), "_model.so")
     stancflags <- paste("--include-paths=.", paste(stanc_args, collapse = " "))
 
-    flags <- c(paste("-C", get_ffistan_path()), make_args, paste0("STANCFLAGS=\"",
+    flags <- c(paste("-C", get_tinystan_path()), make_args, paste0("STANCFLAGS=\"",
         stancflags, "\""), output)
 
     suppressWarnings({
@@ -115,7 +115,7 @@ windows_dll_path_setup <- function() {
         if (tbb_found()) {
             assign("WINDOWS_PATH_SET", TRUE, envir = .GlobalEnv)
         } else {
-            tbb_path <- file.path(get_ffistan_path(), "stan", "lib", "stan_math",
+            tbb_path <- file.path(get_tinystan_path(), "stan", "lib", "stan_math",
                 "lib", "tbb")
             Sys.setenv(PATH = paste(tbb_path, Sys.getenv("PATH"), sep = ";"))
             assign("WINDOWS_PATH_SET", tbb_found(), envir = .GlobalEnv)

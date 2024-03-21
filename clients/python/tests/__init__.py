@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-import ffistan
+import tinystan
 
 STAN_FOLDER = Path(__file__).parent.parent.parent.parent / "test_models"
 
@@ -25,7 +25,7 @@ def temp_json():
 def model_fixture(name):
     @pytest.fixture(scope="module", name=f"{name}_model")
     def fix():
-        yield ffistan.Model(STAN_FOLDER / name / f"{name}_model.so")
+        yield tinystan.Model(STAN_FOLDER / name / f"{name}_model.so")
 
     return fix
 

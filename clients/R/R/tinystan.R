@@ -26,18 +26,18 @@ StanModel <- R6::R6Class("StanModel", public = list(initialize = function(lib, s
 
     private$lib <- tools::file_path_as_absolute(lib)
     private$lib_name <- tools::file_path_sans_ext(basename(lib))
-    if (warn && is.loaded("ffistan_create_model_R", PACKAGE = private$lib_name)) {
+    if (warn && is.loaded("tinystan_create_model_R", PACKAGE = private$lib_name)) {
         warning(paste0("Loading a shared object '", lib, "' which is already loaded.\n",
             "If the file has changed since the last time it was loaded, this load may not update the library!"))
     }
 
     dyn.load(private$lib, PACKAGE = private$lib_name)
 
-    sep <- .C("ffistan_separator_char_R", sep = raw(1), PACKAGE = private$lib_name)$sep
+    sep <- .C("tinystan_separator_char_R", sep = raw(1), PACKAGE = private$lib_name)$sep
     private$sep <- rawToChar(sep)
 
 }, api_version = function() {
-    .C("ffistan_api_version", major = integer(1), minor = integer(1), patch = integer(1),
+    .C("tinystan_api_version", major = integer(1), minor = integer(1), patch = integer(1),
         PACKAGE = private$lib_name)
 }, sample = function(data = "", num_chains = 4, inits = NULL, seed = NULL, id = 1,
     init_radius = 2, num_warmup = 1000, num_samples = 1000, metric = HMCMetric$DIAGONAL,
@@ -102,7 +102,7 @@ StanModel <- R6::R6Class("StanModel", public = list(initialize = function(lib, s
             metric_size <- 1
         }
 
-        vars <- .C("ffistan_sample_R", return_code = as.integer(0), as.raw(model),
+        vars <- .C("tinystan_sample_R", return_code = as.integer(0), as.raw(model),
             as.integer(num_chains), private$encode_inits(inits), as.integer(seed),
             as.integer(id), as.double(init_radius), as.integer(num_warmup), as.integer(num_samples),
             as.integer(metric), as.logical(metric_has_init), as.double(inv_metric_init),
@@ -163,7 +163,7 @@ StanModel <- R6::R6Class("StanModel", public = list(initialize = function(lib, s
         num_params <- length(params)
         output_size <- num_params * num_output
 
-        vars <- .C("ffistan_pathfinder_R", return_code = as.integer(0), as.raw(model),
+        vars <- .C("tinystan_pathfinder_R", return_code = as.integer(0), as.raw(model),
             as.integer(num_paths), private$encode_inits(inits), as.integer(seed),
             as.integer(id), as.double(init_radius), as.integer(num_draws), as.integer(max_history_size),
             as.double(init_alpha), as.double(tol_obj), as.double(tol_rel_obj), as.double(tol_grad),
@@ -189,7 +189,7 @@ StanModel <- R6::R6Class("StanModel", public = list(initialize = function(lib, s
         num_params <- length(params)
         output_size <- num_params
 
-        vars <- .C("ffistan_optimize_R", return_code = as.integer(0), as.raw(model),
+        vars <- .C("tinystan_optimize_R", return_code = as.integer(0), as.raw(model),
             private$encode_inits(init), as.integer(seed), as.integer(id), as.double(init_radius),
             as.integer(algorithm), as.integer(num_iterations), as.logical(jacobian),
             as.integer(max_history_size), as.double(init_alpha), as.double(tol_obj),
@@ -202,17 +202,17 @@ StanModel <- R6::R6Class("StanModel", public = list(initialize = function(lib, s
     })
 }), private = list(lib = NA, lib_name = NA, sep = NA, with_model = function(data,
     seed, block) {
-    ffi_ret <- .C("ffistan_create_model_R", model = raw(8), as.character(data), as.integer(seed),
-        err = raw(8), NAOK = TRUE, PACKAGE = private$lib_name)
+    ffi_ret <- .C("tinystan_create_model_R", model = raw(8), as.character(data),
+        as.integer(seed), err = raw(8), NAOK = TRUE, PACKAGE = private$lib_name)
     handle_error(all(ffi_ret$model == 0), private$lib_name, ffi_ret$err)
     tryCatch({
         # this is the equivalent of base R's `with` function
         eval(substitute(block), ffi_ret, enclos = parent.frame())
     }, finally = {
-        .C("ffistan_destroy_model_R", as.raw(ffi_ret$model), PACKAGE = private$lib_name)
+        .C("tinystan_destroy_model_R", as.raw(ffi_ret$model), PACKAGE = private$lib_name)
     })
 }, get_parameter_names = function(model) {
-    param_names_raw <- .C("ffistan_model_param_names_R", as.raw(model), names = as.character(""),
+    param_names_raw <- .C("tinystan_model_param_names_R", as.raw(model), names = as.character(""),
         PACKAGE = private$lib_name)$names
     if (param_names_raw == "") {
         return(c())
@@ -220,7 +220,7 @@ StanModel <- R6::R6Class("StanModel", public = list(initialize = function(lib, s
     strsplit(param_names_raw, ",")[[1]]
 
 }, get_free_params = function(model) {
-    .C("ffistan_model_num_free_params_R", as.raw(model), params = as.integer(0),
+    .C("tinystan_model_num_free_params_R", as.raw(model), params = as.integer(0),
         PACKAGE = private$lib_name)$params
 }, encode_inits = function(inits) {
     if (is.null(inits)) {
@@ -246,11 +246,11 @@ handle_error <- function(rc, lib_name, err_ptr) {
         if (all(err_ptr == 0)) {
             stop(paste("Unknown error, function returned code", rc))
         }
-        msg <- .C("ffistan_get_error_message_R", as.raw(err_ptr), err_msg = as.character(""),
+        msg <- .C("tinystan_get_error_message_R", as.raw(err_ptr), err_msg = as.character(""),
             PACKAGE = lib_name)$err_msg
-        type <- .C("ffistan_get_error_type_R", as.raw(err_ptr), err_type = as.integer(0),
+        type <- .C("tinystan_get_error_type_R", as.raw(err_ptr), err_type = as.integer(0),
             PACKAGE = lib_name)$err_type
-        .C("ffistan_free_stan_error_R", as.raw(err_ptr), PACKAGE = lib_name)
+        .C("tinystan_free_stan_error_R", as.raw(err_ptr), PACKAGE = lib_name)
         if (type == 3) {
             if (requireNamespace("rlang", quietly = TRUE)) {
                 rlang::interrupt()

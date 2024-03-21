@@ -3,7 +3,7 @@
 
 @testset "Optimize" verbose = true begin
 
-    ALL_ALGORITHMS = [FFIStan.NEWTON, FFIStan.LBFGS, FFIStan.BFGS]
+    ALL_ALGORITHMS = [TinyStan.NEWTON, TinyStan.LBFGS, TinyStan.BFGS]
 
     @testset "Data" begin
         (names, draws) = optimize(bernoulli_model, BERNOULLI_DATA)
@@ -118,7 +118,7 @@
 
             # lbfgs only
 
-            if algorithm == FFIStan.LBFGS
+            if algorithm == TinyStan.LBFGS
                 @test_throws "positive" optimize(
                     bernoulli_model,
                     BERNOULLI_DATA;
@@ -144,7 +144,7 @@
                 (:tol_rel_grad, 0, "positive"),
                 (:tol_param, 0, "positive"),
             ]
-                if algorithm != FFIStan.NEWTON
+                if algorithm != TinyStan.NEWTON
                     @test_throws match optimize(
                         bernoulli_model,
                         BERNOULLI_DATA;

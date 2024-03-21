@@ -1,19 +1,19 @@
 ## include paths
-FFISTAN_ROOT ?= .
+TINYSTAN_ROOT ?= .
 
 # user customization
--include $(FFISTAN_ROOT)/make/local
+-include $(TINYSTAN_ROOT)/make/local
 
-SRC ?= $(FFISTAN_ROOT)/src/
-STAN ?= $(FFISTAN_ROOT)/stan/
-STANC ?= $(FFISTAN_ROOT)/bin/stanc$(EXE)
+SRC ?= $(TINYSTAN_ROOT)/src/
+STAN ?= $(TINYSTAN_ROOT)/stan/
+STANC ?= $(TINYSTAN_ROOT)/bin/stanc$(EXE)
 MATH ?= $(STAN)lib/stan_math/
 RAPIDJSON ?= $(STAN)lib/rapidjson_1.1.0/
 
 ## required C++ includes
 INC_FIRST ?= -I $(STAN)src -I $(RAPIDJSON)
 
-# FFIStan always wants multithreading support
+# TinyStan always wants multithreading support
 STAN_THREADS=true
 
 ## makefiles needed for math library
@@ -24,7 +24,7 @@ include $(MATH)make/dependencies
 ## Set -fPIC globally since we're always building a shared library
 CXXFLAGS += -fPIC -fvisibility=hidden -fvisibility-inlines-hidden
 CXXFLAGS_SUNDIALS += -fPIC
-CPPFLAGS += -DFFISTAN_EXPORT
+CPPFLAGS += -DTINYSTAN_EXPORT
 
 ifeq ($(OS),Windows_NT)
 	CXXFLAGS += -Wa,-mbig-obj
@@ -40,12 +40,12 @@ endif
 STAN_FLAGS=$(STAN_FLAG_OPENCL)
 
 
-FFISTAN_O = $(patsubst %.cpp,%$(STAN_FLAGS).o,$(SRC)ffistan.cpp)
-FFISTAN_DEPS := $(SRC)ffistan.cpp $(SRC)R_shims.cpp $(wildcard $(SRC)*.hpp) $(wildcard $(SRC)*.h)
-include $(SRC)ffistan.d
+TINYSTAN_O = $(patsubst %.cpp,%$(STAN_FLAGS).o,$(SRC)tinystan.cpp)
+TINYSTAN_DEPS := $(SRC)tinystan.cpp $(SRC)R_shims.cpp $(wildcard $(SRC)*.hpp) $(wildcard $(SRC)*.h)
+include $(SRC)tinystan.d
 
-$(FFISTAN_O) : $(FFISTAN_DEPS)
-	@echo '--- Compiling FFIStan C++ code ---'
+$(TINYSTAN_O) : $(TINYSTAN_DEPS)
+	@echo '--- Compiling TinyStan C++ code ---'
 	@mkdir -p $(dir $@)
 	$(COMPILE.cpp) $(OUTPUT_OPTION) $(LDLIBS) $<
 
@@ -62,12 +62,12 @@ $(FFISTAN_O) : $(FFISTAN_DEPS)
 	$(COMPILE.cpp) -x c++ -o $(subst  \,/,$*).o $(subst \,/,$<)
 
 ## builds executable (suffix depends on platform)
-%_model.so : %.o $(FFISTAN_O) $(SUNDIALS_TARGETS) $(MPI_TARGETS) $(TBB_TARGETS)
+%_model.so : %.o $(TINYSTAN_O) $(SUNDIALS_TARGETS) $(MPI_TARGETS) $(TBB_TARGETS)
 	@echo '--- Linking C++ code ---'
-	$(LINK.cpp) -shared -lm -o $(patsubst %.o, %_model.so, $(subst \,/,$<)) $(subst \,/,$*.o) $(FFISTAN_O) $(LDLIBS) $(SUNDIALS_TARGETS) $(MPI_TARGETS) $(TBB_TARGETS)
+	$(LINK.cpp) -shared -lm -o $(patsubst %.o, %_model.so, $(subst \,/,$<)) $(subst \,/,$*.o) $(TINYSTAN_O) $(LDLIBS) $(SUNDIALS_TARGETS) $(MPI_TARGETS) $(TBB_TARGETS)
 
 # build all test models at once
-TEST_MODEL_NAMES = $(patsubst $(FFISTAN_ROOT)/test_models/%/, %, $(sort $(dir $(wildcard $(FFISTAN_ROOT)/test_models/*/))))
+TEST_MODEL_NAMES = $(patsubst $(TINYSTAN_ROOT)/test_models/%/, %, $(sort $(dir $(wildcard $(TINYSTAN_ROOT)/test_models/*/))))
 TEST_MODEL_NAMES := $(filter-out syntax_error, $(TEST_MODEL_NAMES))
 TEST_MODEL_LIBS = $(join $(addprefix test_models/, $(TEST_MODEL_NAMES)), $(addsuffix _model.so, $(addprefix /, $(TEST_MODEL_NAMES))))
 
@@ -154,7 +154,7 @@ $(MATH)make/% :
 	@echo 'We tried to find the Stan Math submodule at:'
 	@echo '  $(MATH)'
 	@echo ''
-	@echo 'The most likely source of the problem is FFIStan was cloned without'
+	@echo 'The most likely source of the problem is TinyStan was cloned without'
 	@echo 'the --recursive flag.  To fix this, run the following command:'
 	@echo '  git submodule update --init --recursive'
 	@echo ''

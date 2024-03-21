@@ -1,34 +1,34 @@
-#ifndef FFISTAN_H
-#define FFISTAN_H
+#ifndef TINYSTAN_H
+#define TINYSTAN_H
 
-/// \file ffistan.h
+/// \file tinystan.h
 
 #ifdef __cplusplus
 #include <cstddef>
-struct FFIStanError;
-struct FFIStanModel;
+struct TinyStanError;
+struct TinyStanModel;
 extern "C" {
 #else
 #include <stddef.h>
 #include <stdbool.h>
-typedef struct FFIStanError FFIStanError;  // opaque type
-typedef struct FFIStanModel FFIStanModel;  // opaque type
+typedef struct TinyStanError TinyStanError;  // opaque type
+typedef struct TinyStanModel TinyStanModel;  // opaque type
 #endif
 
 #if defined _WIN32 || defined __MINGW32__
-#define FFISTAN_ON_WINDOWS 1
+#define TINYSTAN_ON_WINDOWS 1
 #else
-#define FFISTAN_ON_WINDOWS 0
+#define TINYSTAN_ON_WINDOWS 0
 #endif
 
-#if FFISTAN_ON_WINDOWS
-#ifdef FFISTAN_EXPORT
-#define FFISTAN_PUBLIC __declspec(dllexport)
+#if TINYSTAN_ON_WINDOWS
+#ifdef TINYSTAN_EXPORT
+#define TINYSTAN_PUBLIC __declspec(dllexport)
 #else
-#define FFISTAN_PUBLIC __declspec(dllimport)
+#define TINYSTAN_PUBLIC __declspec(dllimport)
 #endif
 #else
-#define FFISTAN_PUBLIC __attribute__((visibility("default")))
+#define TINYSTAN_PUBLIC __attribute__((visibility("default")))
 #endif
 
 /**
@@ -37,7 +37,7 @@ typedef struct FFIStanModel FFIStanModel;  // opaque type
  * @param[out] minor The minor version number.
  * @param[out] patch The patch version number.
  */
-FFISTAN_PUBLIC void ffistan_api_version(int *major, int *minor, int *patch);
+TINYSTAN_PUBLIC void tinystan_api_version(int *major, int *minor, int *patch);
 
 /**
  * Get the version of Stan this library is built against.
@@ -45,7 +45,7 @@ FFISTAN_PUBLIC void ffistan_api_version(int *major, int *minor, int *patch);
  * @param[out] minor The minor version number.
  * @param[out] patch The patch version number
  */
-FFISTAN_PUBLIC void ffistan_stan_version(int *major, int *minor, int *patch);
+TINYSTAN_PUBLIC void tinystan_stan_version(int *major, int *minor, int *patch);
 
 /**
  * Instantiate a model from JSON-encoded data.
@@ -59,17 +59,17 @@ FFISTAN_PUBLIC void ffistan_stan_version(int *major, int *minor, int *patch);
  * @param[in] seed Random seed.
  * @param[out] err Error information.
  * @return A pointer to the model. Must later be freed with
- * ffistan_destroy_model().
+ * tinystan_destroy_model().
  */
-FFISTAN_PUBLIC FFIStanModel *ffistan_create_model(const char *data,
-                                                  unsigned int seed,
-                                                  FFIStanError **err);
+TINYSTAN_PUBLIC TinyStanModel *tinystan_create_model(const char *data,
+                                                     unsigned int seed,
+                                                     TinyStanError **err);
 
 /**
  * Deallocate a model.
  * @param[in] model The model to deallocate.
  */
-FFISTAN_PUBLIC void ffistan_destroy_model(FFIStanModel *model);
+TINYSTAN_PUBLIC void tinystan_destroy_model(TinyStanModel *model);
 
 /**
  * Get the names of the parameters.
@@ -79,7 +79,8 @@ FFISTAN_PUBLIC void ffistan_destroy_model(FFIStanModel *model);
  * Multidimensional parameters are flattened, e.g. "foo[2,3]" becomes 6 strings,
  * starting with "foo.1.1".
  */
-FFISTAN_PUBLIC const char *ffistan_model_param_names(const FFIStanModel *model);
+TINYSTAN_PUBLIC const char *tinystan_model_param_names(
+    const TinyStanModel *model);
 
 /**
  * Get the number of free parameters, i.e., those declared in the parameters
@@ -88,7 +89,8 @@ FFISTAN_PUBLIC const char *ffistan_model_param_names(const FFIStanModel *model);
  * @param[in] model The model.
  * @return The number of free parameters.
  */
-FFISTAN_PUBLIC size_t ffistan_model_num_free_params(const FFIStanModel *model);
+TINYSTAN_PUBLIC size_t
+tinystan_model_num_free_params(const TinyStanModel *model);
 
 /**
  * Returns the separator character which must be used
@@ -96,39 +98,39 @@ FFISTAN_PUBLIC size_t ffistan_model_num_free_params(const FFIStanModel *model);
  *
  * Currently, this is ASCII 0x1C, the file separator character.
  */
-FFISTAN_PUBLIC char ffistan_separator_char();
+TINYSTAN_PUBLIC char tinystan_separator_char();
 
-enum FFISTAN_PUBLIC FFIStanMetric { unit = 0, dense = 1, diagonal = 2 };
+enum TINYSTAN_PUBLIC TinyStanMetric { unit = 0, dense = 1, diagonal = 2 };
 
-FFISTAN_PUBLIC int ffistan_sample(
-    const FFIStanModel *model, size_t num_chains, const char *inits,
+TINYSTAN_PUBLIC int tinystan_sample(
+    const TinyStanModel *model, size_t num_chains, const char *inits,
     unsigned int seed, unsigned int chain_id, double init_radius,
-    int num_warmup, int num_samples, FFIStanMetric metric_choice,
+    int num_warmup, int num_samples, TinyStanMetric metric_choice,
     const double *init_inv_metric, bool adapt, double delta, double gamma,
     double kappa, double t0, unsigned int init_buffer, unsigned int term_buffer,
     unsigned int window, bool save_warmup, double stepsize,
     double stepsize_jitter, int max_depth, int refresh, int num_threads,
-    double *out, size_t out_size, double *metric_out, FFIStanError **err);
+    double *out, size_t out_size, double *metric_out, TinyStanError **err);
 
-FFISTAN_PUBLIC int ffistan_pathfinder(
-    const FFIStanModel *ffimodel, size_t num_paths, const char *inits,
+TINYSTAN_PUBLIC int tinystan_pathfinder(
+    const TinyStanModel *model, size_t num_paths, const char *inits,
     unsigned int seed, unsigned int id, double init_radius, int num_draws,
     /* tuning params */ int max_history_size, double init_alpha, double tol_obj,
     double tol_rel_obj, double tol_grad, double tol_rel_grad, double tol_param,
     int num_iterations, int num_elbo_draws, int num_multi_draws,
     bool calculate_lp, bool psis_resample, int refresh, int num_threads,
-    double *out, size_t out_size, FFIStanError **err);
+    double *out, size_t out_size, TinyStanError **err);
 
-enum FFIStanOptimizationAlgorithm { newton = 0, bfgs = 1, lbfgs = 2 };
+enum TinyStanOptimizationAlgorithm { newton = 0, bfgs = 1, lbfgs = 2 };
 
-FFISTAN_PUBLIC int ffistan_optimize(
-    const FFIStanModel *ffimodel, const char *init, unsigned int seed,
-    unsigned int id, double init_radius, FFIStanOptimizationAlgorithm algorithm,
-    int num_iterations, bool jacobian,
+TINYSTAN_PUBLIC int tinystan_optimize(
+    const TinyStanModel *model, const char *init, unsigned int seed,
+    unsigned int id, double init_radius,
+    TinyStanOptimizationAlgorithm algorithm, int num_iterations, bool jacobian,
     /* tuning params */ int max_history_size, double init_alpha, double tol_obj,
     double tol_rel_obj, double tol_grad, double tol_rel_grad, double tol_param,
     int refresh, int num_threads, double *out, size_t out_size,
-    FFIStanError **err);
+    TinyStanError **err);
 
 /**
  * Get the error message from an error object.
@@ -137,9 +139,14 @@ FFISTAN_PUBLIC int ffistan_optimize(
  * @return The error message. Will be freed when the error object is freed, so
  * copy it if you need it later.
  */
-FFISTAN_PUBLIC const char *ffistan_get_error_message(const FFIStanError *err);
+TINYSTAN_PUBLIC const char *tinystan_get_error_message(
+    const TinyStanError *err);
 
-enum FFISTAN_PUBLIC FFIStanErrorType { generic = 0, config = 1, interrupt = 2 };
+enum TINYSTAN_PUBLIC TinyStanErrorType {
+  generic = 0,
+  config = 1,
+  interrupt = 2
+};
 
 /**
  * Get the type of error.
@@ -147,21 +154,22 @@ enum FFISTAN_PUBLIC FFIStanErrorType { generic = 0, config = 1, interrupt = 2 };
  * @param[in] err The error object.
  * @return The type of error.
  */
-FFISTAN_PUBLIC FFIStanErrorType ffistan_get_error_type(const FFIStanError *err);
+TINYSTAN_PUBLIC TinyStanErrorType
+tinystan_get_error_type(const TinyStanError *err);
 
 /**
  * Free the error object.
  *
  * @note This will invalidate any pointers returned by
- * ffistan_get_error_message().
+ * tinystan_get_error_message().
  *
  * @param[in] err The error object.
  */
-FFISTAN_PUBLIC void ffistan_free_stan_error(FFIStanError *err);
+TINYSTAN_PUBLIC void tinystan_free_stan_error(TinyStanError *err);
 
-typedef void (*FFISTAN_PRINT_CALLBACK)(const char *msg, size_t len, bool bad);
+typedef void (*TINYSTAN_PRINT_CALLBACK)(const char *msg, size_t len, bool bad);
 
-FFISTAN_PUBLIC void ffistan_set_print_callback(FFISTAN_PRINT_CALLBACK print);
+TINYSTAN_PUBLIC void tinystan_set_print_callback(TINYSTAN_PRINT_CALLBACK print);
 
 #ifdef __cplusplus
 }

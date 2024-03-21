@@ -1,5 +1,5 @@
-ALGORITHMS <- c(ffistan::OptimizationAlgorithm$NEWTON, ffistan::OptimizationAlgorithm$BFGS,
-    ffistan::OptimizationAlgorithm$LBFGS)
+ALGORITHMS <- c(tinystan::OptimizationAlgorithm$NEWTON, tinystan::OptimizationAlgorithm$BFGS,
+    tinystan::OptimizationAlgorithm$LBFGS)
 
 test_that("data args work", {
 
@@ -102,7 +102,7 @@ test_that("bad args raise errors", {
         expect_error(bernoulli_model$optimize(BERNOULLI_DATA, algorithm = algorithm,
             init_radius = -0.1), "non-negative")
 
-        if (algorithm != ffistan::OptimizationAlgorithm$NEWTON) {
+        if (algorithm != tinystan::OptimizationAlgorithm$NEWTON) {
             expected <- expect_error
         } else {
             expected <- function(e, ...) {
@@ -123,7 +123,7 @@ test_that("bad args raise errors", {
         expected(bernoulli_model$optimize(BERNOULLI_DATA, algorithm = algorithm,
             tol_param = 0), "positive")
 
-        if (algorithm == ffistan::OptimizationAlgorithm$LBFGS) {
+        if (algorithm == tinystan::OptimizationAlgorithm$LBFGS) {
             expected <- expect_error
         } else {
             expected <- function(e, ...) {

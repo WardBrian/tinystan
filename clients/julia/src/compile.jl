@@ -1,9 +1,9 @@
 using LazyArtifacts
 
-function get_ffistan_path()
-    path = get(ENV, "FFISTAN", "")
+function get_tinystan_path()
+    path = get(ENV, "TINYSTAN", "")
     if path == ""
-        artifact_path = artifact"ffistan"
+        artifact_path = artifact"tinystan"
         path = joinpath(artifact_path, only(readdir(artifact_path)))
     end
     return path
@@ -27,9 +27,9 @@ function validate_stan_dir(path::AbstractString)
     end
 end
 
-function set_ffistan_path!(path::AbstractString)
+function set_tinystan_path!(path::AbstractString)
     validate_stan_dir(path)
-    ENV["FFISTAN"] = path
+    ENV["TINYSTAN"] = path
 end
 
 
@@ -39,8 +39,8 @@ function compile_model(
     stanc_args::AbstractVector{String} = String[],
     make_args::AbstractVector{String} = String[],
 )
-    ffistan = get_ffistan_path()
-    validate_stan_dir(ffistan)
+    tinystan = get_tinystan_path()
+    validate_stan_dir(tinystan)
 
     if !isfile(stan_file)
         throw(SystemError("Stan file not found: $stan_file"))
@@ -54,7 +54,7 @@ function compile_model(
 
     cmd = Cmd(
         `$(get_make()) $make_args "STANCFLAGS=--include-paths=. $stanc_args" $output_file`,
-        dir = abspath(ffistan),
+        dir = abspath(tinystan),
     )
     out = IOBuffer()
     err = IOBuffer()
@@ -85,7 +85,7 @@ function windows_dll_path_setup()
         else
             # add TBB to %PATH%
             ENV["PATH"] =
-                joinpath(get_ffistan_path(), "stan", "lib", "stan_math", "lib", "tbb") *
+                joinpath(get_tinystan_path(), "stan", "lib", "stan_math", "lib", "tbb") *
                 ";" *
                 ENV["PATH"]
             WINDOWS_PATH_SET[] = tbb_found()

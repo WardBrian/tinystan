@@ -32,6 +32,6 @@ test_that("compilation fails on bad syntax", {
 })
 
 test_that("bad paths fail", {
-    expect_error(set_ffistan_path("badpath"), "does not exist!")
-    expect_error(set_ffistan_path(file.path(stan_folder)), "does not contain file 'Makefile'")
+    expect_error(set_tinystan_path("badpath"), "does not exist!")
+    expect_error(set_tinystan_path(file.path(stan_folder)), "does not contain file 'Makefile'")
 })

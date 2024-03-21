@@ -1,4 +1,4 @@
-name: ffistan tests
+name: tinystan tests
 
 on:
   push:
@@ -99,19 +99,19 @@ jobs:
 
       - name: Test import
         run: |
-          python -c "import ffistan"
+          python -c "import tinystan"
 
       - name: Run tests
         run: |
           pytest -v clients/python/
         env:
-          FFISTAN: ${{ github.workspace }}
+          TINYSTAN: ${{ github.workspace }}
 
       - name: Run example
         run: |
           python clients/python/example.py
         env:
-          FFISTAN: ${{ github.workspace }}
+          TINYSTAN: ${{ github.workspace }}
 
   Rlang:
     needs: [build]
@@ -159,7 +159,7 @@ jobs:
           Rscript -e "devtools::test(reporter = c(\"summary\", \"fail\"))"
           Rscript example.R
         env:
-          FFISTAN: ${{ github.workspace }}
+          TINYSTAN: ${{ github.workspace }}
 
       - name: Run tests (windows)
         if: matrix.os == 'windows-latest'
@@ -172,7 +172,7 @@ jobs:
           Rscript example.R
           if (!$LASTEXITCODE.Equals(0)) {exit $LASTEXITCODE}
         env:
-          FFISTAN: ${{ github.workspace }}
+          TINYSTAN: ${{ github.workspace }}
 
   julia:
     needs: [build]
@@ -211,17 +211,17 @@ jobs:
         run: |
           cd clients/julia/
           julia --project=. -e "using Pkg; Pkg.instantiate()"
-          julia --project=. -e "using FFIStan"
+          julia --project=. -e "using TinyStan"
 
       - name: Run tests
         run: |
           julia --project=clients/julia -t 2 -e "using Pkg; Pkg.test()"
         env:
-          FFISTAN: ${{ github.workspace }}
+          TINYSTAN: ${{ github.workspace }}
 
       - name: Run examples
         run: |
           julia --project=clients/julia clients/julia/example.jl
         env:
-          FFISTAN: ${{ github.workspace }}
+          TINYSTAN: ${{ github.workspace }}
 

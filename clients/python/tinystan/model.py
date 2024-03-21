@@ -131,23 +131,23 @@ class Model:
 
         self._lib = ctypes.CDLL(self.lib_path)
 
-        self._create_model = self._lib.ffistan_create_model
+        self._create_model = self._lib.tinystan_create_model
         self._create_model.restype = ctypes.c_void_p
         self._create_model.argtypes = [ctypes.c_char_p, ctypes.c_uint, err_ptr]
 
-        self._delete_model = self._lib.ffistan_destroy_model
+        self._delete_model = self._lib.tinystan_destroy_model
         self._delete_model.restype = None
         self._delete_model.argtypes = [ctypes.c_void_p]
 
-        self._get_param_names = self._lib.ffistan_model_param_names
+        self._get_param_names = self._lib.tinystan_model_param_names
         self._get_param_names.restype = ctypes.c_char_p
         self._get_param_names.argtypes = [ctypes.c_void_p]
 
-        self._num_free_params = self._lib.ffistan_model_num_free_params
+        self._num_free_params = self._lib.tinystan_model_num_free_params
         self._num_free_params.restype = ctypes.c_size_t
         self._num_free_params.argtypes = [ctypes.c_void_p]
 
-        self._version = self._lib.ffistan_api_version
+        self._version = self._lib.tinystan_api_version
         self._version.restype = None
         self._version.argtypes = [
             ctypes.POINTER(ctypes.c_int),
@@ -155,7 +155,7 @@ class Model:
             ctypes.POINTER(ctypes.c_int),
         ]
 
-        self._ffi_sample = self._lib.ffistan_sample
+        self._ffi_sample = self._lib.tinystan_sample
         self._ffi_sample.restype = ctypes.c_int
         self._ffi_sample.argtypes = [
             ctypes.c_void_p,  # model
@@ -189,7 +189,7 @@ class Model:
             err_ptr,
         ]
 
-        self._ffi_pathfinder = self._lib.ffistan_pathfinder
+        self._ffi_pathfinder = self._lib.tinystan_pathfinder
         self._ffi_pathfinder.restype = ctypes.c_int
         self._ffi_pathfinder.argtypes = [
             ctypes.c_void_p,  # model
@@ -218,7 +218,7 @@ class Model:
             err_ptr,
         ]
 
-        self._ffi_optimize = self._lib.ffistan_optimize
+        self._ffi_optimize = self._lib.tinystan_optimize
         self._ffi_optimize.restype = ctypes.c_int
         self._ffi_optimize.argtypes = [
             ctypes.c_void_p,  # model
@@ -243,23 +243,23 @@ class Model:
             err_ptr,
         ]
 
-        self._get_error_msg = self._lib.ffistan_get_error_message
+        self._get_error_msg = self._lib.tinystan_get_error_message
         self._get_error_msg.restype = ctypes.c_char_p
         self._get_error_msg.argtypes = [ctypes.c_void_p]
-        self._get_error_type = self._lib.ffistan_get_error_type
+        self._get_error_type = self._lib.tinystan_get_error_type
         self._get_error_type.restype = ctypes.c_int  # really enum
         self._get_error_type.argtypes = [ctypes.c_void_p]
-        self._free_error = self._lib.ffistan_free_stan_error
+        self._free_error = self._lib.tinystan_free_stan_error
         self._free_error.restype = None
         self._free_error.argtypes = [ctypes.c_void_p]
 
-        get_separator = self._lib.ffistan_separator_char
+        get_separator = self._lib.tinystan_separator_char
         get_separator.restype = ctypes.c_char
         get_separator.argtypes = []
         self.sep = get_separator()
 
         if capture_stan_prints:
-            set_print_callback = self._lib.ffistan_set_print_callback
+            set_print_callback = self._lib.tinystan_set_print_callback
             set_print_callback.restype = None
             set_print_callback.argtypes = [print_callback_type]
             set_print_callback(print_callback)

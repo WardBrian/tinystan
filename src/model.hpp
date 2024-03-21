@@ -1,5 +1,5 @@
-#ifndef FFISTAN_MODEL_HPP
-#define FFISTAN_MODEL_HPP
+#ifndef TINYSTAN_MODEL_HPP
+#define TINYSTAN_MODEL_HPP
 
 #include <stan/model/model_base.hpp>
 #include <stan/io/var_context.hpp>
@@ -22,20 +22,20 @@
 stan::model::model_base &new_model(stan::io::var_context &data_context,
                                    unsigned int seed, std::ostream *msg_stream);
 
-class FFIStanModel {
+class TinyStanModel {
  public:
-  FFIStanModel(const char *data, unsigned int seed) : seed(seed) {
+  TinyStanModel(const char *data, unsigned int seed) : seed(seed) {
     std::unique_ptr<stan::io::var_context> data_context
-        = ffistan::io::load_data(data);
+        = tinystan::io::load_data(data);
     model = &new_model(*data_context, seed, &std::cout);
     std::vector<std::string> names;
     num_free_params = model->num_params_r();
     model->constrained_param_names(names, true, true);
-    param_names = ffistan::util::to_csv(names);
+    param_names = tinystan::util::to_csv(names);
     num_params = names.size();
   }
 
-  ~FFIStanModel() {
+  ~TinyStanModel() {
     delete model;
     free(param_names);
   }

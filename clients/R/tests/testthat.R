@@ -1,5 +1,5 @@
 
 library(testthat)
-library(ffistan)
+library(tinystan)
 
-test_check("ffistan")
+test_check("tinystan")

@@ -1,5 +1,5 @@
-#ifndef FFISTAN_ERRORS_HPP
-#define FFISTAN_ERRORS_HPP
+#ifndef TINYSTAN_ERRORS_HPP
+#define TINYSTAN_ERRORS_HPP
 
 #include <stan/callbacks/logger.hpp>
 
@@ -11,16 +11,16 @@
 
 #include "logging.hpp"
 
-class FFIStanError {
+class TinyStanError {
  public:
-  FFIStanError(const char *msg,
-               FFIStanErrorType type = FFIStanErrorType::generic)
+  TinyStanError(const char *msg,
+                TinyStanErrorType type = TinyStanErrorType::generic)
       : msg(strdup(msg)), type(type) {}
 
-  ~FFIStanError() { free(this->msg); }
+  ~TinyStanError() { free(this->msg); }
 
   char *msg;
-  FFIStanErrorType type;
+  TinyStanErrorType type;
 };
 
 /**
@@ -31,28 +31,28 @@ class FFIStanError {
  * passed to the macro, and the preprocessor would interpret them as argument
  * separators.
  */
-#define FFISTAN_TRY_CATCH(...)                                     \
-  try {                                                            \
-    __VA_ARGS__                                                    \
-  } catch (const ffistan::error::interrupt_exception &e) {         \
-    if (err != nullptr) {                                          \
-      *err = new FFIStanError("", FFIStanErrorType::interrupt);    \
-    }                                                              \
-  } catch (const std::invalid_argument &e) {                       \
-    if (err != nullptr) {                                          \
-      *err = new FFIStanError(e.what(), FFIStanErrorType::config); \
-    }                                                              \
-  } catch (const std::exception &e) {                              \
-    if (err != nullptr) {                                          \
-      *err = new FFIStanError(e.what());                           \
-    }                                                              \
-  } catch (...) {                                                  \
-    if (err != nullptr) {                                          \
-      *err = new FFIStanError("Unknown error");                    \
-    }                                                              \
+#define TINYSTAN_TRY_CATCH(...)                                      \
+  try {                                                              \
+    __VA_ARGS__                                                      \
+  } catch (const tinystan::error::interrupt_exception &e) {          \
+    if (err != nullptr) {                                            \
+      *err = new TinyStanError("", TinyStanErrorType::interrupt);    \
+    }                                                                \
+  } catch (const std::invalid_argument &e) {                         \
+    if (err != nullptr) {                                            \
+      *err = new TinyStanError(e.what(), TinyStanErrorType::config); \
+    }                                                                \
+  } catch (const std::exception &e) {                                \
+    if (err != nullptr) {                                            \
+      *err = new TinyStanError(e.what());                            \
+    }                                                                \
+  } catch (...) {                                                    \
+    if (err != nullptr) {                                            \
+      *err = new TinyStanError("Unknown error");                     \
+    }                                                                \
   }
 
-namespace ffistan {
+namespace tinystan {
 namespace error {
 
 class error_logger : public stan::callbacks::logger {
@@ -112,13 +112,13 @@ class error_logger : public stan::callbacks::logger {
     }
   }
 
-  FFIStanError *get_error() {
+  TinyStanError *get_error() {
     std::lock_guard<std::mutex> lock(error_mutex);
     auto err = last_error.str();
     if (err.empty())
-      return new FFIStanError("Unknown error");
+      return new TinyStanError("Unknown error");
     err.pop_back();
-    return new FFIStanError(err.c_str());
+    return new TinyStanError(err.c_str());
   }
 
  private:
@@ -157,6 +157,6 @@ void check_between(const char *name, double val, double lb, double ub) {
 class interrupt_exception : public std::exception {};
 
 }  // namespace error
-}  // namespace ffistan
+}  // namespace tinystan
 
 #endif
