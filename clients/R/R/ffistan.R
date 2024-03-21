@@ -21,6 +21,7 @@ StanModel <- R6::R6Class("StanModel", public = list(initialize = function(lib, s
         lib_old <- lib
         lib <- paste0(tools::file_path_sans_ext(lib), ".dll")
         file.copy(from = lib_old, to = lib)
+        windows_dll_path_setup()
     }
 
     private$lib <- tools::file_path_as_absolute(lib)

@@ -50,6 +50,7 @@ mutable struct Model
                   "If the file has changed since the last time it was loaded, this load may not update the library!"
         end
 
+        windows_dll_path_setup()
         lib = Libc.Libdl.dlopen(libname)
         sep = Char(ccall(Libc.Libdl.dlsym(lib, :ffistan_separator_char), Cchar, ()))
 
