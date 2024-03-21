@@ -3,7 +3,7 @@ import json
 import numpy as np
 import pytest
 
-import ffistan
+import tinystan
 from tests import (
     BERNOULLI_DATA,
     STAN_FOLDER,
@@ -16,9 +16,9 @@ from tests import (
 )
 
 ALL_ALGORITHMS = [
-    ffistan.OptimizationAlgorithm.NEWTON,
-    ffistan.OptimizationAlgorithm.BFGS,
-    ffistan.OptimizationAlgorithm.LBFGS,
+    tinystan.OptimizationAlgorithm.NEWTON,
+    tinystan.OptimizationAlgorithm.BFGS,
+    tinystan.OptimizationAlgorithm.LBFGS,
 ]
 
 
@@ -132,7 +132,7 @@ def test_bad_argument(bernoulli_model, algorithm, arg, value, match):
 )
 @pytest.mark.parametrize("algorithm", ALL_ALGORITHMS)
 def test_bad_argument_lbfgs(bernoulli_model, algorithm, arg, value, match):
-    if algorithm == ffistan.OptimizationAlgorithm.LBFGS:
+    if algorithm == tinystan.OptimizationAlgorithm.LBFGS:
         with pytest.raises(ValueError, match=match):
             bernoulli_model.optimize(
                 BERNOULLI_DATA, algorithm=algorithm, **{arg: value}
@@ -154,7 +154,7 @@ def test_bad_argument_lbfgs(bernoulli_model, algorithm, arg, value, match):
 )
 @pytest.mark.parametrize("algorithm", ALL_ALGORITHMS)
 def test_bad_argument_bfgs(bernoulli_model, algorithm, arg, value, match):
-    if algorithm != ffistan.OptimizationAlgorithm.NEWTON:
+    if algorithm != tinystan.OptimizationAlgorithm.NEWTON:
         with pytest.raises(ValueError, match=match):
             bernoulli_model.optimize(
                 BERNOULLI_DATA, algorithm=algorithm, **{arg: value}

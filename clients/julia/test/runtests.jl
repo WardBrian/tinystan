@@ -1,5 +1,5 @@
 using Test
-using FFIStan
+using TinyStan
 using Statistics
 
 const STAN_FOLDER = joinpath(@__DIR__, "..", "..", "..", "test_models")
@@ -15,7 +15,7 @@ bernoulli_model = Model(joinpath(STAN_FOLDER, "bernoulli", "bernoulli_model.so")
 BERNOULLI_DATA = "{\"N\": 10, \"y\": [0,1,0,0,0,0,0,0,0,1]}"
 
 
-@testset "FFIStan tests" verbose = true begin
+@testset "TinyStan tests" verbose = true begin
     include("test_compile.jl")
     include("test_model.jl")
     include("test_sample.jl")

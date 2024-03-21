@@ -43,17 +43,17 @@ test_that("save_metric works", {
     data <- "{\"N\": 5}"
 
     out_unit <- gaussian_model$sample(data, num_warmup = 100, num_samples = 10, save_metric = TRUE,
-        metric = ffistan::HMCMetric$UNIT)
+        metric = tinystan::HMCMetric$UNIT)
     expect_equal(dim(out_unit$metric), c(4, 5))
     expect_equal(out_unit$metric, matrix(1, ncol = 5, nrow = 4))
 
     out_diag <- gaussian_model$sample(data, num_warmup = 100, num_samples = 10, save_metric = TRUE,
-        metric = ffistan::HMCMetric$DIAGONAL)
+        metric = tinystan::HMCMetric$DIAGONAL)
     expect_equal(dim(out_diag$metric), c(4, 5))
     expect_equal(out_diag$metric, matrix(1, ncol = 5, nrow = 4))
 
     out_dense <- gaussian_model$sample(data, num_warmup = 100, num_samples = 10,
-        save_metric = TRUE, metric = ffistan::HMCMetric$DENSE)
+        save_metric = TRUE, metric = tinystan::HMCMetric$DENSE)
     expect_equal(dim(out_dense$metric), c(4, 5, 5))
     four_identities <- aperm(array(rep(diag(5), 4), c(5, 5, 4)), c(3, 2, 1))
     expect_equal(out_dense$metric, four_identities)
@@ -160,35 +160,35 @@ test_that("bad inits handled properly", {
 test_that("bad initial metric shape handled properly", {
     data <- "{\"N\": 5}"
 
-    expect_error(gaussian_model$sample(data, metric = ffistan::HMCMetric$DENSE, init_inv_metric = rep(1,
-        5)), "Invalid initial metric size")
+    expect_error(gaussian_model$sample(data, metric = tinystan::HMCMetric$DENSE,
+        init_inv_metric = rep(1, 5)), "Invalid initial metric size")
 
-    expect_error(gaussian_model$sample(data, metric = ffistan::HMCMetric$DENSE, init_inv_metric = matrix(1,
-        5, 4)), "Invalid initial metric size")
+    expect_error(gaussian_model$sample(data, metric = tinystan::HMCMetric$DENSE,
+        init_inv_metric = matrix(1, 5, 4)), "Invalid initial metric size")
 
-    expect_error(gaussian_model$sample(data, num_chains = 4, metric = ffistan::HMCMetric$DENSE,
+    expect_error(gaussian_model$sample(data, num_chains = 4, metric = tinystan::HMCMetric$DENSE,
         init_inv_metric = array(1, c(5, 5, 3))), "Invalid initial metric size")
 
-    expect_error(gaussian_model$sample(data, metric = ffistan::HMCMetric$DIAGONAL,
+    expect_error(gaussian_model$sample(data, metric = tinystan::HMCMetric$DIAGONAL,
         init_inv_metric = rep(1, 4)), "Invalid initial metric size")
 
-    expect_error(gaussian_model$sample(data, num_chains = 4, metric = ffistan::HMCMetric$DIAGONAL,
+    expect_error(gaussian_model$sample(data, num_chains = 4, metric = tinystan::HMCMetric$DIAGONAL,
         init_inv_metric = matrix(1, 5, 3)), "Invalid initial metric size")
 
-    expect_error(gaussian_model$sample(data, num_chains = 4, metric = ffistan::HMCMetric$DIAGONAL,
+    expect_error(gaussian_model$sample(data, num_chains = 4, metric = tinystan::HMCMetric$DIAGONAL,
         init_inv_metric = array(1, c(5, 5, 3))), "Invalid initial metric size")
 })
 
 test_that("bad initial metric handled properly", {
     data <- "{\"N\": 3}"
 
-    expect_error(gaussian_model$sample(data, metric = ffistan::HMCMetric$DENSE, init_inv_metric = matrix(1e+20,
-        3, 3)), "not positive definite")
+    expect_error(gaussian_model$sample(data, metric = tinystan::HMCMetric$DENSE,
+        init_inv_metric = matrix(1e+20, 3, 3)), "not positive definite")
 
     metric = array(0, c(3, 3, 2))
     metric[, , 1] <- 1e+20
     metric[, , 2] <- diag(3)
-    expect_error(gaussian_model$sample(data, num_chains = 2, metric = ffistan::HMCMetric$DENSE,
+    expect_error(gaussian_model$sample(data, num_chains = 2, metric = tinystan::HMCMetric$DENSE,
         init_inv_metric = metric), "not positive definite")
 
 })

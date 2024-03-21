@@ -1,5 +1,5 @@
-#ifndef FFISTAN_INTERRUPT_HPP
-#define FFISTAN_INTERRUPT_HPP
+#ifndef TINYSTAN_INTERRUPT_HPP
+#define TINYSTAN_INTERRUPT_HPP
 
 #include <stan/math/prim/fun/Eigen.hpp>
 #include <stan/callbacks/interrupt.hpp>
@@ -7,31 +7,31 @@
 
 #include "errors.hpp"
 
-#if FFISTAN_ON_WINDOWS
+#if TINYSTAN_ON_WINDOWS
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
 
-namespace ffistan {
+namespace tinystan {
 namespace interrupt {
 
 volatile std::sig_atomic_t interrupted = false;
 
-class ffistan_interrupt_handler : public stan::callbacks::interrupt {
-#if !FFISTAN_ON_WINDOWS  // POSIX signals
+class tinystan_interrupt_handler : public stan::callbacks::interrupt {
+#if !TINYSTAN_ON_WINDOWS  // POSIX signals
  public:
-  ffistan_interrupt_handler() {
+  tinystan_interrupt_handler() {
     interrupted = false;
 
     memset(&custom, 0, sizeof(custom));
     sigemptyset(&custom.sa_mask);
     sigaddset(&custom.sa_mask, SIGINT);
     custom.sa_flags = SA_RESETHAND;
-    custom.sa_handler = &ffistan_interrupt_handler::signal_handler;
+    custom.sa_handler = &tinystan_interrupt_handler::signal_handler;
     sigaction(SIGINT, &custom, &before);
   }
 
-  virtual ~ffistan_interrupt_handler() { sigaction(SIGINT, &before, NULL); }
+  virtual ~tinystan_interrupt_handler() { sigaction(SIGINT, &before, NULL); }
 
   static void signal_handler(int signal) { interrupted = true; }
 
@@ -41,14 +41,14 @@ class ffistan_interrupt_handler : public stan::callbacks::interrupt {
 
 #else  // Windows
  public:
-  ffistan_interrupt_handler() {
+  tinystan_interrupt_handler() {
     interrupted = false;
 
-    SetConsoleCtrlHandler(ffistan_interrupt_handler::signal_handler, TRUE);
+    SetConsoleCtrlHandler(tinystan_interrupt_handler::signal_handler, TRUE);
   }
 
-  virtual ~ffistan_interrupt_handler() {
-    SetConsoleCtrlHandler(ffistan_interrupt_handler::signal_handler, FALSE);
+  virtual ~tinystan_interrupt_handler() {
+    SetConsoleCtrlHandler(tinystan_interrupt_handler::signal_handler, FALSE);
   }
 
   static BOOL WINAPI signal_handler(DWORD type) {
@@ -66,11 +66,11 @@ class ffistan_interrupt_handler : public stan::callbacks::interrupt {
  public:
   void operator()() {
     if (interrupted) {
-      throw ffistan::error::interrupt_exception();
+      throw tinystan::error::interrupt_exception();
     }
   }
 };
 
 }  // namespace interrupt
-}  // namespace ffistan
+}  // namespace tinystan
 #endif

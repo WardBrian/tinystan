@@ -70,7 +70,7 @@
             num_warmup = 100,
             num_samples = 10,
             save_metric = true,
-            metric = FFIStan.UNIT,
+            metric = TinyStan.UNIT,
         )
         @test size(metric) == (4, 5)
         @test isapprox(metric, ones(Float64, 4, 5))
@@ -81,7 +81,7 @@
             num_warmup = 100,
             num_samples = 10,
             save_metric = true,
-            metric = FFIStan.DIAGONAL,
+            metric = TinyStan.DIAGONAL,
         )
         @test size(metric) == (4, 5)
 
@@ -93,7 +93,7 @@
             num_warmup = 100,
             num_samples = 10,
             save_metric = true,
-            metric = FFIStan.DENSE,
+            metric = TinyStan.DENSE,
         )
         @test size(metric) == (4, 5, 5)
         mat = zeros(Float64, 4, 5, 5)
@@ -116,7 +116,7 @@
                 num_chains = 2,
                 save_warmup = true,
                 adapt = adapt,
-                metric = FFIStan.DIAGONAL,
+                metric = TinyStan.DIAGONAL,
                 init_inv_metric = diag_metric,
                 save_metric = true,
                 seed = UInt32(1234),
@@ -151,7 +151,7 @@
                 num_chains = 2,
                 save_warmup = true,
                 adapt = adapt,
-                metric = FFIStan.DENSE,
+                metric = TinyStan.DENSE,
                 init_inv_metric = dense_metric,
                 save_metric = true,
                 seed = UInt32(1234),
@@ -265,14 +265,14 @@
         @test_throws "Invalid initial metric size" sample(
             gaussian_model,
             data;
-            metric = FFIStan.DENSE,
+            metric = TinyStan.DENSE,
             init_inv_metric = ones(5),
         )
 
         @test_throws "Invalid initial metric size" sample(
             gaussian_model,
             data;
-            metric = FFIStan.DENSE,
+            metric = TinyStan.DENSE,
             init_inv_metric = ones(5, 4),
         )
 
@@ -280,14 +280,14 @@
             gaussian_model,
             data;
             num_chains = 2,
-            metric = FFIStan.DENSE,
+            metric = TinyStan.DENSE,
             init_inv_metric = ones(5, 5, 3),
         )
 
         @test_throws "Invalid initial metric size" sample(
             gaussian_model,
             data;
-            metric = FFIStan.DIAGONAL,
+            metric = TinyStan.DIAGONAL,
             init_inv_metric = ones(4),
         )
 
@@ -295,7 +295,7 @@
             gaussian_model,
             data;
             num_chains = 2,
-            metric = FFIStan.DIAGONAL,
+            metric = TinyStan.DIAGONAL,
             init_inv_metric = ones(5, 3),
         )
 
@@ -303,7 +303,7 @@
             gaussian_model,
             data;
             num_chains = 2,
-            metric = FFIStan.DIAGONAL,
+            metric = TinyStan.DIAGONAL,
             init_inv_metric = ones(5, 5, 3),
         )
     end
@@ -313,7 +313,7 @@
         @test_throws "not positive definite" sample(
             gaussian_model,
             data;
-            metric = FFIStan.DENSE,
+            metric = TinyStan.DENSE,
             init_inv_metric = ones(3, 3) * 1e20,
         )
 
@@ -327,7 +327,7 @@
             gaussian_model,
             data;
             num_chains = 2,
-            metric = FFIStan.DENSE,
+            metric = TinyStan.DENSE,
             init_inv_metric = metric,
         )
     end

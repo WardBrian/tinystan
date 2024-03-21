@@ -1,4 +1,4 @@
-name = "FFIStan"
+name = "TinyStan"
 uuid = "3a8caf9d-1ca3-4bd7-a835-128840ab73a4"
 authors = ["Brian Ward <bward@flatironinstitute.org>"]
 version = "0.1.0"

@@ -1,5 +1,5 @@
-#ifndef FFISTAN_UTIL_HPP
-#define FFISTAN_UTIL_HPP
+#ifndef TINYSTAN_UTIL_HPP
+#define TINYSTAN_UTIL_HPP
 
 #include <stan/math/prim/core/init_threadpool_tbb.hpp>
 
@@ -10,7 +10,7 @@
 #include <stdexcept>
 #include <thread>
 
-namespace ffistan {
+namespace tinystan {
 namespace util {
 
 void init_threading(int num_threads) {
@@ -45,5 +45,5 @@ char *to_csv(const std::vector<std::string> &names) {
   return strdup(s_c);
 }
 }  // namespace util
-}  // namespace ffistan
+}  // namespace tinystan
 #endif

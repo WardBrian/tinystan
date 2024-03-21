@@ -52,7 +52,7 @@ mutable struct Model
 
         windows_dll_path_setup()
         lib = Libc.Libdl.dlopen(libname)
-        sep = Char(ccall(Libc.Libdl.dlsym(lib, :ffistan_separator_char), Cchar, ()))
+        sep = Char(ccall(Libc.Libdl.dlsym(lib, :tinystan_separator_char), Cchar, ()))
 
         new(lib, sep)
     end
@@ -67,19 +67,19 @@ function raise_for_error(lib::Ptr{Nothing}, return_code::Cint, err::Ref{Ptr{Cvoi
             error("Unknown error, function returned code $return_code")
         end
         cstr = ccall(
-            Libc.Libdl.dlsym(lib, :ffistan_get_error_message),
+            Libc.Libdl.dlsym(lib, :tinystan_get_error_message),
             Cstring,
             (Ptr{Cvoid},),
             err[],
         )
         msg = unsafe_string(cstr)
         type = ccall(
-            Libc.Libdl.dlsym(lib, :ffistan_get_error_type),
+            Libc.Libdl.dlsym(lib, :tinystan_get_error_type),
             Cint,
             (Ptr{Cvoid},),
             err[],
         )
-        ccall(Libc.Libdl.dlsym(lib, :ffistan_free_stan_error), Cvoid, (Ptr{Cvoid},), err[])
+        ccall(Libc.Libdl.dlsym(lib, :tinystan_free_stan_error), Cvoid, (Ptr{Cvoid},), err[])
         exn = exceptions[type+1]
         throw(exn(msg))
     end
@@ -100,7 +100,7 @@ end
 function with_model(f, model::Model, data::String, seed::UInt32)
     err = Ref{Ptr{Cvoid}}()
     model_ptr = ccall(
-        Libc.Libdl.dlsym(model.lib, :ffistan_create_model),
+        Libc.Libdl.dlsym(model.lib, :tinystan_create_model),
         Ptr{Cvoid},
         (Cstring, Cuint, Ref{Ptr{Cvoid}}),
         data,
@@ -114,7 +114,7 @@ function with_model(f, model::Model, data::String, seed::UInt32)
         return f(model_ptr)
     finally
         ccall(
-            Libc.Libdl.dlsym(model.lib, :ffistan_destroy_model),
+            Libc.Libdl.dlsym(model.lib, :tinystan_destroy_model),
             Cvoid,
             (Ptr{Cvoid},),
             model_ptr,
@@ -125,7 +125,7 @@ end
 function num_free_params(model::Model, model_ptr::Ptr{Cvoid})
     Int(
         ccall(
-            Libc.Libdl.dlsym(model.lib, :ffistan_model_num_free_params),
+            Libc.Libdl.dlsym(model.lib, :tinystan_model_num_free_params),
             Csize_t,
             (Ptr{Cvoid},),
             model_ptr,
@@ -135,7 +135,7 @@ end
 
 function get_names(model::Model, model_ptr::Ptr{Cvoid})
     cstr = ccall(
-        Libc.Libdl.dlsym(model.lib, :ffistan_model_param_names),
+        Libc.Libdl.dlsym(model.lib, :tinystan_model_param_names),
         Cstring,
         (Ptr{Cvoid},),
         model_ptr,
@@ -150,7 +150,7 @@ end
 function api_version(model::Model)
     major, minor, patch = Ref{Cint}(), Ref{Cint}(), Ref{Cint}()
     cstr = ccall(
-        Libc.Libdl.dlsym(model.lib, :ffistan_api_version),
+        Libc.Libdl.dlsym(model.lib, :tinystan_api_version),
         Cvoid,
         (Ptr{Cint}, Ptr{Cint}, Ptr{Cint}),
         major,
@@ -250,7 +250,7 @@ function sample(
 
         err = Ref{Ptr{Cvoid}}()
         return_code = ccall(
-            Libc.Libdl.dlsym(model.lib, :ffistan_sample),
+            Libc.Libdl.dlsym(model.lib, :tinystan_sample),
             Cint,
             (
                 Ptr{Cvoid},
@@ -380,7 +380,7 @@ function pathfinder(
 
         err = Ref{Ptr{Cvoid}}()
         return_code = ccall(
-            Libc.Libdl.dlsym(model.lib, :ffistan_pathfinder),
+            Libc.Libdl.dlsym(model.lib, :tinystan_pathfinder),
             Cint,
             (
                 Ptr{Cvoid},
@@ -471,7 +471,7 @@ function optimize(
 
         err = Ref{Ptr{Cvoid}}()
         return_code = ccall(
-            Libc.Libdl.dlsym(model.lib, :ffistan_optimize),
+            Libc.Libdl.dlsym(model.lib, :tinystan_optimize),
             Cint,
             (
                 Ptr{Cvoid},

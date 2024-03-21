@@ -1,11 +1,11 @@
-#ifndef FFISTAN_LOGGING_HPP
-#define FFISTAN_LOGGING_HPP
+#ifndef TINYSTAN_LOGGING_HPP
+#define TINYSTAN_LOGGING_HPP
 
 #include <stan/callbacks/logger.hpp>
 #include <iostream>
 #include <mutex>
 
-namespace ffistan {
+namespace tinystan {
 namespace io {
 
 /*
@@ -14,7 +14,7 @@ namespace io {
  * If necessary, we could lock a mutex in the else branch of info and warn.
  */
 
-FFISTAN_PRINT_CALLBACK user_print_callback = nullptr;
+TINYSTAN_PRINT_CALLBACK user_print_callback = nullptr;
 
 void info(const std::string& msg) {
   if (user_print_callback == nullptr) {
@@ -33,6 +33,6 @@ void warn(const std::string& msg) {
 }
 
 }  // namespace io
-}  // namespace ffistan
+}  // namespace tinystan
 
 #endif

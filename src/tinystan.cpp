@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 
-#include "ffistan.h"
+#include "tinystan.h"
 
 #include "errors.hpp"
 #include "logging.hpp"
@@ -32,39 +32,39 @@
 
 #include "R_shims.cpp"
 
-using namespace ffistan;
+using namespace tinystan;
 
 extern "C" {
 
-FFIStanModel *ffistan_create_model(const char *data, unsigned int seed,
-                                   FFIStanError **err) {
-  FFISTAN_TRY_CATCH({ return new FFIStanModel(data, seed); })
+TinyStanModel *tinystan_create_model(const char *data, unsigned int seed,
+                                     TinyStanError **err) {
+  TINYSTAN_TRY_CATCH({ return new TinyStanModel(data, seed); })
 
   return nullptr;
 }
 
-void ffistan_destroy_model(FFIStanModel *model) { delete model; }
+void tinystan_destroy_model(TinyStanModel *model) { delete model; }
 
-const char *ffistan_model_param_names(const FFIStanModel *model) {
+const char *tinystan_model_param_names(const TinyStanModel *model) {
   return model->param_names;
 }
 
-size_t ffistan_model_num_free_params(const FFIStanModel *model) {
+size_t tinystan_model_num_free_params(const TinyStanModel *model) {
   return model->num_free_params;
 }
 
-int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
-                   const char *inits, unsigned int seed, unsigned int id,
-                   double init_radius, int num_warmup, int num_samples,
-                   FFIStanMetric metric_choice, const double *init_inv_metric,
-                   /* adaptation params */ bool adapt, double delta,
-                   double gamma, double kappa, double t0,
-                   unsigned int init_buffer, unsigned int term_buffer,
-                   unsigned int window, bool save_warmup, double stepsize,
-                   double stepsize_jitter, int max_depth, int refresh,
-                   int num_threads, double *out, size_t out_size,
-                   double *metric_out, FFIStanError **err) {
-  FFISTAN_TRY_CATCH({
+int tinystan_sample(const TinyStanModel *tmodel, size_t num_chains,
+                    const char *inits, unsigned int seed, unsigned int id,
+                    double init_radius, int num_warmup, int num_samples,
+                    TinyStanMetric metric_choice, const double *init_inv_metric,
+                    /* adaptation params */ bool adapt, double delta,
+                    double gamma, double kappa, double t0,
+                    unsigned int init_buffer, unsigned int term_buffer,
+                    unsigned int window, bool save_warmup, double stepsize,
+                    double stepsize_jitter, int max_depth, int refresh,
+                    int num_threads, double *out, size_t out_size,
+                    double *metric_out, TinyStanError **err) {
+  TINYSTAN_TRY_CATCH({
     error::check_positive("num_chains", num_chains);
     error::check_positive("id", id);
     error::check_nonnegative("init_radius", init_radius);
@@ -84,10 +84,10 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
 
     auto json_inits = io::load_inits(num_chains, inits);
 
-    auto &model = *ffimodel->model;
+    auto &model = *tmodel->model;
 
     // all HMC has 7 algorithm params
-    int num_params = ffimodel->num_params + 7;
+    int num_params = tmodel->num_params + 7;
     int draws_offset = num_params * (num_samples + num_warmup * save_warmup);
     if (out_size < num_chains * draws_offset) {
       std::stringstream ss;
@@ -104,7 +104,7 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
 
     std::vector<io::metric_buffer_writer> metric_writers;
     metric_writers.reserve(num_chains);
-    int num_model_params = ffimodel->num_free_params;
+    int num_model_params = tmodel->num_free_params;
     int metric_offset = metric_choice == dense
                             ? num_model_params * num_model_params
                             : num_model_params;
@@ -119,7 +119,7 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
         num_chains, init_inv_metric, num_model_params, metric_choice);
 
     error::error_logger logger(refresh != 0);
-    interrupt::ffistan_interrupt_handler interrupt;
+    interrupt::tinystan_interrupt_handler interrupt;
 
     std::vector<stan::callbacks::writer> null_writers(num_chains);
 
@@ -189,17 +189,17 @@ int ffistan_sample(const FFIStanModel *ffimodel, size_t num_chains,
   return -1;
 }
 
-int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
-                       const char *inits, unsigned int seed, unsigned int id,
-                       double init_radius, int num_draws,
-                       /* tuning params */ int max_history_size,
-                       double init_alpha, double tol_obj, double tol_rel_obj,
-                       double tol_grad, double tol_rel_grad, double tol_param,
-                       int num_iterations, int num_elbo_draws,
-                       int num_multi_draws, bool calculate_lp,
-                       bool psis_resample, int refresh, int num_threads,
-                       double *out, size_t out_size, FFIStanError **err) {
-  FFISTAN_TRY_CATCH({
+int tinystan_pathfinder(const TinyStanModel *tmodel, size_t num_paths,
+                        const char *inits, unsigned int seed, unsigned int id,
+                        double init_radius, int num_draws,
+                        /* tuning params */ int max_history_size,
+                        double init_alpha, double tol_obj, double tol_rel_obj,
+                        double tol_grad, double tol_rel_grad, double tol_param,
+                        int num_iterations, int num_elbo_draws,
+                        int num_multi_draws, bool calculate_lp,
+                        bool psis_resample, int refresh, int num_threads,
+                        double *out, size_t out_size, TinyStanError **err) {
+  TINYSTAN_TRY_CATCH({
     // argument validation
     error::check_positive("num_paths", num_paths);
     error::check_positive("num_draws", num_draws);
@@ -220,12 +220,12 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
 
     auto json_inits = io::load_inits(num_paths, inits);
 
-    auto &model = *ffimodel->model;
+    auto &model = *tmodel->model;
 
     io::buffer_writer pathfinder_writer(out, out_size);
     error::error_logger logger(refresh != 0);
 
-    interrupt::ffistan_interrupt_handler interrupt;
+    interrupt::tinystan_interrupt_handler interrupt;
     stan::callbacks::structured_writer dummy_json_writer;
 
     bool save_iterations = false;
@@ -265,16 +265,16 @@ int ffistan_pathfinder(const FFIStanModel *ffimodel, size_t num_paths,
   return -1;
 }
 
-int ffistan_optimize(const FFIStanModel *ffimodel, const char *init,
-                     unsigned int seed, unsigned int id, double init_radius,
-                     FFIStanOptimizationAlgorithm algorithm, int num_iterations,
-                     bool jacobian,
-                     /* tuning params */ int max_history_size,
-                     double init_alpha, double tol_obj, double tol_rel_obj,
-                     double tol_grad, double tol_rel_grad, double tol_param,
-                     int refresh, int num_threads, double *out, size_t out_size,
-                     FFIStanError **err) {
-  FFISTAN_TRY_CATCH({
+int tinystan_optimize(const TinyStanModel *tmodel, const char *init,
+                      unsigned int seed, unsigned int id, double init_radius,
+                      TinyStanOptimizationAlgorithm algorithm,
+                      int num_iterations, bool jacobian,
+                      /* tuning params */ int max_history_size,
+                      double init_alpha, double tol_obj, double tol_rel_obj,
+                      double tol_grad, double tol_rel_grad, double tol_param,
+                      int refresh, int num_threads, double *out,
+                      size_t out_size, TinyStanError **err) {
+  TINYSTAN_TRY_CATCH({
     error::check_positive("id", id);
     error::check_positive("num_iterations", num_iterations);
     error::check_nonnegative("init_radius", init_radius);
@@ -294,11 +294,11 @@ int ffistan_optimize(const FFIStanModel *ffimodel, const char *init,
     util::init_threading(num_threads);
 
     auto json_init = io::load_data(init);
-    auto &model = *ffimodel->model;
+    auto &model = *tmodel->model;
     io::buffer_writer sample_writer(out, out_size);
     error::error_logger logger(refresh != 0);
 
-    interrupt::ffistan_interrupt_handler interrupt;
+    interrupt::tinystan_interrupt_handler interrupt;
     stan::callbacks::writer null_writer;
 
     bool save_iterations = false;
@@ -366,37 +366,37 @@ int ffistan_optimize(const FFIStanModel *ffimodel, const char *init,
   return -1;
 }
 
-const char *ffistan_get_error_message(const FFIStanError *err) {
+const char *tinystan_get_error_message(const TinyStanError *err) {
   if (err == nullptr) {
     return "Something went wrong: No error found";
   }
   return err->msg;
 }
 
-FFIStanErrorType ffistan_get_error_type(const FFIStanError *err) {
+TinyStanErrorType tinystan_get_error_type(const TinyStanError *err) {
   if (err == nullptr) {
-    return FFIStanErrorType::generic;
+    return TinyStanErrorType::generic;
   }
   return err->type;
 }
 
-void ffistan_free_stan_error(FFIStanError *err) { delete (err); }
+void tinystan_free_stan_error(TinyStanError *err) { delete (err); }
 
-char ffistan_separator_char() { return io::SEPARATOR; }
+char tinystan_separator_char() { return io::SEPARATOR; }
 
-void ffistan_api_version(int *major, int *minor, int *patch) {
-  *major = FFISTAN_MAJOR;
-  *minor = FFISTAN_MINOR;
-  *patch = FFISTAN_PATCH;
+void tinystan_api_version(int *major, int *minor, int *patch) {
+  *major = TINYSTAN_MAJOR;
+  *minor = TINYSTAN_MINOR;
+  *patch = TINYSTAN_PATCH;
 }
 
-void ffistan_stan_version(int *major, int *minor, int *patch) {
+void tinystan_stan_version(int *major, int *minor, int *patch) {
   *major = STAN_MAJOR;
   *minor = STAN_MINOR;
   *patch = STAN_PATCH;
 }
 
-void ffistan_set_print_callback(FFISTAN_PRINT_CALLBACK print) {
+void tinystan_set_print_callback(TINYSTAN_PRINT_CALLBACK print) {
   io::user_print_callback = print;
 }
 

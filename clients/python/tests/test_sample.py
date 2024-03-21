@@ -3,7 +3,7 @@ import json
 import numpy as np
 import pytest
 
-import ffistan
+import tinystan
 from tests import (
     BERNOULLI_DATA,
     STAN_FOLDER,
@@ -63,7 +63,7 @@ def test_save_metric(gaussian_model):
         num_warmup=100,
         num_samples=10,
         save_metric=True,
-        metric=ffistan.HMCMetric.UNIT,
+        metric=tinystan.HMCMetric.UNIT,
     )
     assert len(out_unit.metric.shape) == 2
     assert out_unit.metric.shape[1] == 5
@@ -74,7 +74,7 @@ def test_save_metric(gaussian_model):
         num_warmup=100,
         num_samples=10,
         save_metric=True,
-        metric=ffistan.HMCMetric.DIAGONAL,
+        metric=tinystan.HMCMetric.DIAGONAL,
     )
     assert len(out_diag.metric.shape) == 2
     assert out_diag.metric.shape[1] == 5
@@ -85,7 +85,7 @@ def test_save_metric(gaussian_model):
         num_warmup=100,
         num_samples=10,
         save_metric=True,
-        metric=ffistan.HMCMetric.DENSE,
+        metric=tinystan.HMCMetric.DENSE,
     )
     assert len(out_dense.metric.shape) == 3
     assert out_dense.metric.shape[1] == 5
@@ -101,7 +101,7 @@ def test_save_metric(gaussian_model):
 
 
 def test_sundials_ode():
-    sir = ffistan.Model(STAN_FOLDER / "sir" / "sir_model.so")
+    sir = tinystan.Model(STAN_FOLDER / "sir" / "sir_model.so")
     sir_data = STAN_FOLDER / "sir" / "sir.data.json"
     sir_init = STAN_FOLDER / "sir" / "sir.data.json"
 
@@ -128,7 +128,7 @@ def test_init_inv_metric_used(gaussian_model, adapt):
         num_chains=2,
         save_warmup=True,
         adapt=adapt,
-        metric=ffistan.HMCMetric.DIAGONAL,
+        metric=tinystan.HMCMetric.DIAGONAL,
         init_inv_metric=diag_metric,
         save_metric=True,
         seed=1234,
@@ -153,7 +153,7 @@ def test_init_inv_metric_used(gaussian_model, adapt):
         num_chains=2,
         save_warmup=True,
         adapt=adapt,
-        metric=ffistan.HMCMetric.DENSE,
+        metric=tinystan.HMCMetric.DENSE,
         init_inv_metric=dense_metric,
         save_metric=True,
         seed=1234,
@@ -239,38 +239,38 @@ def test_bad_initial_metric_size(gaussian_model):
 
     with pytest.raises(ValueError, match="Invalid initial metric size"):
         gaussian_model.sample(
-            data, metric=ffistan.HMCMetric.DENSE, init_inv_metric=np.ones((5,))
+            data, metric=tinystan.HMCMetric.DENSE, init_inv_metric=np.ones((5,))
         )
 
     with pytest.raises(ValueError, match="Invalid initial metric size"):
         gaussian_model.sample(
-            data, metric=ffistan.HMCMetric.DENSE, init_inv_metric=np.ones((4, 5))
+            data, metric=tinystan.HMCMetric.DENSE, init_inv_metric=np.ones((4, 5))
         )
 
     with pytest.raises(ValueError, match="Invalid initial metric size"):
         gaussian_model.sample(
             data,
             num_chains=4,
-            metric=ffistan.HMCMetric.DENSE,
+            metric=tinystan.HMCMetric.DENSE,
             init_inv_metric=np.ones((3, 5, 5)),
         )
 
     with pytest.raises(ValueError, match="Invalid initial metric size"):
         gaussian_model.sample(
-            data, metric=ffistan.HMCMetric.DIAGONAL, init_inv_metric=np.ones((4,))
+            data, metric=tinystan.HMCMetric.DIAGONAL, init_inv_metric=np.ones((4,))
         )
     with pytest.raises(ValueError, match="Invalid initial metric size"):
         gaussian_model.sample(
             data,
             num_chains=4,
-            metric=ffistan.HMCMetric.DIAGONAL,
+            metric=tinystan.HMCMetric.DIAGONAL,
             init_inv_metric=np.ones((3, 5)),
         )
     with pytest.raises(ValueError, match="Invalid initial metric size"):
         gaussian_model.sample(
             data,
             num_chains=4,
-            metric=ffistan.HMCMetric.DIAGONAL,
+            metric=tinystan.HMCMetric.DIAGONAL,
             init_inv_metric=np.ones((3, 5, 5)),
         )
 
@@ -279,7 +279,9 @@ def test_bad_initial_metric(gaussian_model):
     data = {"N": 3}
     with pytest.raises(RuntimeError, match="not positive definite"):
         gaussian_model.sample(
-            data, metric=ffistan.HMCMetric.DENSE, init_inv_metric=np.ones((3, 3)) * 1e20
+            data,
+            metric=tinystan.HMCMetric.DENSE,
+            init_inv_metric=np.ones((3, 3)) * 1e20,
         )
 
     metric = np.zeros((2, 3, 3))
@@ -288,7 +290,7 @@ def test_bad_initial_metric(gaussian_model):
 
     with pytest.raises(RuntimeError, match="not positive definite"):
         gaussian_model.sample(
-            data, num_chains=2, metric=ffistan.HMCMetric.DENSE, init_inv_metric=metric
+            data, num_chains=2, metric=tinystan.HMCMetric.DENSE, init_inv_metric=metric
         )
 
 

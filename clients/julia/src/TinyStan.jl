@@ -1,4 +1,4 @@
-module FFIStan
+module TinyStan
 
 export Model,
     HMCMetric,
@@ -8,7 +8,7 @@ export Model,
     OptimizationAlgorithm,
     api_version,
     compile_model,
-    set_ffistan_path!
+    set_tinystan_path!
 
 include("model.jl")
 include("compile.jl")

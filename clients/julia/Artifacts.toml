@@ -1,7 +1,7 @@
-[ffistan]
+[tinystan]
 git-tree-sha1 = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
 lazy = true
 
-    [[ffistan.download]]
-    sha256 = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
-    url = "https://github.com/WardBrian/ffistan/releases/download/v0.1.0/ffistan-0.1.0.tar.gz"
+[[tinystan.download]]
+sha256 = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+url = "https://github.com/WardBrian/tinystan/releases/download/v0.1.0/tinystan-0.1.0.tar.gz"

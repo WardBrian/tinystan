@@ -1,4 +1,4 @@
-name: Release FFIStan
+name: Release TinyStan
 
 on:
   workflow_dispatch:
@@ -16,7 +16,7 @@ on:
 
 jobs:
   release:
-    name: Release FFIStan
+    name: Release TinyStan
     runs-on: ubuntu-latest
 
     steps:
@@ -38,24 +38,24 @@ jobs:
         run: |
           sed -i 's/Version:.*/Version: ${{ inputs.new_version }}/' clients/R/DESCRIPTION
           sed -i 's/version = .*/version = "${{ inputs.new_version }}"/' clients/julia/Project.toml
-          sed -i 's/__version__ = .*/__version__ = "${{ inputs.new_version }}"/' clients/python/ffistan/__version.py
+          sed -i 's/__version__ = .*/__version__ = "${{ inputs.new_version }}"/' clients/python/tinystan/__version.py
 
-          sed -i 's/#define FFISTAN_MAJOR .*/#define FFISTAN_MAJOR '"$(echo ${{ inputs.new_version }} | cut -d. -f1)"'/' src/version.hpp
-          sed -i 's/#define FFISTAN_MINOR .*/#define FFISTAN_MINOR '"$(echo ${{ inputs.new_version }} | cut -d. -f2)"'/' src/version.hpp
-          sed -i 's/#define FFISTAN_PATCH .*/#define FFISTAN_PATCH '"$(echo ${{ inputs.new_version }} | cut -d. -f3)"'/' src/version.hpp
+          sed -i 's/#define TINYSTAN_MAJOR .*/#define TINYSTAN_MAJOR '"$(echo ${{ inputs.new_version }} | cut -d. -f1)"'/' src/version.hpp
+          sed -i 's/#define TINYSTAN_MINOR .*/#define TINYSTAN_MINOR '"$(echo ${{ inputs.new_version }} | cut -d. -f2)"'/' src/version.hpp
+          sed -i 's/#define TINYSTAN_PATCH .*/#define TINYSTAN_PATCH '"$(echo ${{ inputs.new_version }} | cut -d. -f3)"'/' src/version.hpp
 
           cd docs/
           python add_version.py "v${{ inputs.new_version }}"
 
       - name: Create tarball
         run: |
-          tar --exclude-vcs --exclude='clients' -chzvf ffistan-${{ inputs.new_version }}.tar.gz --transform 's,^,ffistan-${{ inputs.new_version }}/,' *
+          tar --exclude-vcs --exclude='clients' -chzvf tinystan-${{ inputs.new_version }}.tar.gz --transform 's,^,tinystan-${{ inputs.new_version }}/,' *
 
         # Note: because of the order of operations here, the Julia package inside the tarball can never point to itself.
       - name: Update Julia artifact
         if: ${{ !inputs.is_rerun }}
         run: |
-          julia ./julia/updateArtifacts.jl ffistan-${{ inputs.new_version }}.tar.gz "v${{ inputs.new_version }}"
+          julia ./julia/updateArtifacts.jl tinystan-${{ inputs.new_version }}.tar.gz "v${{ inputs.new_version }}"
 
       - name: Setup git identity
         run: |
@@ -81,13 +81,13 @@ jobs:
           name: release-artifacts
           path: |
             clients/python/dist/*.whl
-            ffistan-*.tar.gz
+            tinystan-*.tar.gz
 
       - name: Create release
         if: ${{ !inputs.is_rerun }}
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "ffistan-*.tar.gz,python/dist/*"
+          artifacts: "tinystan-*.tar.gz,python/dist/*"
           tag: "v${{ inputs.new_version }}"
           commit: main
           draft: true
@@ -115,7 +115,7 @@ jobs:
   # docs:
   #   name: Build release docs
   #   needs: release
-  #   uses: roualdes/ffistan/.github/workflows/docs.yaml@main
+  #   uses: roualdes/tinystan/.github/workflows/docs.yaml@main
   #   with:
   #     version: "v${{ inputs.new_version }}"
   #   secrets: inherit
