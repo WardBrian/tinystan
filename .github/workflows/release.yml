@@ -18,7 +18,8 @@ jobs:
   release:
     name: Release TinyStan
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write
     steps:
       - name: Check out github
         uses: actions/checkout@v4
