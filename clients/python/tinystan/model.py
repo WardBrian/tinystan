@@ -66,6 +66,11 @@ OPTIMIZE_VARIABLES = [
     "lp__",
 ]
 
+LAPLACE_VARIABLES = [
+    "log_p__",
+    "log_q__",
+]
+
 FIXED_SAMPLER_VARIABLES = [
     "lp__",
     "accept_stat__",
@@ -240,6 +245,24 @@ class Model:
             ctypes.c_int,  # num_threads
             double_array,
             ctypes.c_size_t,  # buffer size
+            err_ptr,
+        ]
+
+        self._ffi_laplace = self._lib.tinystan_laplace_sample
+        self._ffi_laplace.restype = ctypes.c_int
+        self._ffi_laplace.argtypes = [
+            ctypes.c_void_p,  # model
+            nullable_double_array,  # array of constrained params
+            ctypes.c_char_p,  # json of constrained params
+            ctypes.c_uint,  # seed
+            ctypes.c_int,  # draws
+            ctypes.c_bool,  # jacobian
+            ctypes.c_bool,  # calculate_lp
+            ctypes.c_int,  # refresh
+            ctypes.c_int,  # num_threads
+            double_array,  # draws buffer
+            ctypes.c_size_t,  # buffer size
+            nullable_double_array,  # hessian out
             err_ptr,
         ]
 
@@ -559,3 +582,80 @@ class Model:
             self._raise_for_error(rc, err)
 
         return StanOutput(param_names, out)
+
+    def laplace_sample(
+        self,
+        mode,
+        data="",
+        *,
+        num_draws=1000,
+        jacobian=True,
+        calculate_lp=True,
+        save_hessian=False,
+        seed=None,
+        refresh=0,
+        num_threads=-1,
+    ):
+        if num_draws < 1:
+            raise ValueError("num_draws must be at least 1")
+
+        seed = seed or rand_u32()
+
+        if isinstance(mode, StanOutput):
+            # handle case of passing optimization output directly
+            if len(mode.data.shape) == 1:
+                mode = mode.data[1:]
+            else:
+                raise ValueError("Laplace can only be used with Optimization output")
+                # mode = mode.create_inits(chains=1, seed=seed)
+
+        if isinstance(mode, np.ndarray):
+            mode_json = None
+            mode_array = mode
+        else:
+            mode_json = encode_stan_json(mode)
+            mode_array = None
+
+        with self._get_model(data, seed) as model:
+            param_names = LAPLACE_VARIABLES + self._get_parameter_names(model)
+            num_params = len(param_names)
+
+            if mode_array is not None and len(mode_array) != num_params - len(
+                LAPLACE_VARIABLES
+            ):
+                raise ValueError(
+                    f"Mode array has incorrect length. Expected {num_params - len(LAPLACE_VARIABLES)}"
+                    f" but got {len(mode_array)}"
+                )
+
+            out = np.zeros((num_draws, num_params), dtype=np.float64)
+
+            model_params = self._num_free_params(model)
+            hessian_out = (
+                np.zeros((model_params, model_params), dtype=np.float64)
+                if save_hessian
+                else None
+            )
+            err = ctypes.pointer(ctypes.c_void_p())
+
+            rc = self._ffi_laplace(
+                model,
+                mode_array,
+                mode_json,
+                seed,
+                num_draws,
+                jacobian,
+                calculate_lp,
+                refresh,
+                num_threads,
+                out,
+                out.size,
+                hessian_out,
+                err,
+            )
+            self._raise_for_error(rc, err)
+
+        output = StanOutput(param_names, out)
+        if save_hessian:
+            output.hessian = hessian_out
+        return output

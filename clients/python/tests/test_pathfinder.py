@@ -91,7 +91,6 @@ def test_stan2368_bug(bernoulli_model):
     assert out6["theta"].shape == (1,)
 
 
-
 def test_calculate_lp(bernoulli_model):
     out = bernoulli_model.pathfinder(BERNOULLI_DATA, num_paths=2, calculate_lp=False)
     assert np.sum(np.isnan(out["lp__"])) > 0
