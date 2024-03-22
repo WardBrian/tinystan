@@ -78,13 +78,18 @@ def test_output_sizes(bernoulli_model):
 
     assert out5["theta"].shape == (109,)
 
-    # currently Stan bug https://github.com/stan-dev/stan/issues/3268
-    # out4 = bernoulli_model.pathfinder(
-    #     BERNOULLI_DATA,
-    #     num_paths=1,
-    #     num_draws=1,
-    #     psis_resample=False,
-    # )
+
+@pytest.mark.xfail(reason="Stan bug https://github.com/stan-dev/stan/issues/3268")
+def test_stan2368_bug(bernoulli_model):
+    out6 = bernoulli_model.pathfinder(
+        BERNOULLI_DATA,
+        num_paths=1,
+        num_draws=1,
+        psis_resample=False,
+    )
+
+    assert out6["theta"].shape == (1,)
+
 
 
 def test_calculate_lp(bernoulli_model):
