@@ -3,6 +3,7 @@
 
 #include <stan/model/model_base.hpp>
 #include <stan/io/var_context.hpp>
+#include <stan/callbacks/logger.hpp>
 
 #include <ostream>
 #include <memory>
@@ -46,5 +47,44 @@ class TinyStanModel {
   size_t num_params;
   size_t num_free_params;
 };
+
+namespace tinystan {
+namespace model {
+
+Eigen::VectorXd unconstrain_parameters(const TinyStanModel *tmodel,
+                                       const double *theta,
+                                       const char *theta_json,
+                                       stan::callbacks::logger &logger) {
+  Eigen::VectorXd theta_unc(tmodel->num_free_params);
+  auto &model = *tmodel->model;
+
+  std::stringstream msg;
+  try {
+    if (theta_json != nullptr) {
+      auto json_theta_hat = io::load_data(theta_json);
+      model.transform_inits(*json_theta_hat, theta_unc, &msg);
+
+    } else if (theta != nullptr) {
+      Eigen::VectorXd theta_hat_constr_vec
+          = Eigen::Map<const Eigen::VectorXd>(theta, tmodel->num_params);
+      model.unconstrain_array(theta_hat_constr_vec, theta_unc, &msg);
+    } else {
+      throw std::runtime_error("No initial value provided");
+    }
+  } catch (...) {
+    if (msg.str().length() > 0) {
+      logger.info(msg.str());
+    }
+    throw;
+  }
+  if (msg.str().length() > 0) {
+    logger.info(msg.str());
+  }
+
+  return theta_unc;
+}
+
+}  // namespace model
+}  // namespace tinystan
 
 #endif

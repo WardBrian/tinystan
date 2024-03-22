@@ -6,7 +6,7 @@
     - [ ] Version checking
 - [ ] Fixed param sampler for 0 dimension parameters?
 - [ ] Add wrapper around generate quantities method?
-- [ ] Add wraper around laplace sampling?
+- [x] Add wraper around laplace sampling?
 - [x] Pathfinder: expose the no lp/no PSIS version
   - [x] Pathfinder: now change single-path behavior to run PSIS?
 - [x] Add ability to interrupt the algorithms during runs (Ctrl+C)
@@ -27,6 +27,7 @@
 
 
 ## Other
+- [ ] Documentation
 - [x] Set up visibility such that all non-API symbols are hidden
 - [x] Rename
 - [ ] Look into cmake/clang-cl builds
