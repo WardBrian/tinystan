@@ -156,7 +156,7 @@ end
 
 function api_version(model::Model)
     major, minor, patch = Ref{Cint}(), Ref{Cint}(), Ref{Cint}()
-    cstr = ccall(
+    ccall(
         Libc.Libdl.dlsym(model.lib, :tinystan_api_version),
         Cvoid,
         (Ptr{Cint}, Ptr{Cint}, Ptr{Cint}),

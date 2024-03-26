@@ -146,7 +146,7 @@ def windows_dll_path_setup() -> None:
             )
             tbb_path = os.path.dirname(out.stdout.decode().splitlines()[0])
             os.add_dll_directory(tbb_path)
-        except:
+        except Exception:
             try:
                 tbb_path = os.path.abspath(
                     os.path.join(
@@ -156,7 +156,7 @@ def windows_dll_path_setup() -> None:
                 os.environ["PATH"] = tbb_path + ";" + os.environ["PATH"]
                 os.add_dll_directory(tbb_path)
                 WINDOWS_PATH_SET = True
-            except:
+            except Exception:
                 warnings.warn(
                     "Unable to set path to TBB's DLL. Loading TinyStan models may fail. "
                     f"Tried path '{tbb_path}'",
@@ -178,7 +178,7 @@ def windows_dll_path_setup() -> None:
                 os.path.dirname(out.stdout.decode().splitlines()[0])
             )
             os.add_dll_directory(mingw_dir)
-        except:
+        except Exception:
             # no default location
             warnings.warn(
                 "Unable to find MinGW's DLL location. Loading TinyStan models may fail.",

@@ -23,7 +23,7 @@ def wrapped_ndptr(*args, **kwargs):
     """
     base = ndpointer(*args, **kwargs)
 
-    def from_param(cls, obj):
+    def from_param(_cls, obj):
         if obj is None:
             return obj
         return base.from_param(obj)

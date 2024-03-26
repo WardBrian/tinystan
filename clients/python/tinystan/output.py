@@ -46,11 +46,7 @@ class StanOutput:
             return {
                 name: var.extract_reshape(draw) for name, var in self._params.items()
             }
-        else:
-            return [
-                {
-                    name: var.extract_reshape(data[idx])
-                    for name, var in self._params.items()
-                }
-                for idx in idxs
-            ]
+        return [
+            {name: var.extract_reshape(data[idx]) for name, var in self._params.items()}
+            for idx in idxs
+        ]

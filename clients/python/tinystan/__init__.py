@@ -1,4 +1,4 @@
-from .__version import __version__
+from .__version import __version__ as __version__
 from .compile import compile_model
 from .model import HMCMetric, Model, OptimizationAlgorithm
 from .output import StanOutput
