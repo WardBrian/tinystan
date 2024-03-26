@@ -25,6 +25,8 @@ const PATHFINDER_VARIABLES = ["lp_approx__", "lp__"]
 
 const OPTIMIZE_VARIABLES = ["lp__"]
 
+const LAPLACE_VARIABLES = ["log_p__", "log_q__"]
+
 const exceptions = [ErrorException, ArgumentError, _ -> InterruptException()]
 
 mutable struct Model
@@ -527,5 +529,94 @@ function optimize(
         )
         raise_for_error(model.lib, return_code, err)
         return (param_names, out)
+    end
+end
+
+
+function laplace_sample(
+    model::Model,
+    mode::Union{String,Array{Float64}},
+    data::String = "";
+    num_draws::Int = 1000,
+    jacobian::Bool = true,
+    calculate_lp::Bool = true,
+    save_hessian::Bool = false,
+    seed::Union{UInt32,Nothing} = nothing,
+    refresh::Int = 0,
+    num_threads::Int = -1,
+)
+    if num_draws < 1
+        error("num_draws must be at least 1")
+    end
+    if seed === nothing
+        seed = rand(UInt32)
+    end
+
+    with_model(model, data, seed) do model_ptr
+        param_names = cat(LAPLACE_VARIABLES, get_names(model, model_ptr), dims = 1)
+        num_params = length(param_names)
+        out = zeros(Float64, num_params, num_draws)
+
+        if save_hessian
+            free_params = num_free_params(model, model_ptr)
+            hessian_out = zeros(Float64, free_params, free_params)
+        else
+            hessian_out = C_NULL
+        end
+
+        if mode isa String
+            mode_json = mode
+            mode_array = C_NULL
+        else
+            mode_json = C_NULL
+            mode_array = mode
+
+            if length(mode_array) != (num_params - length(LAPLACE_VARIABLES))
+                error(
+                    "Mode array has incorrect length. Expected $num_params" *
+                    " but got $(length(mode_array))",
+                )
+            end
+        end
+
+        err = Ref{Ptr{Cvoid}}()
+        return_code = ccall(
+            Libc.Libdl.dlsym(model.lib, :tinystan_laplace_sample),
+            Cint,
+            (
+                Ptr{Cvoid},
+                Ptr{Cdouble},
+                Cstring,
+                Cuint,
+                Cint,
+                Cint, # really bool
+                Cint, # really bool
+                Cint,
+                Cint,
+                Ref{Cdouble},
+                Csize_t,
+                Ptr{Cdouble},
+                Ref{Ptr{Cvoid}},
+            ),
+            model_ptr,
+            mode_array,
+            mode_json,
+            seed,
+            num_draws,
+            Int32(jacobian),
+            Int32(calculate_lp),
+            refresh,
+            num_threads,
+            out,
+            length(out),
+            hessian_out,
+            err,
+        )
+        raise_for_error(model.lib, return_code, err)
+
+        if save_hessian
+            return (param_names, transpose(out), hessian_out)
+        end
+        return (param_names, transpose(out))
     end
 end

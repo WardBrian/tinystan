@@ -195,10 +195,14 @@ def test_multiple_inits(multimodal_model, temp_json):
     assert np.all(out3["mu"][0] < 0)
     assert np.all(out3["mu"][1] > 0)
 
+
 def test_init_from_other(bernoulli_model):
     out = bernoulli_model.optimize(BERNOULLI_DATA, jacobian=True)
-    out2 = bernoulli_model.sample(BERNOULLI_DATA, num_warmup=100, num_samples=100, inits=out)
+    out2 = bernoulli_model.sample(
+        BERNOULLI_DATA, num_warmup=100, num_samples=100, inits=out
+    )
     assert 0.2 < out2["theta"].mean() < 0.3
+
 
 def test_bad_data(bernoulli_model):
     data = {"N": -1}

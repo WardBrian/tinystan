@@ -335,7 +335,7 @@ class Model:
         if inits is not None:
             if isinstance(inits, StanOutput):
                 inits = inits.create_inits(chains=chains, seed=seed)
-                
+
             if isinstance(inits, list):
                 inits_encoded = self.sep.join(encode_stan_json(init) for init in inits)
             else:
