@@ -160,7 +160,7 @@
         )
     end
 
-    @testset "Bad nummber of draws" begin
+    @testset "Bad number of draws" begin
         @test_throws "at least 1" laplace_sample(
             bernoulli_model,
             BERNOULLI_MODE,

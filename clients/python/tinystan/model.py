@@ -622,7 +622,6 @@ class Model:
         mode_array, mode_json = preprocess_laplace_inputs(mode)
 
         with self._get_model(data, seed) as model:
-            model_params = self._get_parameter_names
             param_names = LAPLACE_VARIABLES + self._get_parameter_names(model)
             num_params = len(param_names)
 

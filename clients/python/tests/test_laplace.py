@@ -128,6 +128,10 @@ def test_bad_mode_json(bernoulli_model):
     with pytest.raises(RuntimeError, match="Bounded variable is 2"):
         bernoulli_model.laplace_sample(mode1, BERNOULLI_DATA)
 
+    mode2 = {"theta": [0.1, 0.1]}
+    with pytest.raises(ValueError, match="mismatch in number"):
+        bernoulli_model.laplace_sample(mode2, BERNOULLI_DATA)
+
     with pytest.raises(ValueError, match="Could not open data file"):
         bernoulli_model.laplace_sample("bad/path.json", BERNOULLI_DATA)
 

@@ -11,6 +11,8 @@ OptimizationAlgorithm <- list(NEWTON = 0, BFGS = 1, LBFGS = 2)
 
 OPTIMIZATION_VARIABLES = c("lp__")
 
+LAPLACE_VARIABLES = c("log_p__", "log_g__")
+
 #' @export
 StanModel <- R6::R6Class("StanModel", public = list(initialize = function(lib, stanc_args = NULL,
     make_args = NULL, warn = TRUE) {
@@ -200,6 +202,56 @@ StanModel <- R6::R6Class("StanModel", public = list(initialize = function(lib, s
 
         output_as_rvars(params, 1, 1, vars$out)
     })
+}, laplace_sample = function(mode, data = "", num_draws = 1000, jacobian = TRUE,
+    calculate_lp = TRUE, save_hessian = FALSE, seed = NULL, refresh = 0, num_threads = -1) {
+
+    if (num_draws < 1) {
+        stop("num_draws must be at least 1")
+    }
+    if (is.null(seed)) {
+        seed <- as.integer(runif(1, min = 0, max = (2^31)))
+    }
+
+    private$with_model(data, seed, {
+        params <- c(LAPLACE_VARIABLES, private$get_parameter_names(model))
+        num_params <- length(params)
+        free_params <- private$get_free_params(model)
+
+        if (save_hessian) {
+            hessian_size <- free_params * free_params
+        } else {
+            hessian_size <- 1
+        }
+
+        if (is.numeric(mode)) {
+            if (length(mode) != num_params - length(LAPLACE_VARIABLES)) {
+                stop("Mode array has incorrect length.")
+            }
+            mode_array <- as.double(mode)
+            mode_json <- as.character("")
+            use_array <- TRUE
+        } else {
+            mode_array <- as.double(0)
+            mode_json <- as.character(mode)
+            use_array <- FALSE
+        }
+
+        vars <- .C("tinystan_laplace_sample_R", return_code = as.integer(0), as.raw(model),
+            as.logical(use_array), mode_array, mode_json, as.integer(seed), as.integer(num_draws),
+            as.logical(jacobian), as.logical(calculate_lp), as.integer(refresh),
+            as.integer(num_threads), out = double(num_params * num_draws), as.integer(num_params *
+                num_draws), as.logical(save_hessian), hessian = double(hessian_size),
+            err = raw(8), PACKAGE = private$lib_name)
+        handle_error(vars$return_code, private$lib_name, vars$err)
+
+        out <- output_as_rvars(params, num_draws, 1, vars$out)
+        if (save_hessian) {
+            hessian <- array(vars$hessian, dim = c(free_params, free_params))
+            return(list(draws = out, hessian = hessian))
+        }
+        out
+    })
+
 }), private = list(lib = NA, lib_name = NA, sep = NA, with_model = function(data,
     seed, block) {
     ffi_ret <- .C("tinystan_create_model_R", model = raw(8), as.character(data),
