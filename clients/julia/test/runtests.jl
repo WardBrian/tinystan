@@ -22,4 +22,5 @@ simple_jacobian_model =
     include("test_sample.jl")
     include("test_pathfinder.jl")
     include("test_optimize.jl")
+    include("test_laplace.jl")
 end

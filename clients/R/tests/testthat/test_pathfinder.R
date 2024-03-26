@@ -36,13 +36,13 @@ test_that("output sizes are correct", {
 test_that("calculate_lp works", {
     out <- bernoulli_model$pathfinder(BERNOULLI_DATA, num_paths = 2, calculate_lp = FALSE)
 
-    expect_gt(sum(is.nan(out$lp__)), 0)
-    expect_lt(sum(is.nan(out$lp__)), 2000)
+    expect_gt(sum(is.nan(posterior::draws_of(out$lp__))), 0)
+    expect_lt(sum(is.nan(posterior::draws_of(out$lp__))), 2000)
 
     out_single <- bernoulli_model$pathfinder(BERNOULLI_DATA, num_paths = 1, calculate_lp = FALSE)
 
-    expect_gt(sum(is.nan(out_single$lp__)), 0)
-    expect_lt(sum(is.nan(out_single$lp__)), 1000)
+    expect_gt(sum(is.nan(posterior::draws_of(out_single$lp__))), 0)
+    expect_lt(sum(is.nan(posterior::draws_of(out_single$lp__))), 1000)
 })
 
 test_that("seed works", {

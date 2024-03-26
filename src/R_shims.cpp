@@ -88,6 +88,33 @@ TINYSTAN_PUBLIC void tinystan_optimize_R(
       static_cast<size_t>(*out_size), err);
 }
 
+TINYSTAN_PUBLIC
+void tinystan_laplace_sample_R(int* return_code, const TinyStanModel** model,
+                               int* use_array, const double* theta_hat_constr,
+                               const char** theta_hat_json, unsigned int* seed,
+                               int* num_draws, int* jacobian, int* calculate_lp,
+                               int* refresh, int* num_threads, double* out,
+                               int* out_size, int* save_hessian,
+                               double* hessian_out, TinyStanError** err) {
+  //  difficult to directly pass a null pointer from R
+  double* hessian_out_ptr = nullptr;
+  if (*save_hessian)
+    hessian_out_ptr = hessian_out;
+
+  const double* theta_hat_dbl_ptr = nullptr;
+  const char* theta_hat_json_ptr = nullptr;
+  if (*use_array) {
+    theta_hat_dbl_ptr = theta_hat_constr;
+  } else {
+    theta_hat_json_ptr = *theta_hat_json;
+  }
+
+  *return_code = tinystan_laplace_sample(
+      *model, theta_hat_dbl_ptr, theta_hat_json_ptr, *seed, *num_draws,
+      (*jacobian != 0), (*calculate_lp != 0), *refresh, *num_threads, out,
+      static_cast<size_t>(*out_size), hessian_out_ptr, err);
+}
+
 TINYSTAN_PUBLIC void tinystan_get_error_message_R(TinyStanError** err,
                                                   char const** err_msg) {
   *err_msg = tinystan_get_error_message(*err);

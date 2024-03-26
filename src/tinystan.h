@@ -132,6 +132,15 @@ TINYSTAN_PUBLIC int tinystan_optimize(
     int refresh, int num_threads, double *out, size_t out_size,
     TinyStanError **err);
 
+TINYSTAN_PUBLIC
+int tinystan_laplace_sample(const TinyStanModel *tmodel,
+                            const double *theta_hat_constr,
+                            const char *theta_hat_json, unsigned int seed,
+                            int num_draws, bool jacobian, bool calculate_lp,
+                            int refresh, int num_threads, double *out,
+                            size_t out_size, double *hessian_out,
+                            TinyStanError **err);
+
 /**
  * Get the error message from an error object.
  *

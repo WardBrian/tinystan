@@ -6,6 +6,7 @@
 #include <stan/services/optimize/bfgs.hpp>
 #include <stan/services/optimize/lbfgs.hpp>
 #include <stan/services/optimize/newton.hpp>
+#include <stan/services/optimize/laplace_sample.hpp>
 #include <stan/services/sample/hmc_nuts_diag_e.hpp>
 #include <stan/services/sample/hmc_nuts_diag_e_adapt.hpp>
 #include <stan/services/sample/hmc_nuts_dense_e.hpp>
@@ -102,7 +103,7 @@ int tinystan_sample(const TinyStanModel *tmodel, size_t num_chains,
       sample_writers.emplace_back(out + draws_offset * i, draws_offset);
     }
 
-    std::vector<io::metric_buffer_writer> metric_writers;
+    std::vector<io::filtered_writer> metric_writers;
     metric_writers.reserve(num_chains);
     int num_model_params = tmodel->num_free_params;
     int metric_offset = metric_choice == dense
@@ -110,9 +111,10 @@ int tinystan_sample(const TinyStanModel *tmodel, size_t num_chains,
                             : num_model_params;
     for (size_t i = 0; i < num_chains; ++i) {
       if (metric_out != nullptr)
-        metric_writers.emplace_back(metric_out + metric_offset * i);
+        metric_writers.emplace_back("inv_metric",
+                                    metric_out + metric_offset * i);
       else
-        metric_writers.emplace_back(nullptr);
+        metric_writers.emplace_back("inv_metric", nullptr);
     }
 
     auto initial_metrics = io::make_metric_inits(
@@ -363,6 +365,48 @@ int tinystan_optimize(const TinyStanModel *tmodel, const char *init,
     return return_code;
   })
 
+  return -1;
+}
+
+int tinystan_laplace_sample(const TinyStanModel *tmodel,
+                            const double *theta_hat_constr,
+                            const char *theta_hat_json, unsigned int seed,
+                            int num_draws, bool jacobian, bool calculate_lp,
+                            int refresh, int num_threads, double *out,
+                            size_t out_size, double *hessian_out,
+                            TinyStanError **err) {
+  TINYSTAN_TRY_CATCH({
+    error::check_positive("num_draws", num_draws);
+
+    util::init_threading(num_threads);
+
+    auto &model = *tmodel->model;
+    io::buffer_writer sample_writer(out, out_size);
+    io::filtered_writer hessian_writer("Hessian", hessian_out);
+    error::error_logger logger(refresh != 0);
+    interrupt::tinystan_interrupt_handler interrupt;
+
+    Eigen::VectorXd theta_hat = model::unconstrain_parameters(
+        tmodel, theta_hat_constr, theta_hat_json, logger);
+
+    int return_code;
+    if (jacobian) {
+      return_code = stan::services::laplace_sample<true>(
+          model, theta_hat, num_draws, calculate_lp, seed, refresh, interrupt,
+          logger, sample_writer, hessian_writer);
+    } else {
+      return_code = stan::services::laplace_sample<false>(
+          model, theta_hat, num_draws, calculate_lp, seed, refresh, interrupt,
+          logger, sample_writer, hessian_writer);
+    }
+
+    if (return_code != 0) {
+      if (err != nullptr) {
+        *err = logger.get_error();
+      }
+    }
+    return return_code;
+  })
   return -1;
 }
 

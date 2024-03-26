@@ -12,3 +12,4 @@ make/local
 .Rhistory
 
 Manifest.toml
+.coverage

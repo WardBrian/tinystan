@@ -1,5 +1,3 @@
-
-
 test_that("compilation works", {
     name <- "gaussian"
     file <- file.path(stan_folder, name, paste0(name, ".stan"))

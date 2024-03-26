@@ -64,13 +64,13 @@ class buffer_writer : public stan::callbacks::writer {
   size_t size;
 };
 
-class metric_buffer_writer : public stan::callbacks::structured_writer {
+class filtered_writer : public stan::callbacks::structured_writer {
  public:
-  metric_buffer_writer(double *buf) : buf(buf), pos(0){};
-  virtual ~metric_buffer_writer(){};
+  filtered_writer(std::string key, double *buf) : key(key), buf(buf), pos(0){};
+  virtual ~filtered_writer(){};
 
-  void write(const std::string &key, const Eigen::MatrixXd &mat) {
-    if (!pos && buf != nullptr && key == "inv_metric") {
+  void write(const std::string &key_in, const Eigen::MatrixXd &mat) {
+    if (!pos && buf != nullptr && key_in == key) {
       for (int j = 0; j < mat.cols(); ++j) {
         for (int i = 0; i < mat.rows(); ++i) {
           buf[pos++] = mat(i, j);
@@ -78,8 +78,8 @@ class metric_buffer_writer : public stan::callbacks::structured_writer {
       }
     }
   }
-  void write(const std::string &key, const Eigen::VectorXd &vec) {
-    if (!pos && buf != nullptr && key == "inv_metric") {
+  void write(const std::string &key_in, const Eigen::VectorXd &vec) {
+    if (!pos && buf != nullptr && key_in == key) {
       for (int i = 0; i < vec.rows(); ++i) {
         buf[pos++] = vec(i);
       }
@@ -89,6 +89,7 @@ class metric_buffer_writer : public stan::callbacks::structured_writer {
   using stan::callbacks::structured_writer::write;
 
  private:
+  std::string key;
   double *buf;
   size_t pos;
 };
