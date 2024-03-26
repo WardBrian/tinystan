@@ -4,7 +4,7 @@ import sys
 import warnings
 from enum import Enum
 from os import PathLike, fspath
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from dllist import dllist
@@ -105,6 +105,27 @@ def encode_stan_json(data: Union[str, PathLike, Dict[str, Any]]) -> bytes:
 
 def rand_u32():
     return np.random.randint(0, 2**32 - 1, dtype=np.uint32)
+
+
+def preprocess_laplace_inputs(
+    mode: Union[StanOutput, np.ndarray, Dict[str, Any], str, PathLike]
+) -> Tuple[Optional[np.ndarray], Optional[str]]:
+    if isinstance(mode, StanOutput):
+        # handle case of passing optimization output directly
+        if len(mode.data.shape) == 1:
+            mode = mode.data[1:]
+        else:
+            raise ValueError("Laplace can only be used with Optimization output")
+            # mode = mode.create_inits(chains=1, seed=seed)
+
+    if isinstance(mode, np.ndarray):
+        mode_json = None
+        mode_array = mode
+    else:
+        mode_json = encode_stan_json(mode)
+        mode_array = None
+
+    return mode_array, mode_json
 
 
 class Model:
@@ -314,7 +335,7 @@ class Model:
         if inits is not None:
             if isinstance(inits, StanOutput):
                 inits = inits.create_inits(chains=chains, seed=seed)
-
+                
             if isinstance(inits, list):
                 inits_encoded = self.sep.join(encode_stan_json(init) for init in inits)
             else:
@@ -547,9 +568,6 @@ class Model:
     ):
         seed = seed or rand_u32()
 
-        if isinstance(init, StanOutput):
-            init = init.create_inits(chains=1, seed=seed)
-
         with self._get_model(data, seed) as model:
             param_names = OPTIMIZE_VARIABLES + self._get_parameter_names(model)
 
@@ -559,7 +577,7 @@ class Model:
             err = ctypes.pointer(ctypes.c_void_p())
             rc = self._ffi_optimize(
                 model,
-                encode_stan_json(init) if init is not None else None,
+                self._encode_inits(init, 1, seed),
                 seed,
                 id,
                 init_radius,
@@ -601,22 +619,10 @@ class Model:
 
         seed = seed or rand_u32()
 
-        if isinstance(mode, StanOutput):
-            # handle case of passing optimization output directly
-            if len(mode.data.shape) == 1:
-                mode = mode.data[1:]
-            else:
-                raise ValueError("Laplace can only be used with Optimization output")
-                # mode = mode.create_inits(chains=1, seed=seed)
-
-        if isinstance(mode, np.ndarray):
-            mode_json = None
-            mode_array = mode
-        else:
-            mode_json = encode_stan_json(mode)
-            mode_array = None
+        mode_array, mode_json = preprocess_laplace_inputs(mode)
 
         with self._get_model(data, seed) as model:
+            model_params = self._get_parameter_names
             param_names = LAPLACE_VARIABLES + self._get_parameter_names(model)
             num_params = len(param_names)
 
