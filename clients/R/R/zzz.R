@@ -2,7 +2,7 @@
 HMCMetric <- list(UNIT = 0, DENSE = 1, DIAGONAL = 2)
 
 HMC_SAMPLER_VARIABLES = c("lp__", "accept_stat__", "stepsize__", "treedepth__", "n_leapfrog__",
-  "divergent__", "energy__")
+    "divergent__", "energy__")
 
 PATHFINDER_VARIABLES = c("lp_approx__", "lp__")
 

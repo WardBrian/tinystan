@@ -38,10 +38,9 @@ class buffer_writer : public stan::callbacks::writer {
       throw std::runtime_error("Buffer overflow. Please report a bug!");
     }
 #endif
-    const auto v_size = v.size();
-    for (size_t i = 0; i < v_size; ++i) {
-      buf[pos++] = v[i];
-    }
+    Eigen::Map<Eigen::VectorXd>(buf + pos, v.size())
+        = Eigen::Map<const Eigen::VectorXd>(v.data(), v.size());
+    pos += v.size();
   }
 
   // needed for pathfinder - transposed order per spec
