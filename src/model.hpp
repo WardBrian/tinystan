@@ -25,12 +25,13 @@ stan::model::model_base &new_model(stan::io::var_context &data_context,
 
 class TinyStanModel {
  public:
-  TinyStanModel(const char *data, unsigned int seed) : seed(seed) {
-    std::unique_ptr<stan::io::var_context> data_context
-        = tinystan::io::load_data(data);
-    model = &new_model(*data_context, seed, &std::cout);
+  TinyStanModel(const char *data, unsigned int seed) :
+   model(&new_model(*tinystan::io::load_data(data), seed, &std::cout)),
+   seed(seed),
+   num_free_params(model->num_params_r()),
+   param_names(nullptr),
+   num_params(0) {
     std::vector<std::string> names;
-    num_free_params = model->num_params_r();
     model->constrained_param_names(names, true, true);
     param_names = tinystan::util::to_csv(names);
     num_params = names.size();
@@ -43,9 +44,9 @@ class TinyStanModel {
 
   stan::model::model_base *model;
   unsigned int seed;
+  size_t num_free_params;
   char *param_names;
   size_t num_params;
-  size_t num_free_params;
 };
 
 namespace tinystan {

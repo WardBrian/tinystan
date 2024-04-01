@@ -37,7 +37,7 @@ var_ctx_ptr load_data(const char *data_char) {
   }
 }
 
-static const char SEPARATOR = '\x1C';  // ASCII file separator
+static constexpr const char SEPARATOR = '\x1C';  // ASCII file separator
 
 std::vector<var_ctx_ptr> load_inits(int num_chains, const char *inits_char) {
   std::vector<var_ctx_ptr> json_inits;

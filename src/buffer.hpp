@@ -38,8 +38,9 @@ class buffer_writer : public stan::callbacks::writer {
       throw std::runtime_error("Buffer overflow. Please report a bug!");
     }
 #endif
-    for (auto d : v) {
-      buf[pos++] = d;
+    const auto v_size = v.size();
+    for (size_t i = 0; i < v_size; ++i) {
+      buf[pos++] = v[i];
     }
   }
 
@@ -51,8 +52,7 @@ class buffer_writer : public stan::callbacks::writer {
     }
 #endif
     // copy into buffer
-    Eigen::MatrixXd mT = m.transpose();
-    Eigen::Map<Eigen::MatrixXd>(buf + pos, mT.rows(), mT.cols()) = mT;
+    Eigen::Map<Eigen::MatrixXd>(buf + pos, mT.col(), mT.rows()) = m.transpose();
     pos += mT.size();
   }
 
