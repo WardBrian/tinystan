@@ -34,6 +34,7 @@
 
 ## R Package
 
+- [ ] Add hook for R package with formatR
 - [ ] Docs for all public functions
 - [ ] Vignette for usage
 - [ ] tinystan-tools companion package?
