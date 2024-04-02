@@ -52,7 +52,7 @@ class buffer_writer : public stan::callbacks::writer {
 #endif
     // copy into buffer
     Eigen::Map<Eigen::MatrixXd>(buf + pos, m.cols(), m.rows()) = m.transpose();
-    pos += mT.size();
+    pos += m.size();
   }
 
   using stan::callbacks::writer::operator();

@@ -7,7 +7,7 @@ make/local
 clients/R/R.Rproj
 *.pyc
 *.egg-info/
-
+clients/tinystan*
 .RData
 .Rhistory
 
