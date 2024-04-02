@@ -1,9 +1,9 @@
-
+#' Compile a Stan model
 #' @export
 #' @examples
-#' data <- "./tests/test_models/bernoulli/bernoulli.data.json"
-#' mod <- tinystan_model("./tests/test_models/bernoulli/bernoulli.stan")
-#' fit = sampler(private = mod, data = ".tests/test_models/bernoulli/bernoulli.data.json")
+#' data_file <- system.file("bernoulli.data.json", package = "tinystan")
+#' mod <- tinystan_model(system.file("bernoulli.stan", package = "tinystan"))
+#' fit = sampler(private = mod, data = data_file)
 #' fit
 #'
 tinystan_model = function(lib, stanc_args = NULL, make_args = NULL, warn = TRUE) {
@@ -115,7 +115,13 @@ sampler <- function(...) {
     UseMethod("sampler")
 }
 
+#' Run Stan's NUTS sampler
 #' @export
+#' @examples
+#' data_file <- system.file("bernoulli.data.json", package = "tinystan")
+#' mod <- tinystan_model(system.file("bernoulli.stan", package = "tinystan"))
+#' fit = sampler(private = mod, data = data_file)
+#' fit
 sampler.tinystan_model = function(private, data = "", num_chains = 4, inits = NULL,
     seed = NULL, id = 1, init_radius = 2, num_warmup = 1000, num_samples = 1000,
     metric = HMCMetric$DIAGONAL, init_inv_metric = NULL, save_metric = FALSE, adapt = TRUE,
