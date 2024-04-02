@@ -31,8 +31,6 @@ tinystan_model = function(lib, stanc_args = NULL, make_args = NULL, warn = TRUE)
     return(ret)
 }
 
-LAPLACE_VARIABLES = c("log_p__", "log_g__")
-
 #' @export
 print.tinystan_model <- function(mod, ...) {
     cat(mod$code, ...)
