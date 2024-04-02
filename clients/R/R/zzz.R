@@ -11,4 +11,4 @@ OptimizationAlgorithm <- list(NEWTON = 0, BFGS = 1, LBFGS = 2)
 
 OPTIMIZATION_VARIABLES = c("lp__")
 
-
+LAPLACE_VARIABLES = c("log_p__", "log_g__")
