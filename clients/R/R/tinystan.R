@@ -1,5 +1,11 @@
 
 #' @export
+#' @examples
+#' data <- "./tests/test_models/bernoulli/bernoulli.data.json"
+#' mod <- tinystan_model("./tests/test_models/bernoulli/bernoulli.stan")
+#' fit = sampler(private = mod, data = ".tests/test_models/bernoulli/bernoulli.data.json")
+#' fit
+#'
 tinystan_model = function(lib, stanc_args = NULL, make_args = NULL, warn = TRUE) {
     if (tools::file_ext(lib) == "stan") {
         # FIXME: This is a hack to get the code from the stan file
