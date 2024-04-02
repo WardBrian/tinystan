@@ -33,14 +33,14 @@ class buffer_writer : public stan::callbacks::writer {
 
   // primary way of writing draws
   void operator()(const std::vector<double> &v) override {
+    const auto v_size = v.size();
 #ifndef TINYSTAN_NO_BOUNDS_CHECK
-    if (pos + v.size() > size) {
+    if (pos + v_size > size) {
       throw std::runtime_error("Buffer overflow. Please report a bug!");
     }
 #endif
-    Eigen::Map<Eigen::VectorXd>(buf + pos, v.size())
-        = Eigen::Map<const Eigen::VectorXd>(v.data(), v.size());
-    pos += v.size();
+    std::memcpy(buf + pos, v.data(), sizeof(double)*v_size);
+    pos += v_size;
   }
 
   // needed for pathfinder - transposed order per spec
