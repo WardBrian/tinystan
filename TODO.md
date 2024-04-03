@@ -31,3 +31,17 @@
 - [x] Set up visibility such that all non-API symbols are hidden
 - [x] Rename
 - [ ] Look into cmake/clang-cl builds
+
+## R Package
+
+- [ ] Add hook for R package with formatR
+- [ ] Docs for all public functions
+- [ ] Vignette for usage
+- [ ] tinystan-tools companion package?
+- [ ] Add methods for running loo etc. with tinystan model
+- [ ] Verbose checking of inputs for all the algorithms
+- [ ] Harden compile functions
+- [ ] `tinystan-fit` as return that holds
+  - [ ] return samples as rvars
+  - [ ] S3 functions defined to extract rvars to the environment
+  - [ ] S3 functions for calling loo etc on the fit? Since we want to keep things simple I'm not sure that's within scope

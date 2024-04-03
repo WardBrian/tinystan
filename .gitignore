@@ -4,12 +4,13 @@
 bin/
 test_models/**/*.hpp
 make/local
-
+clients/R/R.Rproj
 *.pyc
 *.egg-info/
-
+clients/tinystan*
 .RData
 .Rhistory
 
 Manifest.toml
 .coverage
+.Rproj.user

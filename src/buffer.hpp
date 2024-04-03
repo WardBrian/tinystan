@@ -33,14 +33,14 @@ class buffer_writer : public stan::callbacks::writer {
 
   // primary way of writing draws
   void operator()(const std::vector<double> &v) override {
+    const auto v_size = v.size();
 #ifndef TINYSTAN_NO_BOUNDS_CHECK
-    if (pos + v.size() > size) {
+    if (pos + v_size > size) {
       throw std::runtime_error("Buffer overflow. Please report a bug!");
     }
 #endif
-    for (auto d : v) {
-      buf[pos++] = d;
-    }
+    std::memcpy(buf + pos, v.data(), sizeof(double) * v_size);
+    pos += v_size;
   }
 
   // needed for pathfinder - transposed order per spec
@@ -51,9 +51,8 @@ class buffer_writer : public stan::callbacks::writer {
     }
 #endif
     // copy into buffer
-    Eigen::MatrixXd mT = m.transpose();
-    Eigen::Map<Eigen::MatrixXd>(buf + pos, mT.rows(), mT.cols()) = mT;
-    pos += mT.size();
+    Eigen::Map<Eigen::MatrixXd>(buf + pos, m.cols(), m.rows()) = m.transpose();
+    pos += m.size();
   }
 
   using stan::callbacks::writer::operator();
