@@ -12,7 +12,7 @@ Compile a Stan model
 \examples{
 data_file <- system.file("bernoulli.data.json", package = "tinystan")
 mod <- tinystan_model(system.file("bernoulli.stan", package = "tinystan"))
-fit = sampler(private = mod, data = data_file)
+fit = sampler(modal = mod, data = data_file)
 fit
 
 }

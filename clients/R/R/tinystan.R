@@ -3,7 +3,7 @@
 #' @examples
 #' data_file <- system.file("bernoulli.data.json", package = "tinystan")
 #' mod <- tinystan_model(system.file("bernoulli.stan", package = "tinystan"))
-#' fit = sampler(private = mod, data = data_file)
+#' fit = sampler(modal = mod, data = data_file)
 #' fit
 #'
 tinystan_model = function(lib, stanc_args = NULL, make_args = NULL, warn = TRUE) {
@@ -52,15 +52,15 @@ api_version = function(stan_model) {
 }
 
 #' @noRd
-with_model = function(private, data, seed, block) {
+with_model = function(modal, data, seed, block) {
     ffi_ret <- .C("tinystan_create_model_R", model = raw(8), as.character(data),
-        as.integer(seed), err = raw(8), NAOK = TRUE, PACKAGE = private$lib_name)
-    handle_error(all(ffi_ret$model == 0), private$lib_name, ffi_ret$err)
+        as.integer(seed), err = raw(8), NAOK = TRUE, PACKAGE = modal$lib_name)
+    handle_error(all(ffi_ret$model == 0), modal$lib_name, ffi_ret$err)
     tryCatch({
         # this is the equivalent of base R's `with` function
         eval(substitute(block), ffi_ret, enclos = parent.frame())
     }, finally = {
-        .C("tinystan_destroy_model_R", as.raw(ffi_ret$model), PACKAGE = private$lib_name)
+        .C("tinystan_destroy_model_R", as.raw(ffi_ret$model), PACKAGE = modal$lib_name)
     })
 }
 
@@ -70,9 +70,9 @@ get_parameter_names <- function(...) {
 }
 
 #' @noRd
-get_parameter_names.tinystan_model = function(private, model) {
+get_parameter_names.tinystan_model = function(modal, model) {
     param_names_raw <- .C("tinystan_model_param_names_R", as.raw(model), names = as.character(""),
-        PACKAGE = private$lib_name)$names
+        PACKAGE = modal$lib_name)$names
     if (param_names_raw == "") {
         return(c())
     }
@@ -87,13 +87,13 @@ get_free_params <- function(...) {
 
 
 #' @noRd
-get_free_params.tinystan_model = function(private, model) {
+get_free_params.tinystan_model = function(modal, model) {
     .C("tinystan_model_num_free_params_R", as.raw(model), params = as.integer(0),
-        PACKAGE = private$lib_name)$params
+        PACKAGE = modal$lib_name)$params
 }
 
 #' @noRd
-encode_inits = function(private, inits) {
+encode_inits = function(modal, inits) {
     if (is.null(inits)) {
         return(as.character(""))
     }
@@ -101,11 +101,11 @@ encode_inits = function(private, inits) {
         if (length(inits) == 1) {
             return(as.character(inits))
         } else {
-            return(as.character(paste0(inits, collapse = private$sep)))
+            return(as.character(paste0(inits, collapse = modal$sep)))
         }
     }
     if (is.list(inits)) {
-        return(as.character(paste0(inits, collapse = private$sep)))
+        return(as.character(paste0(inits, collapse = modal$sep)))
     }
     stop("inits must be a character vector or a list")
 }
@@ -120,9 +120,9 @@ sampler <- function(...) {
 #' @examples
 #' data_file <- system.file("bernoulli.data.json", package = "tinystan")
 #' mod <- tinystan_model(system.file("bernoulli.stan", package = "tinystan"))
-#' fit = sampler(private = mod, data = data_file)
+#' fit = sampler(modal = mod, data = data_file)
 #' fit
-sampler.tinystan_model = function(private, data = "", num_chains = 4, inits = NULL,
+sampler.tinystan_model = function(modal, data = "", num_chains = 4, inits = NULL,
     seed = NULL, id = 1, init_radius = 2, num_warmup = 1000, num_samples = 1000,
     metric = HMCMetric$DIAGONAL, init_inv_metric = NULL, save_metric = FALSE, adapt = TRUE,
     delta = 0.8, gamma = 0.05, kappa = 0.75, t0 = 10, init_buffer = 75, term_buffer = 50,
@@ -143,13 +143,13 @@ sampler.tinystan_model = function(private, data = "", num_chains = 4, inits = NU
         seed <- as.integer(runif(1, min = 0, max = (2^31)))
     }
 
-    with_model(private, data, seed, {
-        free_params <- get_free_params(private, model)
+    with_model(modal, data, seed, {
+        free_params <- get_free_params(modal, model)
         if (free_params == 0) {
             stop("Model has no parameters to sample")
         }
 
-        params <- c(HMC_SAMPLER_VARIABLES, get_parameter_names(private, model))
+        params <- c(HMC_SAMPLER_VARIABLES, get_parameter_names(modal, model))
         num_params <- length(params)
         num_draws <- as.integer(save_warmup) * num_warmup + num_samples
         output_size <- num_params * num_chains * num_draws
@@ -187,7 +187,7 @@ sampler.tinystan_model = function(private, data = "", num_chains = 4, inits = NU
         }
 
         vars <- .C("tinystan_sample_R", return_code = as.integer(0), as.raw(model),
-            as.integer(num_chains), encode_inits(private, inits), as.integer(seed),
+            as.integer(num_chains), encode_inits(modal, inits), as.integer(seed),
             as.integer(id), as.double(init_radius), as.integer(num_warmup), as.integer(num_samples),
             as.integer(metric), as.logical(metric_has_init), as.double(inv_metric_init),
             as.logical(adapt), as.double(delta), as.double(gamma), as.double(kappa),
@@ -195,8 +195,8 @@ sampler.tinystan_model = function(private, data = "", num_chains = 4, inits = NU
             as.logical(save_warmup), as.double(stepsize), as.double(stepsize_jitter),
             as.integer(max_depth), as.integer(refresh), as.integer(num_threads),
             out = double(output_size), as.integer(output_size), save_metric = as.logical(save_metric),
-            metric = double(metric_size), err = raw(8), PACKAGE = private$lib_name)
-        handle_error(vars$return_code, private$lib_name, vars$err)
+            metric = double(metric_size), err = raw(8), PACKAGE = modal$lib_name)
+        handle_error(vars$return_code, modal$lib_name, vars$err)
         # reshape the output matrix
         out <- output_as_rvars(params, num_draws, num_chains, vars$out)
 
@@ -216,7 +216,13 @@ sampler.tinystan_model = function(private, data = "", num_chains = 4, inits = NU
 }
 
 #' @export
-pathfinder = function(private, data = "", num_paths = 4, inits = NULL, seed = NULL,
+pathfinder <- function(...) {
+  UseMethod("pathfinder")
+}
+
+#' Run Stan's pathfinder algorithm
+#' @export
+pathfinder.tinystan_model = function(modal, data = "", num_paths = 4, inits = NULL, seed = NULL,
     id = 1, init_radius = 2, num_draws = 1000, max_history_size = 5, init_alpha = 0.001,
     tol_obj = 1e-12, tol_rel_obj = 10000, tol_grad = 1e-08, tol_rel_grad = 1e+07,
     tol_param = 1e-08, num_iterations = 1000, num_elbo_draws = 100, num_multi_draws = 1000,
@@ -240,32 +246,38 @@ pathfinder = function(private, data = "", num_paths = 4, inits = NULL, seed = NU
         seed <- as.integer(runif(1, min = 0, max = (2^31)))
     }
 
-    with_model(private, data, seed, {
-        free_params <- get_free_params(private, model)
+    with_model(modal, data, seed, {
+        free_params <- get_free_params(modal, model)
         if (free_params == 0) {
             stop("Model has no parameters")
         }
 
-        params <- c(PATHFINDER_VARIABLES, get_parameter_names(private, model))
+        params <- c(PATHFINDER_VARIABLES, get_parameter_names(modal, model))
         num_params <- length(params)
         output_size <- num_params * num_output
 
         vars <- .C("tinystan_pathfinder_R", return_code = as.integer(0), as.raw(model),
-            as.integer(num_paths), encode_inits(private, inits), as.integer(seed),
+            as.integer(num_paths), encode_inits(modal, inits), as.integer(seed),
             as.integer(id), as.double(init_radius), as.integer(num_draws), as.integer(max_history_size),
             as.double(init_alpha), as.double(tol_obj), as.double(tol_rel_obj), as.double(tol_grad),
             as.double(tol_rel_grad), as.double(tol_param), as.integer(num_iterations),
             as.integer(num_elbo_draws), as.integer(num_multi_draws), as.integer(calculate_lp),
             as.integer(psis_resample), as.integer(refresh), as.integer(num_threads),
-            out = double(output_size), as.integer(output_size), err = raw(8), PACKAGE = private$lib_name)
-        handle_error(vars$return_code, private$lib_name, vars$err)
+            out = double(output_size), as.integer(output_size), err = raw(8), PACKAGE = modal$lib_name)
+        handle_error(vars$return_code, modal$lib_name, vars$err)
 
         output_as_rvars(params, num_output, 1, vars$out)
     })
 }
 
 #' @export
-optimizer = function(private, data = "", init = NULL, seed = NULL, id = 1, init_radius = 2,
+optimizer <- function(...) {
+  UseMethod("optimizer")
+}
+
+#' Run Stan's Optimization algorithm
+#' @export
+optimizer.tinystan_model = function(modal, data = "", init = NULL, seed = NULL, id = 1, init_radius = 2,
     algorithm = OptimizationAlgorithm$LBFGS, jacobian = FALSE, num_iterations = 2000,
     max_history_size = 5, init_alpha = 0.001, tol_obj = 1e-12, tol_rel_obj = 10000,
     tol_grad = 1e-08, tol_rel_grad = 1e+07, tol_param = 1e-08, refresh = 0, num_threads = -1) {
@@ -274,26 +286,32 @@ optimizer = function(private, data = "", init = NULL, seed = NULL, id = 1, init_
         seed <- as.integer(runif(1, min = 0, max = (2^31)))
     }
 
-    with_model(private, data, seed, {
-        params <- c(OPTIMIZATION_VARIABLES, get_parameter_names(private, model))
+    with_model(modal, data, seed, {
+        params <- c(OPTIMIZATION_VARIABLES, get_parameter_names(modal, model))
         num_params <- length(params)
         output_size <- num_params
 
         vars <- .C("tinystan_optimize_R", return_code = as.integer(0), as.raw(model),
-            encode_inits(private, init), as.integer(seed), as.integer(id), as.double(init_radius),
+            encode_inits(modal, init), as.integer(seed), as.integer(id), as.double(init_radius),
             as.integer(algorithm), as.integer(num_iterations), as.logical(jacobian),
             as.integer(max_history_size), as.double(init_alpha), as.double(tol_obj),
             as.double(tol_rel_obj), as.double(tol_grad), as.double(tol_rel_grad),
             as.double(tol_param), as.integer(refresh), as.integer(num_threads), out = double(output_size),
-            as.integer(output_size), err = raw(8), PACKAGE = private$lib_name)
-        handle_error(vars$return_code, private$lib_name, vars$err)
+            as.integer(output_size), err = raw(8), PACKAGE = modal$lib_name)
+        handle_error(vars$return_code, modal$lib_name, vars$err)
 
         output_as_rvars(params, 1, 1, vars$out)
     })
 }
 
 #' @export
-laplace_sampler = function(private, mode, data = "", num_draws = 1000, jacobian = TRUE,
+laplace_sampler <- function(...) {
+  UseMethod("laplace_sampler")
+}
+
+#' Run Stan's Laplace approximation algorithm
+#' @export
+laplace_sampler.tinystan_model = function(modal, mode, data = "", num_draws = 1000, jacobian = TRUE,
     calculate_lp = TRUE, save_hessian = FALSE, seed = NULL, refresh = 0, num_threads = -1) {
 
     if (num_draws < 1) {
@@ -303,10 +321,10 @@ laplace_sampler = function(private, mode, data = "", num_draws = 1000, jacobian 
         seed <- as.integer(runif(1, min = 0, max = (2^31)))
     }
 
-    with_model(private, data, seed, {
-        params <- c(LAPLACE_VARIABLES, get_parameter_names(private, model))
+    with_model(modal, data, seed, {
+        params <- c(LAPLACE_VARIABLES, get_parameter_names(modal, model))
         num_params <- length(params)
-        free_params <- get_free_params(private, model)
+        free_params <- get_free_params(modal, model)
 
         if (save_hessian) {
             hessian_size <- free_params * free_params
@@ -332,8 +350,8 @@ laplace_sampler = function(private, mode, data = "", num_draws = 1000, jacobian 
             as.logical(jacobian), as.logical(calculate_lp), as.integer(refresh),
             as.integer(num_threads), out = double(num_params * num_draws), as.integer(num_params *
                 num_draws), as.logical(save_hessian), hessian = double(hessian_size),
-            err = raw(8), PACKAGE = private$lib_name)
-        handle_error(vars$return_code, private$lib_name, vars$err)
+            err = raw(8), PACKAGE = modal$lib_name)
+        handle_error(vars$return_code, modal$lib_name, vars$err)
 
         out <- output_as_rvars(params, num_draws, 1, vars$out)
         if (save_hessian) {
@@ -349,10 +367,10 @@ laplace_sampler = function(private, mode, data = "", num_draws = 1000, jacobian 
 
 #' Get and free the error message stored at the C++ pointer
 #' @keywords internal
-handle_error <- function(rc, lib_name, err_ptr) {
-    if (rc != 0) {
+handle_error <- function(return_code, lib_name, err_ptr) {
+    if (return_code != 0) {
         if (all(err_ptr == 0)) {
-            stop(paste("Unknown error, function returned code", rc))
+            stop(paste("Unknown error, function returned code", return_code))
         }
         msg <- .C("tinystan_get_error_message_R", as.raw(err_ptr), err_msg = as.character(""),
             PACKAGE = lib_name)$err_msg
