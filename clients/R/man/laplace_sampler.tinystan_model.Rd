@@ -5,7 +5,7 @@
 \title{Run Stan's Laplace approximation algorithm}
 \usage{
 \method{laplace_sampler}{tinystan_model}(
-  modal,
+  model,
   mode,
   data = "",
   num_draws = 1000,

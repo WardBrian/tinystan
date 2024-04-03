@@ -1,9 +1,9 @@
 #' Compile a Stan model
 #' @export
 #' @examples
-#' data_file <- system.file("bernoulli.data.json", package = "tinystan")
-#' mod <- tinystan_model(system.file("bernoulli.stan", package = "tinystan"))
-#' fit = sampler(tinystan_mod = mod, data = data_file)
+#' data_file <- system.file('bernoulli.data.json', package = 'tinystan')
+#' mod <- tinystan_model(system.file('bernoulli.stan', package = 'tinystan'))
+#' fit = sampler(model = mod, data = data_file)
 #' fit
 #'
 tinystan_model = function(lib, stanc_args = NULL, make_args = NULL, warn = TRUE) {
@@ -38,10 +38,10 @@ tinystan_model = function(lib, stanc_args = NULL, make_args = NULL, warn = TRUE)
 }
 
 #' @export
-print.tinystan_model <- function(mod, ...) {
-    cat(mod$code, ...)
-    if (mod$built_with_so) {
-        cat("Library: ", mod$lib, "\n")
+print.tinystan_model <- function(model, ...) {
+    cat(model$code, ...)
+    if (model$built_with_so) {
+        cat("Library: ", model$lib, "\n")
     }
 }
 
@@ -52,15 +52,15 @@ api_version = function(stan_model) {
 }
 
 #' @noRd
-with_model = function(tinystan_mod, data, seed, block) {
-    ffi_ret <- .C("tinystan_create_model_R", model = raw(8), as.character(data),
-        as.integer(seed), err = raw(8), NAOK = TRUE, PACKAGE = tinystan_mod$lib_name)
-    handle_error(all(ffi_ret$model == 0), tinystan_mod$lib_name, ffi_ret$err)
+with_model = function(model, data, seed, block) {
+    ffi_ret <- .C("tinystan_create_model_R", model_ptr = raw(8), as.character(data),
+        as.integer(seed), err = raw(8), NAOK = TRUE, PACKAGE = model$lib_name)
+    handle_error(all(ffi_ret$model_ptr == 0), model$lib_name, ffi_ret$err)
     tryCatch({
         # this is the equivalent of base R's `with` function
         eval(substitute(block), ffi_ret, enclos = parent.frame())
     }, finally = {
-        .C("tinystan_destroy_model_R", as.raw(ffi_ret$model), PACKAGE = tinystan_mod$lib_name)
+        .C("tinystan_destroy_model_R", as.raw(ffi_ret$model_ptr), PACKAGE = model$lib_name)
     })
 }
 
@@ -70,9 +70,9 @@ get_parameter_names <- function(...) {
 }
 
 #' @noRd
-get_parameter_names.tinystan_model = function(tinystan_mod, model) {
-    param_names_raw <- .C("tinystan_model_param_names_R", as.raw(model), names = as.character(""),
-        PACKAGE = tinystan_mod$lib_name)$names
+get_parameter_names.tinystan_model = function(model, model_ptr) {
+    param_names_raw <- .C("tinystan_model_param_names_R", as.raw(model_ptr), names = as.character(""),
+        PACKAGE = model$lib_name)$names
     if (param_names_raw == "") {
         return(c())
     }
@@ -87,13 +87,13 @@ get_free_params <- function(...) {
 
 
 #' @noRd
-get_free_params.tinystan_model = function(tinystan_mod, model) {
-    .C("tinystan_model_num_free_params_R", as.raw(model), params = as.integer(0),
-        PACKAGE = tinystan_mod$lib_name)$params
+get_free_params.tinystan_model = function(model, model_ptr) {
+    .C("tinystan_model_num_free_params_R", as.raw(model_ptr), params = as.integer(0),
+        PACKAGE = model$lib_name)$params
 }
 
 #' @noRd
-encode_inits = function(tinystan_mod, inits) {
+encode_inits = function(model, inits) {
     if (is.null(inits)) {
         return(as.character(""))
     }
@@ -101,11 +101,11 @@ encode_inits = function(tinystan_mod, inits) {
         if (length(inits) == 1) {
             return(as.character(inits))
         } else {
-            return(as.character(paste0(inits, collapse = tinystan_mod$sep)))
+            return(as.character(paste0(inits, collapse = model$sep)))
         }
     }
     if (is.list(inits)) {
-        return(as.character(paste0(inits, collapse = tinystan_mod$sep)))
+        return(as.character(paste0(inits, collapse = model$sep)))
     }
     stop("inits must be a character vector or a list")
 }
@@ -118,11 +118,11 @@ sampler <- function(...) {
 #' Run Stan's NUTS sampler
 #' @export
 #' @examples
-#' data_file <- system.file("bernoulli.data.json", package = "tinystan")
-#' mod <- tinystan_model(system.file("bernoulli.stan", package = "tinystan"))
-#' fit = sampler(tinystan_mod = mod, data = data_file)
+#' data_file <- system.file('bernoulli.data.json', package = 'tinystan')
+#' mod <- tinystan_model(system.file('bernoulli.stan', package = 'tinystan'))
+#' fit = sampler(model = mod, data = data_file)
 #' fit
-sampler.tinystan_model = function(tinystan_mod, data = "", num_chains = 4, inits = NULL,
+sampler.tinystan_model = function(model, data = "", num_chains = 4, inits = NULL,
     seed = NULL, id = 1, init_radius = 2, num_warmup = 1000, num_samples = 1000,
     metric = HMCMetric$DIAGONAL, init_inv_metric = NULL, save_metric = FALSE, adapt = TRUE,
     delta = 0.8, gamma = 0.05, kappa = 0.75, t0 = 10, init_buffer = 75, term_buffer = 50,
@@ -143,13 +143,13 @@ sampler.tinystan_model = function(tinystan_mod, data = "", num_chains = 4, inits
         seed <- as.integer(runif(1, min = 0, max = (2^31)))
     }
 
-    with_model(tinystan_mod, data, seed, {
-        free_params <- get_free_params(tinystan_mod, model)
+    with_model(model, data, seed, {
+        free_params <- get_free_params(model, model_ptr)
         if (free_params == 0) {
             stop("Model has no parameters to sample")
         }
 
-        params <- c(HMC_SAMPLER_VARIABLES, get_parameter_names(tinystan_mod, model))
+        params <- c(HMC_SAMPLER_VARIABLES, get_parameter_names(model, model_ptr))
         num_params <- length(params)
         num_draws <- as.integer(save_warmup) * num_warmup + num_samples
         output_size <- num_params * num_chains * num_draws
@@ -186,8 +186,8 @@ sampler.tinystan_model = function(tinystan_mod, data = "", num_chains = 4, inits
             metric_size <- 1
         }
 
-        vars <- .C("tinystan_sample_R", return_code = as.integer(0), as.raw(model),
-            as.integer(num_chains), encode_inits(tinystan_mod, inits), as.integer(seed),
+        vars <- .C("tinystan_sample_R", return_code = as.integer(0), as.raw(model_ptr),
+            as.integer(num_chains), encode_inits(model, inits), as.integer(seed),
             as.integer(id), as.double(init_radius), as.integer(num_warmup), as.integer(num_samples),
             as.integer(metric), as.logical(metric_has_init), as.double(inv_metric_init),
             as.logical(adapt), as.double(delta), as.double(gamma), as.double(kappa),
@@ -195,8 +195,8 @@ sampler.tinystan_model = function(tinystan_mod, data = "", num_chains = 4, inits
             as.logical(save_warmup), as.double(stepsize), as.double(stepsize_jitter),
             as.integer(max_depth), as.integer(refresh), as.integer(num_threads),
             out = double(output_size), as.integer(output_size), save_metric = as.logical(save_metric),
-            metric = double(metric_size), err = raw(8), PACKAGE = tinystan_mod$lib_name)
-        handle_error(vars$return_code, tinystan_mod$lib_name, vars$err)
+            metric = double(metric_size), err = raw(8), PACKAGE = model$lib_name)
+        handle_error(vars$return_code, model$lib_name, vars$err)
         # reshape the output matrix
         out <- output_as_rvars(params, num_draws, num_chains, vars$out)
 
@@ -217,14 +217,14 @@ sampler.tinystan_model = function(tinystan_mod, data = "", num_chains = 4, inits
 
 #' @export
 pathfinder <- function(...) {
-  UseMethod("pathfinder")
+    UseMethod("pathfinder")
 }
 
 #' Run Stan's pathfinder algorithm
 #' @export
-pathfinder.tinystan_model = function(tinystan_mod, data = "", num_paths = 4, inits = NULL, seed = NULL,
-    id = 1, init_radius = 2, num_draws = 1000, max_history_size = 5, init_alpha = 0.001,
-    tol_obj = 1e-12, tol_rel_obj = 10000, tol_grad = 1e-08, tol_rel_grad = 1e+07,
+pathfinder.tinystan_model = function(model, data = "", num_paths = 4, inits = NULL,
+    seed = NULL, id = 1, init_radius = 2, num_draws = 1000, max_history_size = 5,
+    init_alpha = 0.001, tol_obj = 1e-12, tol_rel_obj = 10000, tol_grad = 1e-08, tol_rel_grad = 1e+07,
     tol_param = 1e-08, num_iterations = 1000, num_elbo_draws = 100, num_multi_draws = 1000,
     calculate_lp = TRUE, psis_resample = TRUE, refresh = 0, num_threads = -1) {
     if (num_draws < 1) {
@@ -246,25 +246,25 @@ pathfinder.tinystan_model = function(tinystan_mod, data = "", num_paths = 4, ini
         seed <- as.integer(runif(1, min = 0, max = (2^31)))
     }
 
-    with_model(tinystan_mod, data, seed, {
-        free_params <- get_free_params(tinystan_mod, model)
+    with_model(model, data, seed, {
+        free_params <- get_free_params(model, model_ptr)
         if (free_params == 0) {
             stop("Model has no parameters")
         }
 
-        params <- c(PATHFINDER_VARIABLES, get_parameter_names(tinystan_mod, model))
+        params <- c(PATHFINDER_VARIABLES, get_parameter_names(model, model_ptr))
         num_params <- length(params)
         output_size <- num_params * num_output
 
-        vars <- .C("tinystan_pathfinder_R", return_code = as.integer(0), as.raw(model),
-            as.integer(num_paths), encode_inits(tinystan_mod, inits), as.integer(seed),
+        vars <- .C("tinystan_pathfinder_R", return_code = as.integer(0), as.raw(model_ptr),
+            as.integer(num_paths), encode_inits(model, inits), as.integer(seed),
             as.integer(id), as.double(init_radius), as.integer(num_draws), as.integer(max_history_size),
             as.double(init_alpha), as.double(tol_obj), as.double(tol_rel_obj), as.double(tol_grad),
             as.double(tol_rel_grad), as.double(tol_param), as.integer(num_iterations),
             as.integer(num_elbo_draws), as.integer(num_multi_draws), as.integer(calculate_lp),
             as.integer(psis_resample), as.integer(refresh), as.integer(num_threads),
-            out = double(output_size), as.integer(output_size), err = raw(8), PACKAGE = tinystan_mod$lib_name)
-        handle_error(vars$return_code, tinystan_mod$lib_name, vars$err)
+            out = double(output_size), as.integer(output_size), err = raw(8), PACKAGE = model$lib_name)
+        handle_error(vars$return_code, model$lib_name, vars$err)
 
         output_as_rvars(params, num_output, 1, vars$out)
     })
@@ -272,13 +272,13 @@ pathfinder.tinystan_model = function(tinystan_mod, data = "", num_paths = 4, ini
 
 #' @export
 optimizer <- function(...) {
-  UseMethod("optimizer")
+    UseMethod("optimizer")
 }
 
 #' Run Stan's Optimization algorithm
 #' @export
-optimizer.tinystan_model = function(tinystan_mod, data = "", init = NULL, seed = NULL, id = 1, init_radius = 2,
-    algorithm = OptimizationAlgorithm$LBFGS, jacobian = FALSE, num_iterations = 2000,
+optimizer.tinystan_model = function(model, data = "", init = NULL, seed = NULL, id = 1,
+    init_radius = 2, algorithm = OptimizationAlgorithm$LBFGS, jacobian = FALSE, num_iterations = 2000,
     max_history_size = 5, init_alpha = 0.001, tol_obj = 1e-12, tol_rel_obj = 10000,
     tol_grad = 1e-08, tol_rel_grad = 1e+07, tol_param = 1e-08, refresh = 0, num_threads = -1) {
 
@@ -286,19 +286,19 @@ optimizer.tinystan_model = function(tinystan_mod, data = "", init = NULL, seed =
         seed <- as.integer(runif(1, min = 0, max = (2^31)))
     }
 
-    with_model(tinystan_mod, data, seed, {
-        params <- c(OPTIMIZATION_VARIABLES, get_parameter_names(tinystan_mod, model))
+    with_model(model, data, seed, {
+        params <- c(OPTIMIZATION_VARIABLES, get_parameter_names(model, model_ptr))
         num_params <- length(params)
         output_size <- num_params
 
-        vars <- .C("tinystan_optimize_R", return_code = as.integer(0), as.raw(model),
-            encode_inits(tinystan_mod, init), as.integer(seed), as.integer(id), as.double(init_radius),
+        vars <- .C("tinystan_optimize_R", return_code = as.integer(0), as.raw(model_ptr),
+            encode_inits(model, init), as.integer(seed), as.integer(id), as.double(init_radius),
             as.integer(algorithm), as.integer(num_iterations), as.logical(jacobian),
             as.integer(max_history_size), as.double(init_alpha), as.double(tol_obj),
             as.double(tol_rel_obj), as.double(tol_grad), as.double(tol_rel_grad),
             as.double(tol_param), as.integer(refresh), as.integer(num_threads), out = double(output_size),
-            as.integer(output_size), err = raw(8), PACKAGE = tinystan_mod$lib_name)
-        handle_error(vars$return_code, tinystan_mod$lib_name, vars$err)
+            as.integer(output_size), err = raw(8), PACKAGE = model$lib_name)
+        handle_error(vars$return_code, model$lib_name, vars$err)
 
         output_as_rvars(params, 1, 1, vars$out)
     })
@@ -306,13 +306,14 @@ optimizer.tinystan_model = function(tinystan_mod, data = "", init = NULL, seed =
 
 #' @export
 laplace_sampler <- function(...) {
-  UseMethod("laplace_sampler")
+    UseMethod("laplace_sampler")
 }
 
 #' Run Stan's Laplace approximation algorithm
 #' @export
-laplace_sampler.tinystan_model = function(tinystan_mod, mode, data = "", num_draws = 1000, jacobian = TRUE,
-    calculate_lp = TRUE, save_hessian = FALSE, seed = NULL, refresh = 0, num_threads = -1) {
+laplace_sampler.tinystan_model = function(model, mode, data = "", num_draws = 1000,
+    jacobian = TRUE, calculate_lp = TRUE, save_hessian = FALSE, seed = NULL, refresh = 0,
+    num_threads = -1) {
 
     if (num_draws < 1) {
         stop("num_draws must be at least 1")
@@ -321,10 +322,10 @@ laplace_sampler.tinystan_model = function(tinystan_mod, mode, data = "", num_dra
         seed <- as.integer(runif(1, min = 0, max = (2^31)))
     }
 
-    with_model(tinystan_mod, data, seed, {
-        params <- c(LAPLACE_VARIABLES, get_parameter_names(tinystan_mod, model))
+    with_model(model, data, seed, {
+        params <- c(LAPLACE_VARIABLES, get_parameter_names(model, model_ptr))
         num_params <- length(params)
-        free_params <- get_free_params(tinystan_mod, model)
+        free_params <- get_free_params(model, model_ptr)
 
         if (save_hessian) {
             hessian_size <- free_params * free_params
@@ -345,13 +346,13 @@ laplace_sampler.tinystan_model = function(tinystan_mod, mode, data = "", num_dra
             use_array <- FALSE
         }
 
-        vars <- .C("tinystan_laplace_sample_R", return_code = as.integer(0), as.raw(model),
+        vars <- .C("tinystan_laplace_sample_R", return_code = as.integer(0), as.raw(model_ptr),
             as.logical(use_array), mode_array, mode_json, as.integer(seed), as.integer(num_draws),
             as.logical(jacobian), as.logical(calculate_lp), as.integer(refresh),
             as.integer(num_threads), out = double(num_params * num_draws), as.integer(num_params *
                 num_draws), as.logical(save_hessian), hessian = double(hessian_size),
-            err = raw(8), PACKAGE = tinystan_mod$lib_name)
-        handle_error(vars$return_code, tinystan_mod$lib_name, vars$err)
+            err = raw(8), PACKAGE = model$lib_name)
+        handle_error(vars$return_code, model$lib_name, vars$err)
 
         out <- output_as_rvars(params, num_draws, 1, vars$out)
         if (save_hessian) {

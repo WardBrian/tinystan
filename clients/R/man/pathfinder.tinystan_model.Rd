@@ -5,7 +5,7 @@
 \title{Run Stan's pathfinder algorithm}
 \usage{
 \method{pathfinder}{tinystan_model}(
-  modal,
+  model,
   data = "",
   num_paths = 4,
   inits = NULL,

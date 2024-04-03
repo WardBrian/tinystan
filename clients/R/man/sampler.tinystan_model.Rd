@@ -5,7 +5,7 @@
 \title{Run Stan's NUTS sampler}
 \usage{
 \method{sampler}{tinystan_model}(
-  modal,
+  model,
   data = "",
   num_chains = 4,
   inits = NULL,
@@ -37,8 +37,8 @@
 Run Stan's NUTS sampler
 }
 \examples{
-data_file <- system.file("bernoulli.data.json", package = "tinystan")
-mod <- tinystan_model(system.file("bernoulli.stan", package = "tinystan"))
-fit = sampler(modal = mod, data = data_file)
+data_file <- system.file('bernoulli.data.json', package = 'tinystan')
+mod <- tinystan_model(system.file('bernoulli.stan', package = 'tinystan'))
+fit = sampler(model = mod, data = data_file)
 fit
 }

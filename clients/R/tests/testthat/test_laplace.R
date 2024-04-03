@@ -103,6 +103,6 @@ test_that("bad mode json handled properly", {
 
 
 test_that("bad num_draws raises errors", {
-    expect_error(laplace_sampler(bernoulli_model, BERNOULLI_MODE, BERNOULLI_DATA, num_draws = 0),
-        "at least 1")
+    expect_error(laplace_sampler(bernoulli_model, BERNOULLI_MODE, BERNOULLI_DATA,
+        num_draws = 0), "at least 1")
 })

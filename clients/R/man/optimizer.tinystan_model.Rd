@@ -5,7 +5,7 @@
 \title{Run Stan's Optimization algorithm}
 \usage{
 \method{optimizer}{tinystan_model}(
-  modal,
+  model,
   data = "",
   init = NULL,
   seed = NULL,

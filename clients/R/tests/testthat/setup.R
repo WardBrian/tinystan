@@ -2,11 +2,12 @@ options(warnPartialMatchDollar = TRUE)
 options(warnPartialMatchArgs = TRUE)
 options(warnPartialMatchAttr = TRUE)
 options(warn = 0)
-top_level_directory = file.path("../../../../")
+
+top_level_directory <- file.path("../../../../")
 set_tinystan_path(top_level_directory)
 stan_folder <- file.path(top_level_directory, "test_models")
+
 bernoulli_model <- tinystan_model(file.path(stan_folder, "bernoulli", "bernoulli.stan"))
-tinystan:::api_version(bernoulli_model)
 BERNOULLI_DATA <- "{\"N\": 10, \"y\": [0, 1, 0, 0, 0, 0, 0, 0, 0, 1]}"
 
 gaussian_model <- tinystan_model(file.path(stan_folder, "gaussian", "gaussian.stan"))

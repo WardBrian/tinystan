@@ -10,9 +10,9 @@ tinystan_model(lib, stanc_args = NULL, make_args = NULL, warn = TRUE)
 Compile a Stan model
 }
 \examples{
-data_file <- system.file("bernoulli.data.json", package = "tinystan")
-mod <- tinystan_model(system.file("bernoulli.stan", package = "tinystan"))
-fit = sampler(modal = mod, data = data_file)
+data_file <- system.file('bernoulli.data.json', package = 'tinystan')
+mod <- tinystan_model(system.file('bernoulli.stan', package = 'tinystan'))
+fit = sampler(model = mod, data = data_file)
 fit
 
 }

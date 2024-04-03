@@ -39,7 +39,7 @@ class buffer_writer : public stan::callbacks::writer {
       throw std::runtime_error("Buffer overflow. Please report a bug!");
     }
 #endif
-    std::memcpy(buf + pos, v.data(), sizeof(double)*v_size);
+    std::memcpy(buf + pos, v.data(), sizeof(double) * v_size);
     pos += v_size;
   }
 
