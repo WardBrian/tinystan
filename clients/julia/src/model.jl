@@ -347,7 +347,7 @@ function pathfinder(
     tol_rel_grad = 1e7,
     tol_param = 1e-8,
     num_iterations::Int = 1000,
-    num_elbo_draws::Int = 100,
+    num_elbo_draws::Int = 25,
     num_multi_draws::Int = 1000,
     calculate_lp::Bool = true,
     psis_resample::Bool = true,

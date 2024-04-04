@@ -37,6 +37,11 @@ def set_tinystan_path(path: str) -> None:
     """
     Set the path to TinyStan.
 
+
+    This is useful for development or if the automatic download is
+    not desired. If the path is invalid, this function will raise an
+    error.
+
     This should point to the top-level folder of the repository.
     """
     path = os.path.abspath(path)
@@ -92,21 +97,37 @@ def compile_model(
 ) -> Path:
     """
     Run TinyStan's Makefile on a ``.stan`` file, creating the ``.so``
-    used by the StanModel class.
+    used by the Model class.
 
-    This function checks that the path to TinyStan is valid and will
-    error if not. This can be set with :func:`set_tinystan_path`.
+    This function requires the presence of the TinyStan source code.
+    It will download the source code if it is not found.
+    A manual location can be used instead by calling :func:`set_tinystan_path`.
 
-    :param stan_file: A path to a Stan model file.
-    :param stanc_args: A list of arguments to pass to stanc3.
+    Parameters
+    ----------
+    stan_file : Union[str, os.PathLike]
+        A path to a Stan model file.
+    stanc_args : List[str], optional
+        A list of arguments to pass to stanc3.
         For example, ``["--O1"]`` will enable compiler optimization level 1.
-    :param make_args: A list of additional arguments to pass to Make.
-        If the same flags are defined in ``make/local``, the versions
+    make_args : List[str], optional
+        A list of additional arguments to pass to Make.
+        If the same flags are defined in :file:`make/local`, the versions
         passed here will take precedent.
-    :raises FileNotFoundError or PermissionError: If `stan_file` does not exist
-        or is not readable.
-    :raises ValueError: If TinyStan cannot be located.
-    :raises RuntimeError: If compilation fails.
+
+    Raises
+    ------
+    FileNotFoundError or PermissionError
+        If ``stan_file`` does not exist or is not readable.
+    ValueError
+        If the TinyStan source code location is invalid.
+    RuntimeError
+        If compilation fails.
+
+    Returns
+    -------
+    Path
+        The path to the compiled ``.so`` file.
     """
     validate_readable(stan_file)
     verify_tinystan_path(get_tinystan_path())
