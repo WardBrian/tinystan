@@ -4,7 +4,8 @@ import sys
 import warnings
 from enum import Enum
 from os import PathLike, fspath
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
+
 
 import numpy as np
 from dllist import dllist
@@ -15,7 +16,10 @@ from .compile import compile_model, windows_dll_path_setup
 from .output import StanOutput
 from .util import validate_readable
 
+# type aliases
+StanData = Union[str, PathLike, Mapping[str, Any]]
 
+# ctypes helpers
 def wrapped_ndptr(*args, **kwargs):
     """
     A version of np.ctypeslib.ndpointer
@@ -46,6 +50,7 @@ def print_callback(msg, size, is_error):
         file=sys.stderr if is_error else sys.stdout,
     )
 
+# algorithm-specific constants
 
 HMC_SAMPLER_VARIABLES = [
     "lp__",
@@ -78,21 +83,25 @@ FIXED_SAMPLER_VARIABLES = [
 
 
 class HMCMetric(Enum):
-    UNIT = 0
-    DENSE = 1
-    DIAGONAL = 2
+    """Choices for the structure of the mass matrix used in the HMC sampler."""
+
+    UNIT = 0  #: :meta hide-value:
+    DENSE = 1  #: :meta hide-value:
+    DIAGONAL = 2  #: :meta hide-value:
 
 
 class OptimizationAlgorithm(Enum):
-    NEWTON = 0
-    BFGS = 1
-    LBFGS = 2
+    """Choices for the optimization algorithm to use."""
+
+    NEWTON = 0  #: :meta hide-value:
+    BFGS = 1  #: :meta hide-value:
+    LBFGS = 2  #: :meta hide-value:
 
 
 _exception_types = [RuntimeError, ValueError, KeyboardInterrupt]
 
 
-# also allow inits from a StanOutput
+# TODO also allow inits from a StanOutput?
 def encode_stan_json(data: Union[str, PathLike, Dict[str, Any]]) -> bytes:
     """Turn the provided data into something we can send to C++."""
     if isinstance(data, PathLike):
@@ -104,6 +113,7 @@ def encode_stan_json(data: Union[str, PathLike, Dict[str, Any]]) -> bytes:
 
 
 def rand_u32():
+    """Generate a random 32-bit unsigned integer."""
     return np.random.randint(0, 2**32 - 1, dtype=np.uint32)
 
 
@@ -138,6 +148,35 @@ class Model:
         make_args: List[str] = [],
         warn: bool = True,
     ):
+        """
+        Load a Stan model for inference, compiling it if necessary.
+
+        Parameters
+        ----------
+        model : Union[str, PathLike]
+            Path to the Stan model file or shared object.
+        stanc_args : List[str], optional
+            A list of arguments to pass to stanc3 if the model is not compiled.
+            For example, ``["--O1"]`` will enable compiler optimization level 1.
+        make_args : List[str], optional
+            A list of additional arguments to pass to GNU Make if the
+            model is not compiled. For example, ``["STAN_THREADS=True"]`` will enable
+            threading for the compiled model. If the same flags are defined
+            in ``make/local``, the versions passed here will take precedent.
+        capture_stan_prints : bool, optional
+            If ``True``, capture all ``print`` statements and output
+            from Stan and print them from Python. This may have
+            a performance impact. If ``False``, ``print`` statements
+            from Stan will be sent to ``cout`` and will not be seen in
+            Jupyter or capturable with :func:`contextlib.redirect_stdout`.
+
+            **Note:** If this is set for a model, any other models instantiated
+            from the *same shared library* will also have the callback set, even
+            if they were created *before* this model.
+        warn : bool, optional
+            If ``False``, the warning about re-loading the same shared object
+            is suppressed.
+        """
         windows_dll_path_setup()
 
         model = fspath(model)
@@ -349,39 +388,130 @@ class Model:
         return list(comma_separated.split(","))
 
     def api_version(self):
+        """Return the version of the TinyStan API backing this model."""
         major, minor, patch = ctypes.c_int(), ctypes.c_int(), ctypes.c_int()
         self._version(ctypes.byref(major), ctypes.byref(minor), ctypes.byref(patch))
         return (major.value, minor.value, patch.value)
 
     def sample(
         self,
-        data="",
+        data: StanData = "",
         *,
-        num_chains=4,
-        inits=None,
-        seed=None,
-        id=1,
-        init_radius=2.0,
-        num_warmup=1000,
-        num_samples=1000,
-        metric=HMCMetric.DIAGONAL,
-        init_inv_metric=None,
-        save_metric=False,
-        adapt=True,
-        delta=0.8,
-        gamma=0.05,
-        kappa=0.75,
-        t0=10,
-        init_buffer=75,
-        term_buffer=50,
-        window=25,
-        save_warmup=False,
-        stepsize=1.0,
-        stepsize_jitter=0.0,
-        max_depth=10,
-        refresh=0,
-        num_threads=-1,
+        num_chains: int = 4,
+        inits: Union[StanData, List[StanData], None] = None,
+        seed: Optional[int] = None,
+        id: int = 1,
+        init_radius: float = 2.0,
+        num_warmup: int = 1000,
+        num_samples: int = 1000,
+        metric: HMCMetric = HMCMetric.DIAGONAL,
+        init_inv_metric: Optional[StanData] = None,
+        save_metric: bool = False,
+        adapt: bool = True,
+        delta: float = 0.8,
+        gamma: float = 0.05,
+        kappa: float = 0.75,
+        t0: float = 10,
+        init_buffer: int = 75,
+        term_buffer: int = 50,
+        window: int = 25,
+        save_warmup: bool = False,
+        stepsize: float = 1.0,
+        stepsize_jitter: float = 0.0,
+        max_depth: int = 10,
+        refresh: int = 0,
+        num_threads: int = -1,
     ):
+        """
+        Run Stan's No-U-Turn Sampler (NUTS) to sample from the posterior.
+        An in-depth explanation of the parameters can be found in the Stan
+        documentation at https://mc-stan.org/docs/reference-manual/mcmc.html
+
+        Parameters
+        ----------
+        data : str | dict, optional
+            The data to use for the model. This can be a
+            path to a JSON file, a JSON string, or a dictionary.
+            By default, ""
+        num_chains : int, optional
+            The number of chains to run, by default 4
+        inits : str | dict | list[str | dict] | None, optional
+            Initial parameter values. This can be a single
+            path to a JSON file, a JSON string, a dictionary, or a
+            list of length ``num_chains`` of those.
+            By default, ""
+        seed : Optional[int], optional
+            The seed to use for the random number generator.
+            If not provided, a random seed will be generated.
+        id : int, optional
+            Chain ID for the first chain, by default 1
+        init_radius : float, optional
+            Radius to initialize unspecified parameters within.
+            The parameter values are drawn uniformly from the interval
+            [-init_radius, init_radius] on the unconstrained scale.
+            By default 2.0
+        num_warmup : int, optional
+            Number of warmup iterations to run, by default 1000
+        num_samples : int, optional
+            Number of samples to draw after warmup, by default 1000
+        metric : HMCMetric, optional
+            The type of mass matrix to use in the sampler.
+            The options are ``UNIT``, ``DENSE``, and ``DIAGONAL``.
+            By default HMCMetric.DIAGONAL
+        init_inv_metric : str | dict | None, optional
+            Initial value for the mass matrix used by the sampler.
+            This can be a path to a JSON file, a JSON string, or a dictionary.
+            By default, ""
+        save_metric : bool, optional
+            Whether to report the final mass matrix, by default False
+        adapt : bool, optional
+            Whether the sampler should adapt the step size and metric,
+            by default True
+        delta : float, optional
+            Target average acceptance probability, by default 0.8
+        gamma : float, optional
+            Adaptation regularization scale, by default 0.05
+        kappa : float, optional
+            Adaptation relaxation exponent, by default 0.75
+        t0 : float, optional
+            Adaptation iteration offset, by default 10
+        init_buffer : int, optional
+            Number of warmup samples to use for initial step size adaptation,
+            by default 75
+        term_buffer : int, optional
+            Number of warmup samples to use for step size adaptation
+            after the metric is adapted, by default 50
+        window : int, optional
+            Initial number of iterations to use for metric adaptation,
+            which is doubled each time the adaptation window is hit,
+            by default 25
+        save_warmup : bool, optional
+            Whether to save the warmup samples, by default False
+        stepsize : float, optional
+            Initial step size for the sampler, by default 1.0
+        stepsize_jitter : float, optional
+            Amount of random jitter to add to the step size, by default 0.0
+        max_depth : int, optional
+            Maximum tree depth for the sampler, by default 10
+        refresh : int, optional
+            Number of iterations between progress messages, by default 0
+            (supress messages)
+        num_threads : int, optional
+            Number of threads to use for sampling, by default -1
+            (use all available)
+
+        Returns
+        -------
+        StanOutput
+            An object containing the samples and metadata from the sampling run.
+
+        Raises
+        ------
+        ValueError
+            If any of the parameters are invalid or out of range.
+        RuntimeError
+            If there is an unrecoverable error during sampling.
+        """
         # these are checked here because they're sizes for "out"
         if num_chains < 1:
             raise ValueError("num_chains must be at least 1")
@@ -467,29 +597,115 @@ class Model:
 
     def pathfinder(
         self,
-        data="",
+        data: StanData = "",
         *,
-        num_paths=4,
-        inits=None,
-        seed=None,
-        id=1,
-        init_radius=2.0,
-        num_draws=1000,
-        max_history_size=5,
-        init_alpha=0.001,
-        tol_obj=1e-12,
-        tol_rel_obj=1e4,
-        tol_grad=1e-8,
-        tol_rel_grad=1e7,
-        tol_param=1e-8,
-        num_iterations=1000,
-        num_elbo_draws=100,
-        num_multi_draws=1000,
-        calculate_lp=True,
-        psis_resample=True,
-        refresh=0,
-        num_threads=-1,
+        num_paths: int = 4,
+        inits: Optional[StanData] = None,
+        seed: Optional[int] = None,
+        id: int = 1,
+        init_radius: float = 2.0,
+        num_draws: int = 1000,
+        max_history_size: int = 5,
+        init_alpha: float = 0.001,
+        tol_obj: float = 1e-12,
+        tol_rel_obj: float = 1e4,
+        tol_grad: float = 1e-8,
+        tol_rel_grad: float = 1e7,
+        tol_param: float = 1e-8,
+        num_iterations: int = 1000,
+        num_elbo_draws: int = 25,
+        num_multi_draws: int = 1000,
+        calculate_lp: bool = True,
+        psis_resample: bool = True,
+        refresh: int = 0,
+        num_threads: int = -1,
     ):
+        """
+        Run the Pathfinder algorithm to approximate the posterior.
+        See https://mc-stan.org/docs/reference-manual/pathfinder.html
+        for more information on the algorithm.
+
+        Parameters
+        ----------
+        data : str | dict, optional
+            The data to use for the model. This can be a
+            path to a JSON file, a JSON string, or a dictionary.
+            By default, ""
+        num_paths : int, optional
+            The number of individual runs of the algorithm to run in parallel, by default 4
+        inits : str | dict | list[str | dict] | None, optional
+            Initial parameter values. This can be a single
+            path to a JSON file, a JSON string, a dictionary, or a
+            list of length ``num_paths`` of those.
+            By default, ""
+        seed : Optional[int], optional
+            The seed to use for the random number generator.
+            If not provided, a random seed will be generated.
+        id : int, optional
+            ID for the first path, by default 1
+        init_radius : float, optional
+            Radius to initialize unspecified parameters within.
+            The parameter values are drawn uniformly from the interval
+            [-init_radius, init_radius] on the unconstrained scale.
+            By default 2.0
+        num_draws : int, optional
+            Number of approximate draws drawn from each of the
+            ``num_paths`` Pathfinders, by default 1000
+        max_history_size : int, optional
+            History size used by the internal L-BFGS algorithm to
+            approximate the Hessian, by default 5
+        init_alpha : float, optional
+            Initial step size for the internal L-BFGS algorithm,
+            by default 0.001
+        tol_obj : float, optional
+            Convergence tolerance for the objective function for
+            the internal L-BFGS algorithm, by default 1e-12
+        tol_rel_obj : float, optional
+            Relative convergence tolerance for the objective function
+            for the internal L-BFGS algorithm, by default 1e4
+        tol_grad : float, optional
+            Convergence tolerance for the gradient norm for the internal
+            L-BFGS algorithm, by default 1e-8
+        tol_rel_grad : float, optional
+            Relative convergence tolerance for the gradient norm for the
+            internal L-BFGS algorithm, by default 1e7
+        tol_param : float, optional
+            Convergence tolerance for the changes in parameters for the
+            internal L-BFGS algorithm, by default 1e-8
+        num_iterations : int, optional
+            Maximum number of iterations for the internal L-BFGS algorithm,
+            by default 1000
+        num_elbo_draws : int, optional
+            Number of Monte Carlo draws used to estimate the ELBO,
+            by default 25
+        num_multi_draws : int, optional
+            Number of draws returned by Multi-Pathfinder, by default 1000
+        calculate_lp : bool, optional
+            Whether to calculate the log probability of the approximate draws.
+            If False, this also implies ``psis_resample=False``. By default True
+        psis_resample : bool, optional
+            Whether to use Pareto smoothed importance sampling on
+            the approximate draws. If False, all ``num_path * num_draws``
+            approximate samples will be returned. By default True.
+        refresh : int, optional
+            Number of iterations between progress messages, by default 0
+            (supress messages)
+        num_threads : int, optional
+            Number of threads to use for Pathfinder, by default -1
+            (use all available)
+
+        Returns
+        -------
+        StanOutput
+            An object containing the samples and metadata from the algorithm.
+
+        Raises
+        ------
+        ValueError
+            If any of the parameters are invalid or out of range.
+        RuntimeError
+            If there is an unrecoverable error during the algorithm.
+        """
         if num_draws < 1:
             raise ValueError("num_draws must be at least 1")
         if num_paths < 1:
@@ -547,25 +763,101 @@ class Model:
 
     def optimize(
         self,
-        data="",
+        data: StanData = "",
         *,
-        init=None,
-        seed=None,
-        id=1,
-        init_radius=2.0,
-        algorithm=OptimizationAlgorithm.LBFGS,
-        jacobian=False,
-        num_iterations=2000,
-        max_history_size=5,
-        init_alpha=0.001,
-        tol_obj=1e-12,
-        tol_rel_obj=1e4,
-        tol_grad=1e-8,
-        tol_rel_grad=1e7,
-        tol_param=1e-8,
-        refresh=0,
-        num_threads=-1,
+        init: Optional[StanData] = None,
+        seed: Optional[int] = None,
+        id: int = 1,
+        init_radius: float = 2.0,
+        algorithm: OptimizationAlgorithm = OptimizationAlgorithm.LBFGS,
+        jacobian: bool = False,
+        num_iterations: int = 2000,
+        max_history_size: int = 5,
+        init_alpha: float = 0.001,
+        tol_obj: float = 1e-12,
+        tol_rel_obj: float = 1e4,
+        tol_grad: float = 1e-8,
+        tol_rel_grad: float = 1e7,
+        tol_param: float = 1e-8,
+        refresh: int = 0,
+        num_threads: int = -1,
     ):
+        """
+        Optimize the model parameters using the specified algorithm.
+
+        This will find either the maximum a posteriori (MAP) estimate
+        or the maximum likelihood estimate (MLE) of the model parameters,
+        depending on the value of the ``jacobian`` parameter.
+
+        Parameters
+        ----------
+        data : str | dict, optional
+            The data to use for the model. This can be a
+            path to a JSON file, a JSON string, or a dictionary.
+            By default, ""
+        init : str | dict | None, optional
+            Initial parameter values. This can be a
+            path to a JSON file, a JSON string, or a dictionary.
+            By default, ""
+        seed : Optional[int], optional
+            The seed to use for the random number generator.
+            If not provided, a random seed will be generated.
+        id : int, optional
+            ID used to offset the random number generator, by default 1
+        init_radius : float, optional
+            Radius to initialize unspecified parameters within.
+            The parameter values are drawn uniformly from the interval
+            [-init_radius, init_radius] on the unconstrained scale.
+            By default 2.0
+        algorithm : OptimizationAlgorithm, optional
+            Which optimization algorithm to use. Some of the following
+            arguments may be ignored depending on the algorithm.
+            By default OptimizationAlgorithm.LBFGS
+        jacobian : bool, optional
+            Whether to apply the Jacobian change of variables to the
+            log density. If False, the algorithm will find the MLE.
+            If True, the algorithm will find the MAP estimate.
+            By default False
+        num_iterations : int, optional
+            Maximum number of iterations to run the optimization,
+            by default 2000
+        max_history_size : int, optional
+            History size used to approximate the Hessian, by default 5
+        init_alpha : float, optional
+            Initial step size, by default 0.001
+        tol_obj : float, optional
+            Convergence tolerance for the objective function,
+            by default 1e-12
+        tol_rel_obj : float, optional
+            Relative convergence tolerance for the objective function,
+            by default 1e4
+        tol_grad : float, optional
+            Convergence tolerance for the gradient norm, by default 1e-8
+        tol_rel_grad : float, optional
+            Relative convergence tolerance for the gradient norm,
+            by default 1e7
+        tol_param : float, optional
+            Convergence tolerance for the changes in parameters,
+            by default 1e-8
+        refresh : int, optional
+            Number of iterations between progress messages, by default 0
+            (supress messages)
+        num_threads : int, optional
+            Number of threads to use for log density evaluations, by default -1
+            (use all available)
+
+        Returns
+        -------
+        StanOutput
+            An object containing the samples and metadata from the algorithm.
+
+        Raises
+        ------
+        ValueError
+            If any of the parameters are invalid or out of range.
+        RuntimeError
+            If there is an unrecoverable error during the algorithm.
+        """
         seed = seed or rand_u32()
 
         with self._get_model(data, seed) as model:
@@ -603,17 +895,66 @@ class Model:
 
     def laplace_sample(
         self,
-        mode,
-        data="",
+        mode: Union[StanOutput, np.ndarray, StanData],
+        data: StanData = "",
         *,
-        num_draws=1000,
-        jacobian=True,
-        calculate_lp=True,
-        save_hessian=False,
-        seed=None,
-        refresh=0,
-        num_threads=-1,
+        seed: Optional[int] = None,
+        num_draws: int = 1000,
+        jacobian: bool = True,
+        calculate_lp: bool = True,
+        save_hessian: bool = False,
+        refresh: int = 0,
+        num_threads: int = -1,
     ):
+        """
+        Sample from the Laplace approximation of the posterior
+        centered at the provided mode.
+
+        Parameters
+        ----------
+        mode : Union[StanOutput, np.ndarray, StanData]
+            The mode of the Laplace approximation. This can be a
+            StanOutput object from :meth:`~Model.optimize`, a numpy
+            array, a path to a JSON file, a JSON string, or a dictionary.
+        data : str | dict, optional
+            The data to use for the model. This can be a
+            path to a JSON file, a JSON string, or a dictionary.
+            By default, ""
+        seed : Optional[int], optional
+            The seed to use for the random number generator.
+            If not provided, a random seed will be generated.
+        num_draws : int, optional
+            Number of draws, by default 1000
+        jacobian : bool, optional
+            Whether to apply the Jacobian change of variables to the
+            log density. **Note:** This should match the value used
+            when the mode was calculated.
+            By default True.
+        calculate_lp : bool, optional
+            Whether to calculate the log probability of the samples,
+            by default True
+        save_hessian : bool, optional
+            Whether to save the Hessian matrix calculated at the mode,
+            by default False
+        refresh : int, optional
+            Number of iterations between progress messages, by default 0
+            (supress messages)
+        num_threads : int, optional
+            Number of threads to use for log density evaluations, by default -1
+            (use all available)
+
+        Returns
+        -------
+        StanOutput
+            An object containing the samples and metadata from the algorithm.
+
+        Raises
+        ------
+        ValueError
+            If any of the parameters are invalid or out of range.
+        RuntimeError
+            If there is an unrecoverable error during the algorithm.
+        """
         if num_draws < 1:
             raise ValueError("num_draws must be at least 1")
 

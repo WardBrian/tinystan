@@ -1,16 +1,22 @@
 *.o
 *.d
 *.so
-bin/
 test_models/**/*.hpp
+
+bin/
+_build/
+.coverage
+
 make/local
-clients/R/R.Rproj
 *.pyc
 *.egg-info/
+
+
 clients/tinystan*
 .RData
 .Rhistory
+*.Rproj
+.Rproj.user
+
 
 Manifest.toml
-.coverage
-.Rproj.user

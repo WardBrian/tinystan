@@ -21,7 +21,7 @@
   tol_rel_grad = 1e+07,
   tol_param = 1e-08,
   num_iterations = 1000,
-  num_elbo_draws = 100,
+  num_elbo_draws = 25,
   num_multi_draws = 1000,
   calculate_lp = TRUE,
   psis_resample = TRUE,
