@@ -97,7 +97,7 @@ def test_save_metric(gaussian_model):
     out_nometric = gaussian_model.sample(
         data, num_warmup=10, num_samples=10, save_metric=False
     )
-    assert not hasattr(out_nometric, "metric")
+    assert out_nometric.metric is None
 
 
 def test_sundials_ode():
