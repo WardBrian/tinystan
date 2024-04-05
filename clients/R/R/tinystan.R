@@ -377,7 +377,7 @@ handle_error <- function(return_code, lib_name, err_ptr) {
             PACKAGE = lib_name)$err_msg
         type <- .C("tinystan_get_error_type_R", as.raw(err_ptr), err_type = as.integer(0),
             PACKAGE = lib_name)$err_type
-        .C("tinystan_free_stan_error_R", as.raw(err_ptr), PACKAGE = lib_name)
+        .C("tinystan_destroy_error_R", as.raw(err_ptr), PACKAGE = lib_name)
         if (type == 3) {
             if (requireNamespace("rlang", quietly = TRUE)) {
                 rlang::interrupt()

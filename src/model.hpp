@@ -23,6 +23,9 @@
 stan::model::model_base &new_model(stan::io::var_context &data_context,
                                    unsigned int seed, std::ostream *msg_stream);
 
+/**
+ * Holder for the instantiated Stan model and some extra metadata
+ */
 class TinyStanModel {
  public:
   TinyStanModel(const char *data, unsigned int seed)
@@ -52,6 +55,17 @@ class TinyStanModel {
 namespace tinystan {
 namespace model {
 
+/**
+ * @brief Transform the constrained parameters to unconstrained space
+ *
+ * Can accept either a JSON string or a pointer to the constrained parameters,
+ * only one of which should be provided at any given time.
+ *
+ * @param tmodel TinyStanModel instance
+ * @param theta pointer to the constrained parameters
+ * @param theta_json JSON string with the constrained parameters
+ * @param logger logger instance
+ */
 Eigen::VectorXd unconstrain_parameters(const TinyStanModel *tmodel,
                                        const double *theta,
                                        const char *theta_json,

@@ -19,19 +19,22 @@
 namespace tinystan {
 namespace io {
 
-/*
- * Shim between the Stan callbacks that are used for outputting
- * and the simple buffer interface we provide.
- * Bounds checking is primarily for debugging and can be disabled
- * by defining `TINYSTAN_NO_BOUNDS_CHECK` at compile time.
+/**
+ * @brief Writer for tabular data (e.g. draws)
+ *
+ * Adaptor for stan::callbacks::writer that writes to a C-style
+ * buffer. It ignores all writes except for the primary ones used for draws.
+ * Bounds checking is enabled by default, but can be disabled by defining
+ * TINYSTAN_NO_BOUNDS_CHECK at compile time.
  */
-
 class buffer_writer : public stan::callbacks::writer {
  public:
   buffer_writer(double *buf, size_t max) : buf(buf), pos(0), size(max){};
   virtual ~buffer_writer(){};
 
-  // primary way of writing draws
+  /**
+   * Primary method used by the Stan algorithms
+   */
   void operator()(const std::vector<double> &v) override {
     const auto v_size = v.size();
 #ifndef TINYSTAN_NO_BOUNDS_CHECK
@@ -43,7 +46,9 @@ class buffer_writer : public stan::callbacks::writer {
     pos += v_size;
   }
 
-  // needed for pathfinder - transposed order per spec
+  /**
+   * Used by Pathfinder which writes draws all at once
+   */
   void operator()(const Eigen::Ref<Eigen::Matrix<double, -1, -1>> &m) override {
 #ifndef TINYSTAN_NO_BOUNDS_CHECK
     if (pos + m.size() > size) {
@@ -63,6 +68,12 @@ class buffer_writer : public stan::callbacks::writer {
   size_t size;
 };
 
+/**
+ * @brief Writer for structured data (e.g. inv_metric) of a specific key
+ *
+ * Adaptor for stan::callbacks::structured_writer that writes to a C-style
+ * buffer. It only writes vectors or matrices with the specified key.
+ */
 class filtered_writer : public stan::callbacks::structured_writer {
  public:
   filtered_writer(std::string key, double *buf) : key(key), buf(buf), pos(0){};
@@ -93,6 +104,12 @@ class filtered_writer : public stan::callbacks::structured_writer {
   size_t pos;
 };
 
+/**
+ * @brief Data provider for metric initialization
+ *
+ * Adaptor for stan::io::var_context that reads from a C-style buffer.
+ * This only supports reading the "inv_metric" key.
+ */
 class metric_buffer_reader : public stan::io::empty_var_context {
  public:
   metric_buffer_reader(const double *buf, size_t size,

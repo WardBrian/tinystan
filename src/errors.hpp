@@ -55,6 +55,11 @@ class TinyStanError {
 namespace tinystan {
 namespace error {
 
+/**
+ * Logger which captures errors for later retrieval.
+ * Optionally prints-non errors using tinystan::io::info and
+ * tinystan::io::warn.
+ */
 class error_logger : public stan::callbacks::logger {
  public:
   error_logger(bool print_non_errors) : print(print_non_errors){};
@@ -154,6 +159,10 @@ void check_between(const char *name, double val, double lb, double ub) {
   }
 }
 
+/**
+ * Exception thrown when the user interrupts the program.
+ * See tinystan::interrupt::tinystan_interrupt_handler for more details.
+ */
 class interrupt_exception : public std::exception {};
 
 }  // namespace error

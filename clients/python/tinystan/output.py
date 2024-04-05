@@ -65,7 +65,7 @@ class StanOutput:
         return f"StanOutput with parameters:\n\t{p}"
 
     def create_inits(
-        self, *, chains:int=4, seed:Optional[int]=None
+        self, *, chains: int = 4, seed: Optional[int] = None
     ) -> Union[Dict[str, np.ndarray], List[Dict[str, np.ndarray]]]:
         """
         Create a dictionary of parameters suitable for initializing a new Stan run.

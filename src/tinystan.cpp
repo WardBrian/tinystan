@@ -424,7 +424,7 @@ TinyStanErrorType tinystan_get_error_type(const TinyStanError *err) {
   return err->type;
 }
 
-void tinystan_free_stan_error(TinyStanError *err) { delete (err); }
+void tinystan_destroy_error(TinyStanError *err) { delete (err); }
 
 char tinystan_separator_char() { return io::SEPARATOR; }
 
