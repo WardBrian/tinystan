@@ -86,7 +86,7 @@ function raise_for_error(lib::Ptr{Nothing}, return_code::Cint, err::Ref{Ptr{Cvoi
             (Ptr{Cvoid},),
             err[],
         )
-        ccall(Libc.Libdl.dlsym(lib, :tinystan_free_stan_error), Cvoid, (Ptr{Cvoid},), err[])
+        ccall(Libc.Libdl.dlsym(lib, :tinystan_destroy_error), Cvoid, (Ptr{Cvoid},), err[])
         exn = exceptions[type+1]
         throw(exn(msg))
     end

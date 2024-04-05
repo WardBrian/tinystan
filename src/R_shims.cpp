@@ -1,9 +1,13 @@
 #include "tinystan.h"
 
-// R's .C function can only pass in pointers to C types, so we need to
-// provide shims which indirect all our arguments and returns
-
+/**
+ *  \file R_shims.cpp
+ *  R's .C function can only pass in pointers to C types, so we need to
+ * provide shims which indirect all our arguments and returns
+ */
 extern "C" {
+
+/// see \link tinystan_create_model() \endlink for details
 TINYSTAN_PUBLIC void tinystan_create_model_R(TinyStanModel** ptr_out,
                                              const char** data,
                                              unsigned int* seed,
@@ -11,24 +15,29 @@ TINYSTAN_PUBLIC void tinystan_create_model_R(TinyStanModel** ptr_out,
   *ptr_out = tinystan_create_model(*data, *seed, err);
 }
 
+/// see \link tinystan_destroy_model() \endlink for details
 TINYSTAN_PUBLIC void tinystan_destroy_model_R(TinyStanModel** model) {
   tinystan_destroy_model(*model);
 }
 
+/// see \link tinystan_model_param_names() \endlink for details
 TINYSTAN_PUBLIC void tinystan_model_param_names_R(TinyStanModel** model,
                                                   char const** names) {
   *names = tinystan_model_param_names(*model);
 }
 
+/// see \link tinystan_model_num_free_params() \endlink for details
 TINYSTAN_PUBLIC void tinystan_model_num_free_params_R(TinyStanModel** model,
                                                       int* n) {
   *n = tinystan_model_num_free_params(*model);
 }
 
+/// see \link tinystan_separator_char() \endlink for details
 TINYSTAN_PUBLIC void tinystan_separator_char_R(char* sep) {
   *sep = tinystan_separator_char();
 }
 
+/// see \link tinystan_sample() \endlink for details
 TINYSTAN_PUBLIC void tinystan_sample_R(
     int* return_code, TinyStanModel** model, unsigned int* num_chains,
     char** inits, unsigned int* seed, unsigned int* chain_id,
@@ -57,6 +66,7 @@ TINYSTAN_PUBLIC void tinystan_sample_R(
       static_cast<size_t>(*out_size), metric_out_ptr, err);
 }
 
+/// see \link tinystan_pathfinder() \endlink for details
 TINYSTAN_PUBLIC void tinystan_pathfinder_R(
     int* return_code, TinyStanModel** model, unsigned int* num_paths,
     char** inits, unsigned int* seed, unsigned int* id, double* init_radius,
@@ -73,6 +83,7 @@ TINYSTAN_PUBLIC void tinystan_pathfinder_R(
       *num_threads, out, static_cast<size_t>(*out_size), err);
 }
 
+/// see \link tinystan_optimize() \endlink for details
 TINYSTAN_PUBLIC void tinystan_optimize_R(
     int* return_code, TinyStanModel** model, char** init, unsigned int* seed,
     unsigned int* id, double* init_radius, int* algorithm, int* num_iterations,
@@ -88,6 +99,7 @@ TINYSTAN_PUBLIC void tinystan_optimize_R(
       static_cast<size_t>(*out_size), err);
 }
 
+/// see \link tinystan_laplace_sample() \endlink for details
 TINYSTAN_PUBLIC
 void tinystan_laplace_sample_R(int* return_code, const TinyStanModel** model,
                                int* use_array, const double* theta_hat_constr,
@@ -115,17 +127,20 @@ void tinystan_laplace_sample_R(int* return_code, const TinyStanModel** model,
       static_cast<size_t>(*out_size), hessian_out_ptr, err);
 }
 
+/// see \link tinystan_get_error_message() \endlink for details
 TINYSTAN_PUBLIC void tinystan_get_error_message_R(TinyStanError** err,
                                                   char const** err_msg) {
   *err_msg = tinystan_get_error_message(*err);
 }
 
+/// see \link tinystan_get_error_type() \endlink for details
 TINYSTAN_PUBLIC void tinystan_get_error_type_R(TinyStanError** err,
                                                int* err_type) {
   *err_type = static_cast<int>(tinystan_get_error_type(*err));
 }
 
-TINYSTAN_PUBLIC void tinystan_free_stan_error_R(TinyStanError** err) {
-  tinystan_free_stan_error(*err);
+/// see \link tinystan_destroy_error() \endlink for details
+TINYSTAN_PUBLIC void tinystan_destroy_error_R(TinyStanError** err) {
+  tinystan_destroy_error(*err);
 }
 }

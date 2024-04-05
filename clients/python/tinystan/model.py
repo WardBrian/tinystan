@@ -6,7 +6,6 @@ from enum import Enum
 from os import PathLike, fspath
 from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
 
-
 import numpy as np
 from dllist import dllist
 from numpy.ctypeslib import ndpointer
@@ -18,6 +17,7 @@ from .util import validate_readable
 
 # type aliases
 StanData = Union[str, PathLike, Mapping[str, Any]]
+
 
 # ctypes helpers
 def wrapped_ndptr(*args, **kwargs):
@@ -49,6 +49,7 @@ def print_callback(msg, size, is_error):
         ctypes.string_at(msg, size).decode("utf-8"),
         file=sys.stderr if is_error else sys.stdout,
     )
+
 
 # algorithm-specific constants
 
@@ -332,7 +333,7 @@ class Model:
         self._get_error_type = self._lib.tinystan_get_error_type
         self._get_error_type.restype = ctypes.c_int  # really enum
         self._get_error_type.argtypes = [ctypes.c_void_p]
-        self._free_error = self._lib.tinystan_free_stan_error
+        self._free_error = self._lib.tinystan_destroy_error
         self._free_error.restype = None
         self._free_error.argtypes = [ctypes.c_void_p]
 

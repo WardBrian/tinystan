@@ -13,6 +13,12 @@
 namespace tinystan {
 namespace util {
 
+/**
+ * Initialize the threading pool with the specified number of threads.
+ *
+ * NOTE: Repeated calls to this function may not override the number of threads
+ * previously set.
+ */
 void init_threading(int num_threads) {
   if (num_threads == -1) {
     num_threads = std::thread::hardware_concurrency();
@@ -33,6 +39,12 @@ void init_threading(int num_threads) {
   }
 }
 
+/**
+ * Convert a vector of strings to a single comma-separated string.
+ *
+ * @param names vector of strings to convert
+ * @return freshly allocated comma-separated string
+ */
 char *to_csv(const std::vector<std::string> &names) {
   std::stringstream ss;
   for (size_t i = 0; i < names.size(); ++i) {

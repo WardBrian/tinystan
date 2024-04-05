@@ -17,6 +17,15 @@ namespace interrupt {
 
 volatile std::sig_atomic_t interrupted = false;
 
+/**
+ * @brief Interrupt handler for Stan
+ *
+ * Wrapper around OS-specific interrupt handling. This class is used to
+ * interrupt Stan's algorithms when the user presses `Ctrl+C`.
+ *
+ * This uses RAII to install a custom signal handler which is later
+ * removed, restoring the previous handler if one existed.
+ */
 class tinystan_interrupt_handler : public stan::callbacks::interrupt {
 #if !TINYSTAN_ON_WINDOWS  // POSIX signals
  public:
@@ -31,6 +40,11 @@ class tinystan_interrupt_handler : public stan::callbacks::interrupt {
     sigaction(SIGINT, &custom, &before);
   }
 
+  /**
+   * Restore the original signal handler. Important for languages like Python's
+   * REPL where `Ctrl+C` is used to interrupt the current command, not terminate
+   * the program.
+   */
   virtual ~tinystan_interrupt_handler() { sigaction(SIGINT, &before, NULL); }
 
   static void signal_handler(int signal) { interrupted = true; }
@@ -47,6 +61,11 @@ class tinystan_interrupt_handler : public stan::callbacks::interrupt {
     SetConsoleCtrlHandler(tinystan_interrupt_handler::signal_handler, TRUE);
   }
 
+  /**
+   * Remove our custom signal handler. Important for languages like Python's
+   * REPL where `Ctrl+C` is used to interrupt the current command, not terminate
+   * the program.
+   */
   virtual ~tinystan_interrupt_handler() {
     SetConsoleCtrlHandler(tinystan_interrupt_handler::signal_handler, FALSE);
   }
@@ -64,6 +83,9 @@ class tinystan_interrupt_handler : public stan::callbacks::interrupt {
 #endif
 
  public:
+  /**
+   * Check if the user has interrupted the program.
+   */
   void operator()() {
     if (interrupted) {
       throw tinystan::error::interrupt_exception();
