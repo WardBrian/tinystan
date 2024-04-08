@@ -118,7 +118,7 @@ TINYSTAN_PUBLIC char tinystan_separator_char();
 /**
  * Choice of metric for HMC.
  */
-enum TINYSTAN_PUBLIC TinyStanMetric { unit = 0, dense = 1, diagonal = 2 };
+typedef enum { unit = 0, dense = 1, diagonal = 2 } TinyStanMetric;
 
 /**
  * @brief Run Stan's No-U-Turn Sampler (NUTS) to sample from the posterior.
@@ -250,7 +250,7 @@ TINYSTAN_PUBLIC int tinystan_pathfinder(
 /**
  * Choice of optimization algorithm.
  */
-enum TinyStanOptimizationAlgorithm { newton = 0, bfgs = 1, lbfgs = 2 };
+typedef enum { newton = 0, bfgs = 1, lbfgs = 2 } TinyStanOptimizationAlgorithm;
 
 /**
  * @brief Optimize the model parameters using the specified algorithm.
@@ -358,11 +358,11 @@ TINYSTAN_PUBLIC const char *tinystan_get_error_message(
 /**
  * An enum representing different kinds of errors TinyStan can generate.
  */
-enum TINYSTAN_PUBLIC TinyStanErrorType {
+typedef enum {
   generic = 0,   ///< A generic runtime error from Stan.
   config = 1,    ///< An invalid configuration for the algorithm.
   interrupt = 2  ///< The user interrupted the algorithm with `Ctrl+C`.
-};
+} TinyStanErrorType;
 
 /**
  * Get the type of error.

@@ -31,6 +31,7 @@
 - [x] Set up visibility such that all non-API symbols are hidden
 - [x] Rename
 - [ ] Look into cmake/clang-cl builds
+- [ ] Try to compile for webassembly with emscripten
 
 ## R Package
 
