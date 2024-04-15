@@ -1,20 +1,7 @@
-using LazyArtifacts
-
-function get_tinystan_path()
-    path = get(ENV, "TINYSTAN", "")
-    if path == ""
-        artifact_path = artifact"tinystan"
-        path = joinpath(artifact_path, only(readdir(artifact_path)))
-    end
-    return path
-end
-
 
 function get_make()
     get(ENV, "MAKE", Sys.iswindows() ? "mingw32-make.exe" : "make")
 end
-
-
 
 function validate_stan_dir(path::AbstractString)
     if !isdir(path)
@@ -32,7 +19,28 @@ function set_tinystan_path!(path::AbstractString)
     ENV["TINYSTAN"] = path
 end
 
-
+function get_tinystan_path()
+    path = get(ENV, "TINYSTAN", "")
+    if path == ""
+        path = CURRENT_TINYSTAN
+        try
+            validate_stan_dir(path)
+        catch
+            println(
+                "TinyStan not found at location specified by \$TINYSTAN " *
+                "environment variable, downloading version $pkg_version to $path",
+            )
+            get_tinystan_src()
+            num_files = length(readdir(HOME_TINYSTAN))
+            if num_files >= 5
+                @warn "Found $num_files different versions of TinyStan in $HOME_TINYSTAN. " *
+                      "Consider deleting old versions to save space."
+            end
+            println("Done!")
+        end
+    end
+    return path
+end
 
 function compile_model(
     stan_file::AbstractString;
