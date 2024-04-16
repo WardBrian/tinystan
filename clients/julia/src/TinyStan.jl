@@ -12,6 +12,7 @@ export Model,
     set_tinystan_path!
 
 include("model.jl")
+include("download.jl")
 include("compile.jl")
 
 end

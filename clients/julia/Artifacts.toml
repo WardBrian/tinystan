@@ -1,7 +1,0 @@
-[tinystan]
-git-tree-sha1 = "dbddf9c93d00de149e7644d7a0d5b0c37f63ed43"
-lazy = true
-
-    [[tinystan.download]]
-    sha256 = "e68bb820f2b46bb0185d4a32fe9afd738fe7cb57e0fea6fae1695ee0bb88dc49"
-    url = "https://github.com/WardBrian/tinystan/releases/download/v0.1.0/tinystan-0.1.0.tar.gz"
