@@ -47,7 +47,7 @@ jobs:
 
       - name: Create tarball
         run: |
-          tar --exclude-vcs --exclude='clients' -chzvf --hard-dereference tinystan-${{ inputs.new_version }}.tar.gz --transform 's,^,tinystan-${{ inputs.new_version }}/,' *
+          tar --exclude-vcs --exclude='clients' --hard-dereference -chzvf tinystan-${{ inputs.new_version }}.tar.gz --transform 's,^,tinystan-${{ inputs.new_version }}/,' *
 
       - name: Setup git identity
         run: |
