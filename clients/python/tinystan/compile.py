@@ -10,10 +10,7 @@ from .download import CURRENT_TINYSTAN, HOME_TINYSTAN, get_tinystan_src
 from .util import validate_readable
 
 IS_WINDOWS = platform.system() == "Windows"
-MAKE = os.getenv(
-    "MAKE",
-    "make" if not IS_WINDOWS else "mingw32-make",
-)
+MAKE = os.getenv("MAKE", "make")
 WINDOWS_PATH_SET = False
 
 
