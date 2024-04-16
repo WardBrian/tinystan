@@ -78,17 +78,31 @@ def test_output_sizes(bernoulli_model):
 
     assert out5["theta"].shape == (109,)
 
-
-@pytest.mark.xfail(reason="Stan bug https://github.com/stan-dev/stan/issues/3268")
-def test_stan2368_bug(bernoulli_model):
+    # edge cases where num_elbo_draws > num_draws
     out6 = bernoulli_model.pathfinder(
+        BERNOULLI_DATA,
+        num_paths=1,
+        num_multi_draws=1,
+    )
+    assert out6["theta"].shape == (1,)
+
+    out7 = bernoulli_model.pathfinder(
         BERNOULLI_DATA,
         num_paths=1,
         num_draws=1,
         psis_resample=False,
     )
+    assert out7["theta"].shape == (1,)
 
-    assert out6["theta"].shape == (1,)
+
+    out8 = bernoulli_model.pathfinder(
+        BERNOULLI_DATA,
+        num_paths=4,
+        num_draws=1,
+        psis_resample=False,
+    )
+
+    assert out8["theta"].shape == (4,)
 
 
 def test_calculate_lp(bernoulli_model):
