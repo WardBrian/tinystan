@@ -94,7 +94,6 @@ def test_output_sizes(bernoulli_model):
     )
     assert out7["theta"].shape == (1,)
 
-
     out8 = bernoulli_model.pathfinder(
         BERNOULLI_DATA,
         num_paths=4,
