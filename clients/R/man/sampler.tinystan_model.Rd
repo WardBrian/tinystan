@@ -2,7 +2,7 @@
 % Please edit documentation in R/tinystan.R
 \name{sampler.tinystan_model}
 \alias{sampler.tinystan_model}
-\title{Run Stan's NUTS sampler}
+\title{Generic function \code{sampler}}
 \usage{
 \method{sampler}{tinystan_model}(
   model,

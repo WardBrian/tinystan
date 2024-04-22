@@ -2,7 +2,7 @@
 % Please edit documentation in R/tinystan.R
 \name{pathfinder.tinystan_model}
 \alias{pathfinder.tinystan_model}
-\title{Run Stan's pathfinder algorithm}
+\title{Generic function \code{pathfinder}}
 \usage{
 \method{pathfinder}{tinystan_model}(
   model,

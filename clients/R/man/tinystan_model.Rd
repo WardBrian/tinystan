@@ -2,12 +2,12 @@
 % Please edit documentation in R/tinystan.R
 \name{tinystan_model}
 \alias{tinystan_model}
-\title{Compile a Stan model}
+\title{Class \code{tinystan_model}}
 \usage{
 tinystan_model(lib, stanc_args = NULL, make_args = NULL, warn = TRUE)
 }
 \description{
-Compile a Stan model
+Load a Stan model, compiling if necessary.
 }
 \examples{
 data_file <- system.file('bernoulli.data.json', package = 'tinystan')

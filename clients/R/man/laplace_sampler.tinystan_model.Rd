@@ -2,7 +2,7 @@
 % Please edit documentation in R/tinystan.R
 \name{laplace_sampler.tinystan_model}
 \alias{laplace_sampler.tinystan_model}
-\title{Run Stan's Laplace approximation algorithm}
+\title{Generic function \code{laplace_sampler}}
 \usage{
 \method{laplace_sampler}{tinystan_model}(
   model,

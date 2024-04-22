@@ -1,4 +1,5 @@
-#' Compile a Stan model
+#' @title Class `tinystan_model`
+#' @description Load a Stan model, compiling if necessary.
 #' @export
 #' @examples
 #' data_file <- system.file('bernoulli.data.json', package = 'tinystan')
@@ -115,7 +116,8 @@ sampler <- function(...) {
     UseMethod("sampler")
 }
 
-#' Run Stan's NUTS sampler
+#' @title Generic function `sampler`
+#' @description Run Stan's NUTS sampler
 #' @export
 #' @examples
 #' data_file <- system.file('bernoulli.data.json', package = 'tinystan')
@@ -220,7 +222,8 @@ pathfinder <- function(...) {
     UseMethod("pathfinder")
 }
 
-#' Run Stan's pathfinder algorithm
+#' @title Generic function `pathfinder`
+#' @description Run Stan's pathfinder algorithm
 #' @export
 pathfinder.tinystan_model = function(model, data = "", num_paths = 4, inits = NULL,
     seed = NULL, id = 1, init_radius = 2, num_draws = 1000, max_history_size = 5,
@@ -275,7 +278,8 @@ optimizer <- function(...) {
     UseMethod("optimizer")
 }
 
-#' Run Stan's Optimization algorithm
+#' @title Generic function `optimizer`
+#' @description Run Stan's Optimization algorithms
 #' @export
 optimizer.tinystan_model = function(model, data = "", init = NULL, seed = NULL, id = 1,
     init_radius = 2, algorithm = OptimizationAlgorithm$LBFGS, jacobian = FALSE, num_iterations = 2000,
@@ -309,7 +313,8 @@ laplace_sampler <- function(...) {
     UseMethod("laplace_sampler")
 }
 
-#' Run Stan's Laplace approximation algorithm
+#' @title Generic function `laplace_sampler`
+#' @description Run Stan's Laplace approximation algorithm
 #' @export
 laplace_sampler.tinystan_model = function(model, mode, data = "", num_draws = 1000,
     jacobian = TRUE, calculate_lp = TRUE, save_hessian = FALSE, seed = NULL, refresh = 0,

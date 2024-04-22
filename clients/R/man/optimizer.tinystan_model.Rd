@@ -2,7 +2,7 @@
 % Please edit documentation in R/tinystan.R
 \name{optimizer.tinystan_model}
 \alias{optimizer.tinystan_model}
-\title{Run Stan's Optimization algorithm}
+\title{Generic function \code{optimizer}}
 \usage{
 \method{optimizer}{tinystan_model}(
   model,
@@ -26,5 +26,5 @@
 )
 }
 \description{
-Run Stan's Optimization algorithm
+Run Stan's Optimization algorithms
 }
