@@ -372,6 +372,7 @@ laplace_sampler.tinystan_model = function(model, mode, data = "", num_draws = 10
 
 
 #' Get and free the error message stored at the C++ pointer
+#' @noRd
 #' @keywords internal
 handle_error <- function(return_code, lib_name, err_ptr) {
     if (return_code != 0) {
