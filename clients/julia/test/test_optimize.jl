@@ -137,12 +137,12 @@
             # lbfgs or bfgs
 
             @testset for (name, value, match) in [
-                (:init_alpha, 0, "positive"),
-                (:tol_obj, 0, "positive"),
-                (:tol_rel_obj, 0, "positive"),
-                (:tol_grad, 0, "positive"),
-                (:tol_rel_grad, 0, "positive"),
-                (:tol_param, 0, "positive"),
+                (:init_alpha, 0., "positive"),
+                (:tol_obj, 0., "positive"),
+                (:tol_rel_obj, 0., "positive"),
+                (:tol_grad, 0., "positive"),
+                (:tol_rel_grad, 0., "positive"),
+                (:tol_param, 0., "positive"),
             ]
                 if algorithm != TinyStan.NEWTON
                     @test_throws match optimize(
