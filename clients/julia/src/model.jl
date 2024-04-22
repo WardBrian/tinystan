@@ -1,10 +1,20 @@
 
+"""
+Choices for the structure of the mass matrix used in the HMC sampler.
+
+Either `UNIT`, `DENSE`, or `DIAGONAL`.
+"""
 @enum HMCMetric begin
     UNIT = 0
     DENSE = 1
     DIAGONAL = 2
 end
 
+"""
+Choices for the optimization algorithm to use.
+
+Either `NEWTON`, `BFGS`, or `LBFGS`.
+"""
 @enum OptimizationAlgorithm begin
     NEWTON = 0
     BFGS = 1
@@ -29,15 +39,27 @@ const LAPLACE_VARIABLES = ["log_p__", "log_q__"]
 
 const exceptions = [ErrorException, ArgumentError, _ -> InterruptException()]
 
+"""
+    Model(model::String; stanc_args::Vector{String} = String[], make_args::Vector{String} = String[], warn::Bool = true)
+
+Load a Stan model for inference, compiling it if necessary.
+
+If model is a path to a file ending in `.stan`, this will first compile
+the model.  Compilation occurs if no shared object file exists for the
+supplied Stan file or if a shared object file exists and the Stan file
+has changed since last compilation.  This is equivalent to calling
+[`compile_model`](@ref) and then the constructor. If `warn` is
+false, the warning about re-loading the same shared objects is suppressed.
+"""
 mutable struct Model
     lib::Ptr{Nothing}
     const sep::Char
 
     function Model(
         model::String;
-        stanc_args::AbstractVector{String} = String[],
-        make_args::AbstractVector{String} = String[],
-        warn::Bool = true,
+        stanc_args::AbstractVector{String}=String[],
+        make_args::AbstractVector{String}=String[],
+        warn::Bool=true,
     )
 
         if !isfile(model)
@@ -167,36 +189,46 @@ function api_version(model::Model)
     (major[], minor[], patch[])
 end
 
-# algorithms
 
+"""
+    sample(model::Model, data::String=""; num_chains::Int=4, inits::Union{nothing,AbstractString,AbstractArray{AbstractString}}=nothing, seed::Union{Nothing,UInt32}=nothing, id::Int=1, init_radius=2.0, num_warmup::Int=1000, num_samples::Int=1000, metric::HMCMetric=DIAGONAL, init_inv_metric::Union{Nothing,Array{Float64}}=nothing, save_metric::Bool=false, adapt::Bool=true, delta::Float64=0.8, gamma::Float64=0.05, kappa::Float64=0.75, t0::Int=10, init_buffer::Int=75, term_buffer::Int=50, window::Int=25, save_warmup::Bool=false, stepsize::Float64=1.0, stepsize_jitter::Float64=0.0, max_depth::Int=10, refresh::Int=0, num_threads::Int=-1)
+
+
+Run Stan's No-U-Turn Sampler (NUTS) to sample from the posterior.
+An in-depth explanation of the parameters can be found in the [Stan
+documentation](https://mc-stan.org/docs/reference-manual/mcmc.html).
+
+Returns a tuple of the parameter names, the draws, and the metric if
+`save_metric` is true.
+"""
 function sample(
     model::Model,
-    data::String = "",
+    data::AbstractString="",
     ;
-    num_chains::Int = 4,
-    inits = nothing,
-    seed::Union{Nothing,UInt32} = nothing,
-    id::Int = 1,
-    init_radius = 2.0,
-    num_warmup::Int = 1000,
-    num_samples::Int = 1000,
-    metric::HMCMetric = DIAGONAL,
-    init_inv_metric::Union{Nothing,Array{Float64}} = nothing,
-    save_metric::Bool = false,
-    adapt = true,
-    delta = 0.8,
-    gamma = 0.05,
-    kappa = 0.75,
-    t0::Int = 10,
-    init_buffer::Int = 75,
-    term_buffer::Int = 50,
-    window::Int = 25,
-    save_warmup::Bool = false,
-    stepsize = 1.0,
-    stepsize_jitter = 0.0,
-    max_depth::Int = 10,
-    refresh::Int = 0,
-    num_threads::Int = -1,
+    num_chains::Int=4,
+    inits::Union{Nothing,AbstractString,AbstractVector{String}}=nothing,
+    seed::Union{Nothing,UInt32}=nothing,
+    id::Int=1,
+    init_radius=2.0,
+    num_warmup::Int=1000,
+    num_samples::Int=1000,
+    metric::HMCMetric=DIAGONAL,
+    init_inv_metric::Union{Nothing,Array{Float64}}=nothing,
+    save_metric::Bool=false,
+    adapt::Bool=true,
+    delta::Float64=0.8,
+    gamma::Float64=0.05,
+    kappa::Float64=0.75,
+    t0::Int=10,
+    init_buffer::Int=75,
+    term_buffer::Int=50,
+    window::Int=25,
+    save_warmup::Bool=false,
+    stepsize::Float64=1.0,
+    stepsize_jitter::Float64=0.0,
+    max_depth::Int=10,
+    refresh::Int=0,
+    num_threads::Int=-1,
 )
     if num_chains < 1
         error("num_chains must be at least 1")
@@ -218,7 +250,7 @@ function sample(
             error("Model has no parameters to sample")
         end
 
-        param_names = cat(HMC_SAMPLER_VARIABLES, get_names(model, model_ptr), dims = 1)
+        param_names = cat(HMC_SAMPLER_VARIABLES, get_names(model, model_ptr), dims=1)
         num_params = length(param_names)
         num_draws = num_samples + num_warmup * Int(save_warmup)
         out = zeros(Float64, num_params, num_draws, num_chains)
@@ -236,7 +268,7 @@ function sample(
             if inv_metric_dims == metric_size
                 init_inv_metric = repeat(
                     init_inv_metric,
-                    outer = (ntuple(_ -> 1, length(inv_metric_dims))..., num_chains),
+                    outer=(ntuple(_ -> 1, length(inv_metric_dims))..., num_chains),
                 )
             elseif inv_metric_dims == (metric_size..., num_chains)
                 # good to go
@@ -322,37 +354,46 @@ function sample(
         out = permutedims(out, (3, 2, 1))
         if save_metric
             metric_out =
-                permutedims(metric_out, range(length(size(metric_out)), 1, step = -1))
+                permutedims(metric_out, range(length(size(metric_out)), 1, step=-1))
             return (param_names, out, metric_out)
         end
         return (param_names, out)
     end
 end
 
+"""
+    pathfinder(model::Model, data::String=""; num_paths::Int=4, inits::Union{nothing,AbstractString,AbstractArray{AbstractString}}=nothing, seed::Union{Nothing,UInt32}=nothing, id::Int=1, init_radius=2.0, num_draws::Int=1000, max_history_size::Int=5, init_alpha::Float64=0.001, tol_obj::Float64=1e-12, tol_rel_obj::Float64=1e4, tol_grad::Float64=1e-8, tol_rel_grad::Float64=1e7, tol_param::Float64=1e-8, num_iterations::Int=1000, num_elbo_draws::Int=25, num_multi_draws::Int=1000, calculate_lp::Bool=true, psis_resample::Bool=true, refresh::Int=0, num_threads::Int=-1)
+
+Run the Pathfinder algorithm to approximate the posterior.
+See [Stan's documentation](https://mc-stan.org/docs/reference-manual/pathfinder.html)
+for more information on the algorithm.
+
+Returns a tuple of the parameter names and the draws.
+"""
 function pathfinder(
     model::Model,
-    data::String = "",
+    data::AbstractString="",
     ;
-    num_paths::Int = 4,
-    inits::Union{String,Vector{String},Nothing} = nothing,
-    seed::Union{UInt32,Nothing} = nothing,
-    id::Int = 1,
-    init_radius = 2.0,
-    num_draws = 1000,
-    max_history_size::Int = 5,
-    init_alpha = 0.001,
-    tol_obj = 1e-12,
-    tol_rel_obj = 1e4,
-    tol_grad = 1e-8,
-    tol_rel_grad = 1e7,
-    tol_param = 1e-8,
-    num_iterations::Int = 1000,
-    num_elbo_draws::Int = 25,
-    num_multi_draws::Int = 1000,
-    calculate_lp::Bool = true,
-    psis_resample::Bool = true,
-    refresh::Int = 0,
-    num_threads::Int = -1,
+    num_paths::Int=4,
+    inits::Union{Nothing,AbstractString,AbstractVector{String}}=nothing,
+    seed::Union{UInt32,Nothing}=nothing,
+    id::Int=1,
+    init_radius::Float64=2.0,
+    num_draws::Int=1000,
+    max_history_size::Int=5,
+    init_alpha::Float64=0.001,
+    tol_obj::Float64=1e-12,
+    tol_rel_obj::Float64=1e4,
+    tol_grad::Float64=1e-8,
+    tol_rel_grad::Float64=1e7,
+    tol_param::Float64=1e-8,
+    num_iterations::Int=1000,
+    num_elbo_draws::Int=25,
+    num_multi_draws::Int=1000,
+    calculate_lp::Bool=true,
+    psis_resample::Bool=true,
+    refresh::Int=0,
+    num_threads::Int=-1,
 )
     if num_draws < 1
         error("num_draws must be at least 1")
@@ -381,7 +422,7 @@ function pathfinder(
             error("Model has no parameters")
         end
 
-        param_names = cat(PATHFINDER_VARIABLES, get_names(model, model_ptr), dims = 1)
+        param_names = cat(PATHFINDER_VARIABLES, get_names(model, model_ptr), dims=1)
         num_params = length(param_names)
         out = zeros(Float64, num_params, num_output)
 
@@ -446,33 +487,45 @@ function pathfinder(
     end
 end
 
+"""
+    optimize(model::Model, data::String=""; init::Union{Nothing,AbstractString}=nothing, seed::Union{UInt32,Nothing}=nothing, id::Int=1, init_radius::Float64=2.0, algorithm::OptimizationAlgorithm=LBFGS, jacobian::Bool=false, num_iterations::Int=2000, max_history_size::Int=5, init_alpha::Float64=0.001, tol_obj::Float64=1e-12, tol_rel_obj::Float64=1e4, tol_grad::Float64=1e-8, tol_rel_grad::Float64=1e7, tol_param::Float64=1e-8, refresh::Int=0, num_threads::Int=-1)
+
+Optimize the model parameters using the specified algorithm.
+
+This will find either the maximum a posteriori (MAP) estimate
+or the maximum likelihood estimate (MLE) of the model parameters,
+depending on the value of the `jacobian` parameter.
+Additional parameters can be found in the [Stan documentation](https://mc-stan.org/docs/reference-manual/optimization.html).
+
+Returns a tuple of the parameter names and the optimized values.
+"""
 function optimize(
     model::Model,
-    data::String = "",
+    data::AbstractString="",
     ;
-    init::Union{String,Nothing} = nothing,
-    seed::Union{UInt32,Nothing} = nothing,
-    id::Int = 1,
-    init_radius = 2.0,
-    algorithm::OptimizationAlgorithm = LBFGS,
-    jacobian::Bool = false,
-    num_iterations::Int = 2000,
-    max_history_size::Int = 5,
-    init_alpha = 0.001,
-    tol_obj = 1e-12,
-    tol_rel_obj = 1e4,
-    tol_grad = 1e-8,
-    tol_rel_grad = 1e7,
-    tol_param = 1e-8,
-    refresh::Int = 0,
-    num_threads::Int = -1,
+    init::Union{Nothing,AbstractString}=nothing,
+    seed::Union{UInt32,Nothing}=nothing,
+    id::Int=1,
+    init_radius::Float64=2.0,
+    algorithm::OptimizationAlgorithm=LBFGS,
+    jacobian::Bool=false,
+    num_iterations::Int=2000,
+    max_history_size::Int=5,
+    init_alpha::Float64=0.001,
+    tol_obj::Float64=1e-12,
+    tol_rel_obj::Float64=1e4,
+    tol_grad::Float64=1e-8,
+    tol_rel_grad::Float64=1e7,
+    tol_param::Float64=1e-8,
+    refresh::Int=0,
+    num_threads::Int=-1,
 )
     if seed === nothing
         seed = rand(UInt32)
     end
 
     with_model(model, data, seed) do model_ptr
-        param_names = cat(OPTIMIZE_VARIABLES, get_names(model, model_ptr), dims = 1)
+        param_names = cat(OPTIMIZE_VARIABLES, get_names(model, model_ptr), dims=1)
         num_params = length(param_names)
         out = zeros(Float64, num_params)
 
@@ -532,18 +585,27 @@ function optimize(
     end
 end
 
+"""
+    laplace_sample(model::Model, mode::Union{AbstractString,Array{Float64}}, data::AbstractString=""; num_draws::Int=1000, jacobian::Bool=true, calculate_lp::Bool=true, save_hessian::Bool=false, seed::Union{UInt32,Nothing}=nothing, refresh::Int=0, num_threads::Int=-1)
 
+Sample from the Laplace approximation of the posterior
+centered at the provided mode. The mode can be either a JSON string
+or an array of floats, often obtained from the [`optimize`](@ref)
+function.
+
+Returns a tuple of the parameter names and the draws.
+"""
 function laplace_sample(
     model::Model,
-    mode::Union{String,Array{Float64}},
-    data::String = "";
-    num_draws::Int = 1000,
-    jacobian::Bool = true,
-    calculate_lp::Bool = true,
-    save_hessian::Bool = false,
-    seed::Union{UInt32,Nothing} = nothing,
-    refresh::Int = 0,
-    num_threads::Int = -1,
+    mode::Union{AbstractString,Array{Float64}},
+    data::AbstractString="";
+    num_draws::Int=1000,
+    jacobian::Bool=true,
+    calculate_lp::Bool=true,
+    save_hessian::Bool=false,
+    seed::Union{UInt32,Nothing}=nothing,
+    refresh::Int=0,
+    num_threads::Int=-1,
 )
     if num_draws < 1
         error("num_draws must be at least 1")
@@ -553,7 +615,7 @@ function laplace_sample(
     end
 
     with_model(model, data, seed) do model_ptr
-        param_names = cat(LAPLACE_VARIABLES, get_names(model, model_ptr), dims = 1)
+        param_names = cat(LAPLACE_VARIABLES, get_names(model, model_ptr), dims=1)
         num_params = length(param_names)
         out = zeros(Float64, num_params, num_draws)
 

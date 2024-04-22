@@ -14,11 +14,27 @@ function validate_stan_dir(path::AbstractString)
     end
 end
 
+"""
+    set_tinystan_path!(path)
+
+Set the path TinyStan.
+"""
 function set_tinystan_path!(path::AbstractString)
     validate_stan_dir(path)
     ENV["TINYSTAN"] = path
 end
 
+"""
+    get_tinystan_path() -> String
+
+Return the path the the TinyStan directory.
+
+If the environment variable `TINYSTAN` is set, this will be returned.
+Otherwise, this function downloads a matching version of TinyStan under
+a folder called `.tinystan` in the user's home directory.
+
+See [`set_tinystan_path!()`](@ref) to set the path from within Julia.
+"""
 function get_tinystan_path()
     path = get(ENV, "TINYSTAN", "")
     if path == ""
@@ -42,6 +58,20 @@ function get_tinystan_path()
     return path
 end
 
+"""
+    compile_model(stan_file; stanc_args=[], make_args=[])
+
+Run TinyStan’s Makefile on a `.stan` file, creating the `.so` used by StanModel and
+return a path to the compiled library.
+Arguments to `stanc3` can be passed as a vector, for example `["--O1"]` enables level 1 compiler
+optimizations.
+Additional arguments to `make` can be passed as a vector, for example `["STAN_THREADS=true"]`
+enables the model's threading capabilities. If the same flags are defined in `make/local`,
+the versions passed here will take precedent.
+
+This function checks that the path to TinyStan is valid and will error if it is not.
+This can be set with [`set_tinystan_path!()`](@ref).
+"""
 function compile_model(
     stan_file::AbstractString;
     stanc_args::AbstractVector{String} = String[],
