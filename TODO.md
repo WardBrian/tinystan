@@ -17,7 +17,7 @@
 - [x] Language specific outputs (rvars, stanio, not sure if Julia has a good option)
 
 ## Testing
-- [ ] Test with sanitizers in CI?
+- [-] Test with sanitizers in CI?
 - [x] Add a variety of models, including:
     - [x] A model that uses SUNDIALS
     - [x] A model with no parameters
@@ -27,11 +27,11 @@
 
 
 ## Other
-- [ ] Documentation
+- [x] Documentation
 - [x] Set up visibility such that all non-API symbols are hidden
 - [x] Rename
+- [x] Try to compile for webassembly with emscripten
 - [ ] Look into cmake/clang-cl builds
-- [ ] Try to compile for webassembly with emscripten
 
 ## R Package
 
