@@ -21,7 +21,7 @@ namespace util {
  */
 void init_threading(int num_threads) {
   if (num_threads == -1) {
-    num_threads = std::thread::hardware_concurrency();
+    num_threads = std::max(1U, std::thread::hardware_concurrency());
   }
 #ifndef STAN_THREADS
   if (num_threads > 1) {
