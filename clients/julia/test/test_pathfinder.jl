@@ -185,12 +185,12 @@
             (:num_multi_draws, 0, "at least 1"),
             # l-bfgs sub-options:
             (:max_history_size, 0, "positive"),
-            (:init_alpha, 0., "positive"),
-            (:tol_obj, 0., "positive"),
-            (:tol_rel_obj, 0., "positive"),
-            (:tol_grad, 0., "positive"),
-            (:tol_rel_grad, 0., "positive"),
-            (:tol_param, 0., "positive"),
+            (:init_alpha, 0.0, "positive"),
+            (:tol_obj, 0.0, "positive"),
+            (:tol_rel_obj, 0.0, "positive"),
+            (:tol_grad, 0.0, "positive"),
+            (:tol_rel_grad, 0.0, "positive"),
+            (:tol_param, 0.0, "positive"),
         ]
             @test_throws match pathfinder(
                 bernoulli_model,

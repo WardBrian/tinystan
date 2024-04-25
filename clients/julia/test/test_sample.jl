@@ -360,7 +360,7 @@
             (:delta, -0.1, "between 0 and 1"),
             (:delta, 1.1, "between 0 and 1"),
             (:gamma, 0.0, "positive"),
-            (:kappa, 0., "positive"),
+            (:kappa, 0.0, "positive"),
             (:t0, 0, "positive"),
             (:stepsize, 0.0, "positive"),
             (:stepsize_jitter, -0.1, "between 0 and 1"),

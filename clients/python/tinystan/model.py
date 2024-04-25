@@ -789,6 +789,8 @@ class Model:
         This will find either the maximum a posteriori (MAP) estimate
         or the maximum likelihood estimate (MLE) of the model parameters,
         depending on the value of the ``jacobian`` parameter.
+        Additional parameters can be found in the Stan documentation at
+        https://mc-stan.org/docs/reference-manual/optimization.html
 
         Parameters
         ----------

@@ -57,9 +57,9 @@ mutable struct Model
 
     function Model(
         model::String;
-        stanc_args::AbstractVector{String}=String[],
-        make_args::AbstractVector{String}=String[],
-        warn::Bool=true,
+        stanc_args::AbstractVector{String} = String[],
+        make_args::AbstractVector{String} = String[],
+        warn::Bool = true,
     )
 
         if !isfile(model)
@@ -203,32 +203,32 @@ Returns a tuple of the parameter names, the draws, and the metric if
 """
 function sample(
     model::Model,
-    data::AbstractString="",
+    data::AbstractString = "",
     ;
-    num_chains::Int=4,
-    inits::Union{Nothing,AbstractString,AbstractVector{String}}=nothing,
-    seed::Union{Nothing,UInt32}=nothing,
-    id::Int=1,
-    init_radius=2.0,
-    num_warmup::Int=1000,
-    num_samples::Int=1000,
-    metric::HMCMetric=DIAGONAL,
-    init_inv_metric::Union{Nothing,Array{Float64}}=nothing,
-    save_metric::Bool=false,
-    adapt::Bool=true,
-    delta::Float64=0.8,
-    gamma::Float64=0.05,
-    kappa::Float64=0.75,
-    t0::Int=10,
-    init_buffer::Int=75,
-    term_buffer::Int=50,
-    window::Int=25,
-    save_warmup::Bool=false,
-    stepsize::Float64=1.0,
-    stepsize_jitter::Float64=0.0,
-    max_depth::Int=10,
-    refresh::Int=0,
-    num_threads::Int=-1,
+    num_chains::Int = 4,
+    inits::Union{Nothing,AbstractString,AbstractVector{String}} = nothing,
+    seed::Union{Nothing,UInt32} = nothing,
+    id::Int = 1,
+    init_radius = 2.0,
+    num_warmup::Int = 1000,
+    num_samples::Int = 1000,
+    metric::HMCMetric = DIAGONAL,
+    init_inv_metric::Union{Nothing,Array{Float64}} = nothing,
+    save_metric::Bool = false,
+    adapt::Bool = true,
+    delta::Float64 = 0.8,
+    gamma::Float64 = 0.05,
+    kappa::Float64 = 0.75,
+    t0::Int = 10,
+    init_buffer::Int = 75,
+    term_buffer::Int = 50,
+    window::Int = 25,
+    save_warmup::Bool = false,
+    stepsize::Float64 = 1.0,
+    stepsize_jitter::Float64 = 0.0,
+    max_depth::Int = 10,
+    refresh::Int = 0,
+    num_threads::Int = -1,
 )
     if num_chains < 1
         error("num_chains must be at least 1")
@@ -250,7 +250,7 @@ function sample(
             error("Model has no parameters to sample")
         end
 
-        param_names = cat(HMC_SAMPLER_VARIABLES, get_names(model, model_ptr), dims=1)
+        param_names = cat(HMC_SAMPLER_VARIABLES, get_names(model, model_ptr), dims = 1)
         num_params = length(param_names)
         num_draws = num_samples + num_warmup * Int(save_warmup)
         out = zeros(Float64, num_params, num_draws, num_chains)
@@ -268,7 +268,7 @@ function sample(
             if inv_metric_dims == metric_size
                 init_inv_metric = repeat(
                     init_inv_metric,
-                    outer=(ntuple(_ -> 1, length(inv_metric_dims))..., num_chains),
+                    outer = (ntuple(_ -> 1, length(inv_metric_dims))..., num_chains),
                 )
             elseif inv_metric_dims == (metric_size..., num_chains)
                 # good to go
@@ -354,7 +354,7 @@ function sample(
         out = permutedims(out, (3, 2, 1))
         if save_metric
             metric_out =
-                permutedims(metric_out, range(length(size(metric_out)), 1, step=-1))
+                permutedims(metric_out, range(length(size(metric_out)), 1, step = -1))
             return (param_names, out, metric_out)
         end
         return (param_names, out)
@@ -372,28 +372,28 @@ Returns a tuple of the parameter names and the draws.
 """
 function pathfinder(
     model::Model,
-    data::AbstractString="",
+    data::AbstractString = "",
     ;
-    num_paths::Int=4,
-    inits::Union{Nothing,AbstractString,AbstractVector{String}}=nothing,
-    seed::Union{UInt32,Nothing}=nothing,
-    id::Int=1,
-    init_radius::Float64=2.0,
-    num_draws::Int=1000,
-    max_history_size::Int=5,
-    init_alpha::Float64=0.001,
-    tol_obj::Float64=1e-12,
-    tol_rel_obj::Float64=1e4,
-    tol_grad::Float64=1e-8,
-    tol_rel_grad::Float64=1e7,
-    tol_param::Float64=1e-8,
-    num_iterations::Int=1000,
-    num_elbo_draws::Int=25,
-    num_multi_draws::Int=1000,
-    calculate_lp::Bool=true,
-    psis_resample::Bool=true,
-    refresh::Int=0,
-    num_threads::Int=-1,
+    num_paths::Int = 4,
+    inits::Union{Nothing,AbstractString,AbstractVector{String}} = nothing,
+    seed::Union{UInt32,Nothing} = nothing,
+    id::Int = 1,
+    init_radius::Float64 = 2.0,
+    num_draws::Int = 1000,
+    max_history_size::Int = 5,
+    init_alpha::Float64 = 0.001,
+    tol_obj::Float64 = 1e-12,
+    tol_rel_obj::Float64 = 1e4,
+    tol_grad::Float64 = 1e-8,
+    tol_rel_grad::Float64 = 1e7,
+    tol_param::Float64 = 1e-8,
+    num_iterations::Int = 1000,
+    num_elbo_draws::Int = 25,
+    num_multi_draws::Int = 1000,
+    calculate_lp::Bool = true,
+    psis_resample::Bool = true,
+    refresh::Int = 0,
+    num_threads::Int = -1,
 )
     if num_draws < 1
         error("num_draws must be at least 1")
@@ -422,7 +422,7 @@ function pathfinder(
             error("Model has no parameters")
         end
 
-        param_names = cat(PATHFINDER_VARIABLES, get_names(model, model_ptr), dims=1)
+        param_names = cat(PATHFINDER_VARIABLES, get_names(model, model_ptr), dims = 1)
         num_params = length(param_names)
         out = zeros(Float64, num_params, num_output)
 
@@ -501,31 +501,31 @@ Returns a tuple of the parameter names and the optimized values.
 """
 function optimize(
     model::Model,
-    data::AbstractString="",
+    data::AbstractString = "",
     ;
-    init::Union{Nothing,AbstractString}=nothing,
-    seed::Union{UInt32,Nothing}=nothing,
-    id::Int=1,
-    init_radius::Float64=2.0,
-    algorithm::OptimizationAlgorithm=LBFGS,
-    jacobian::Bool=false,
-    num_iterations::Int=2000,
-    max_history_size::Int=5,
-    init_alpha::Float64=0.001,
-    tol_obj::Float64=1e-12,
-    tol_rel_obj::Float64=1e4,
-    tol_grad::Float64=1e-8,
-    tol_rel_grad::Float64=1e7,
-    tol_param::Float64=1e-8,
-    refresh::Int=0,
-    num_threads::Int=-1,
+    init::Union{Nothing,AbstractString} = nothing,
+    seed::Union{UInt32,Nothing} = nothing,
+    id::Int = 1,
+    init_radius::Float64 = 2.0,
+    algorithm::OptimizationAlgorithm = LBFGS,
+    jacobian::Bool = false,
+    num_iterations::Int = 2000,
+    max_history_size::Int = 5,
+    init_alpha::Float64 = 0.001,
+    tol_obj::Float64 = 1e-12,
+    tol_rel_obj::Float64 = 1e4,
+    tol_grad::Float64 = 1e-8,
+    tol_rel_grad::Float64 = 1e7,
+    tol_param::Float64 = 1e-8,
+    refresh::Int = 0,
+    num_threads::Int = -1,
 )
     if seed === nothing
         seed = rand(UInt32)
     end
 
     with_model(model, data, seed) do model_ptr
-        param_names = cat(OPTIMIZE_VARIABLES, get_names(model, model_ptr), dims=1)
+        param_names = cat(OPTIMIZE_VARIABLES, get_names(model, model_ptr), dims = 1)
         num_params = length(param_names)
         out = zeros(Float64, num_params)
 
@@ -598,14 +598,14 @@ Returns a tuple of the parameter names and the draws.
 function laplace_sample(
     model::Model,
     mode::Union{AbstractString,Array{Float64}},
-    data::AbstractString="";
-    num_draws::Int=1000,
-    jacobian::Bool=true,
-    calculate_lp::Bool=true,
-    save_hessian::Bool=false,
-    seed::Union{UInt32,Nothing}=nothing,
-    refresh::Int=0,
-    num_threads::Int=-1,
+    data::AbstractString = "";
+    num_draws::Int = 1000,
+    jacobian::Bool = true,
+    calculate_lp::Bool = true,
+    save_hessian::Bool = false,
+    seed::Union{UInt32,Nothing} = nothing,
+    refresh::Int = 0,
+    num_threads::Int = -1,
 )
     if num_draws < 1
         error("num_draws must be at least 1")
@@ -615,7 +615,7 @@ function laplace_sample(
     end
 
     with_model(model, data, seed) do model_ptr
-        param_names = cat(LAPLACE_VARIABLES, get_names(model, model_ptr), dims=1)
+        param_names = cat(LAPLACE_VARIABLES, get_names(model, model_ptr), dims = 1)
         num_params = length(param_names)
         out = zeros(Float64, num_params, num_draws)
 
