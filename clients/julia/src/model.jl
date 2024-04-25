@@ -448,8 +448,8 @@ function pathfinder(
                 Cint,
                 Cint,
                 Cint,
-                Cint,
-                Cint,
+                Cint, # really bool
+                Cint, # really bool
                 Cint,
                 Cint,
                 Ref{Cdouble},
