@@ -103,7 +103,7 @@ def test_save_metric(gaussian_model):
 def test_sundials_ode():
     sir = tinystan.Model(STAN_FOLDER / "sir" / "sir_model.so")
     sir_data = STAN_FOLDER / "sir" / "sir.data.json"
-    sir_init = STAN_FOLDER / "sir" / "sir.data.json"
+    sir_init = STAN_FOLDER / "sir" / "sir.init.json"
 
     out = sir.sample(
         data=sir_data,
