@@ -158,9 +158,9 @@ end
 function api_version(model::Model)
     major, minor, patch = Ref{Cint}(), Ref{Cint}(), Ref{Cint}()
     @ccall $(dlsym(model.lib, :tinystan_api_version))(
-        major::Ptr{Cint},
-        minor::Ptr{Cint},
-        patch::Ptr{Cint},
+        major::Ref{Cint},
+        minor::Ref{Cint},
+        patch::Ref{Cint},
     )::Cvoid
     (major[], minor[], patch[])
 end
@@ -289,7 +289,7 @@ function sample(
             max_depth::Cint,
             refresh::Cint,
             num_threads::Cint,
-            out::Ptr{Cdouble},
+            out::Ref{Cdouble},
             length(out)::Csize_t,
             metric_out::Ptr{Cdouble},
             err::Ref{Ptr{Cvoid}},
@@ -394,7 +394,7 @@ function pathfinder(
             psis_resample::Bool,
             refresh::Cint,
             num_threads::Cint,
-            out::Ptr{Cdouble},
+            out::Ref{Cdouble},
             length(out)::Csize_t,
             err::Ref{Ptr{Cvoid}},
         )::Cint
@@ -469,7 +469,7 @@ function optimize(
             tol_param::Cdouble,
             refresh::Cint,
             num_threads::Cint,
-            out::Ptr{Cdouble},
+            out::Ref{Cdouble},
             length(out)::Csize_t,
             err::Ref{Ptr{Cvoid}},
         )::Cint
@@ -545,7 +545,7 @@ function laplace_sample(
             calculate_lp::Bool,
             refresh::Cint,
             num_threads::Cint,
-            out::Ptr{Cdouble},
+            out::Ref{Cdouble},
             length(out)::Csize_t,
             hessian_out::Ptr{Cdouble},
             err::Ref{Ptr{Cvoid}},
