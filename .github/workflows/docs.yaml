@@ -20,7 +20,8 @@ on:
   release:
     types: [published]
 
-permissions: write
+permissions: 
+  contents: write
 
 jobs:
   build-docs:
