@@ -109,7 +109,7 @@ Load a Stan model for inference, compiling it if necessary.
 If model is a path to a file ending in `.stan`, this will first compile the model.  Compilation occurs if no shared object file exists for the supplied Stan file or if a shared object file exists and the Stan file has changed since last compilation.  This is equivalent to calling [`compile_model`](julia.md#TinyStan.compile_model) and then the constructor. If `warn` is false, the warning about re-loading the same shared objects is suppressed.
 
 
-<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L42-L53' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L43-L54' class='documenter-source'>source</a><br>
 
 <a id='TinyStan.sample' href='#TinyStan.sample'>#</a>
 **`TinyStan.sample`** &mdash; *Function*.
@@ -125,7 +125,7 @@ Run Stan's No-U-Turn Sampler (NUTS) to sample from the posterior. An in-depth ex
 Returns a tuple of the parameter names, the draws, and the metric if `save_metric` is true.
 
 
-<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L193-L203' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L169-L179' class='documenter-source'>source</a><br>
 
 <a id='TinyStan.HMCMetric' href='#TinyStan.HMCMetric'>#</a>
 **`TinyStan.HMCMetric`** &mdash; *Type*.
@@ -137,7 +137,7 @@ Choices for the structure of the mass matrix used in the HMC sampler.
 Either `UNIT`, `DENSE`, or `DIAGONAL`.
 
 
-<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L2-L6' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L3-L7' class='documenter-source'>source</a><br>
 
 <a id='TinyStan.pathfinder' href='#TinyStan.pathfinder'>#</a>
 **`TinyStan.pathfinder`** &mdash; *Function*.
@@ -153,7 +153,7 @@ Run the Pathfinder algorithm to approximate the posterior. See [Stan's documenta
 Returns a tuple of the parameter names and the draws.
 
 
-<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L364-L372' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L309-L317' class='documenter-source'>source</a><br>
 
 <a id='TinyStan.optimize' href='#TinyStan.optimize'>#</a>
 **`TinyStan.optimize`** &mdash; *Function*.
@@ -171,7 +171,7 @@ This will find either the maximum a posteriori (MAP) estimate or the maximum lik
 Returns a tuple of the parameter names and the optimized values.
 
 
-<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L490-L501' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L407-L418' class='documenter-source'>source</a><br>
 
 <a id='TinyStan.OptimizationAlgorithm' href='#TinyStan.OptimizationAlgorithm'>#</a>
 **`TinyStan.OptimizationAlgorithm`** &mdash; *Type*.
@@ -183,7 +183,7 @@ Choices for the optimization algorithm to use.
 Either `NEWTON`, `BFGS`, or `LBFGS`.
 
 
-<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L13-L17' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L14-L18' class='documenter-source'>source</a><br>
 
 <a id='TinyStan.laplace_sample' href='#TinyStan.laplace_sample'>#</a>
 **`TinyStan.laplace_sample`** &mdash; *Function*.
@@ -199,7 +199,7 @@ Sample from the Laplace approximation of the posterior centered at the provided 
 Returns a tuple of the parameter names and the draws.
 
 
-<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L588-L597' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L481-L490' class='documenter-source'>source</a><br>
 
 
 <a id='Compilation-utilities'></a>
