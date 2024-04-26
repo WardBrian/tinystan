@@ -5,6 +5,7 @@ test_models/**/*.hpp
 
 bin/
 _build/
+build/
 .coverage
 
 make/local
