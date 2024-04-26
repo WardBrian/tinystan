@@ -20,6 +20,8 @@ on:
   release:
     types: [published]
 
+permissions: write
+
 jobs:
   build-docs:
     runs-on: ubuntu-latest
