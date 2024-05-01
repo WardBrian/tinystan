@@ -6,7 +6,14 @@
     end
 
     @testset "API version" begin
-        @test api_version(bernoulli_model) == (0, 1, 0)
+        @test VersionNumber(api_version(bernoulli_model)) == TinyStan.pkg_version
+    end
+
+    @testset "Stan version" begin
+        ver = stan_version(bernoulli_model)
+        @test ver[1] == 2
+        @test ver[2] >= 34
+        @test ver[3] >= 0
     end
 
 end

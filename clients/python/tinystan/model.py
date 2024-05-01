@@ -11,6 +11,7 @@ from dllist import dllist
 from numpy.ctypeslib import ndpointer
 from stanio import dump_stan_json
 
+from .__version import __version_info__
 from .compile import compile_model, windows_dll_path_setup
 from .output import StanOutput
 from .util import validate_readable
@@ -197,6 +198,28 @@ class Model:
 
         self._lib = ctypes.CDLL(self.lib_path)
 
+        self._version = self._lib.tinystan_api_version
+        self._version.restype = None
+        self._version.argtypes = [
+            ctypes.POINTER(ctypes.c_int),
+            ctypes.POINTER(ctypes.c_int),
+            ctypes.POINTER(ctypes.c_int),
+        ]
+
+        api_ver = self.api_version()
+        if api_ver[0] != __version_info__[0]:
+            raise RuntimeError(
+                "Incompatible TinyStan API version. Expected "
+                f"{__version_info__} but got {api_ver}.\n"
+                "You need to re-compile your model."
+            )
+        if api_ver != __version_info__:
+            warnings.warn(
+                "TinyStan API version does not match. Expected "
+                f"{__version_info__} but got {api_ver}.\n"
+                "You may need to re-compile your model."
+            )
+
         self._create_model = self._lib.tinystan_create_model
         self._create_model.restype = ctypes.c_void_p
         self._create_model.argtypes = [ctypes.c_char_p, ctypes.c_uint, err_ptr]
@@ -213,9 +236,9 @@ class Model:
         self._num_free_params.restype = ctypes.c_size_t
         self._num_free_params.argtypes = [ctypes.c_void_p]
 
-        self._version = self._lib.tinystan_api_version
-        self._version.restype = None
-        self._version.argtypes = [
+        self._stan_version = self._lib.tinystan_stan_version
+        self._stan_version.restype = None
+        self._stan_version.argtypes = [
             ctypes.POINTER(ctypes.c_int),
             ctypes.POINTER(ctypes.c_int),
             ctypes.POINTER(ctypes.c_int),
@@ -392,6 +415,14 @@ class Model:
         """Return the version of the TinyStan API backing this model."""
         major, minor, patch = ctypes.c_int(), ctypes.c_int(), ctypes.c_int()
         self._version(ctypes.byref(major), ctypes.byref(minor), ctypes.byref(patch))
+        return (major.value, minor.value, patch.value)
+
+    def stan_version(self):
+        """Return the version of Stan backing this model."""
+        major, minor, patch = ctypes.c_int(), ctypes.c_int(), ctypes.c_int()
+        self._stan_version(
+            ctypes.byref(major), ctypes.byref(minor), ctypes.byref(patch)
+        )
         return (major.value, minor.value, patch.value)
 
     def sample(
