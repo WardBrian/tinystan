@@ -8,6 +8,7 @@ export Model,
     OptimizationAlgorithm,
     laplace_sample,
     api_version,
+    stan_version,
     compile_model,
     get_tinystan_path,
     set_tinystan_path!

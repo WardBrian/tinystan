@@ -3,7 +3,7 @@
 ## Features
 - [x] Add nicer ability to build models from source in the languages
     - [x] download source if needed, similar to bridgestan
-    - [ ] Version checking
+    - [x] Version checking
 - [ ] Fixed param sampler for 0 dimension parameters?
 - [ ] Add wrapper around generate quantities method?
 - [x] Add wraper around laplace sampling?

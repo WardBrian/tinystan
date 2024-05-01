@@ -82,8 +82,27 @@ mutable struct Model
 
         windows_dll_path_setup()
         lib = dlopen(libname)
-        sep = Char(@ccall $(dlsym(lib, :tinystan_separator_char))()::Cchar)
 
+        major, minor, patch = Ref{Cint}(), Ref{Cint}(), Ref{Cint}()
+        @ccall $(dlsym(lib, :tinystan_api_version))(
+            major::Ref{Cint},
+            minor::Ref{Cint},
+            patch::Ref{Cint},
+        )::Cvoid
+        api_ver = VersionNumber(major[], minor[], patch[])
+        if api_ver.major != TinyStan.pkg_version.major
+            error(
+                "Incompatible TinyStan API version. " *
+                "Expected $(TinyStan.pkg_version) but got $api_ver.\n" *
+                "You need to re-compile your model.",
+            )
+        elseif api_ver != TinyStan.pkg_version
+            @warn "TinyStan API version does not match. " *
+                  "Expected $(TinyStan.pkg_version) but got $api_ver.\n" *
+                  "You may need to re-compile your model."
+        end
+
+        sep = Char(@ccall $(dlsym(lib, :tinystan_separator_char))()::Cchar)
         new(lib, sep)
     end
 
@@ -165,6 +184,15 @@ function api_version(model::Model)
     (major[], minor[], patch[])
 end
 
+function stan_version(model::Model)
+    major, minor, patch = Ref{Cint}(), Ref{Cint}(), Ref{Cint}()
+    @ccall $(dlsym(model.lib, :tinystan_stan_version))(
+        major::Ref{Cint},
+        minor::Ref{Cint},
+        patch::Ref{Cint},
+    )::Cvoid
+    (major[], minor[], patch[])
+end
 
 """
     sample(model::Model, data::String=""; num_chains::Int=4, inits::Union{nothing,AbstractString,AbstractArray{AbstractString}}=nothing, seed::Union{Nothing,UInt32}=nothing, id::Int=1, init_radius=2.0, num_warmup::Int=1000, num_samples::Int=1000, metric::HMCMetric=DIAGONAL, init_inv_metric::Union{Nothing,Array{Float64}}=nothing, save_metric::Bool=false, adapt::Bool=true, delta::Float64=0.8, gamma::Float64=0.05, kappa::Float64=0.75, t0::Int=10, init_buffer::Int=75, term_buffer::Int=50, window::Int=25, save_warmup::Bool=false, stepsize::Float64=1.0, stepsize_jitter::Float64=0.0, max_depth::Int=10, refresh::Int=0, num_threads::Int=-1)

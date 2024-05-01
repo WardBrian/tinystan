@@ -33,6 +33,20 @@ tinystan_model = function(lib, stanc_args = NULL, make_args = NULL, warn = TRUE)
     dyn.load(lib, PACKAGE = lib_name)
     sep <- .C("tinystan_separator_char_R", sep = raw(1), PACKAGE = lib_name)$sep
     sep <- rawToChar(sep)
+
+    api_ver = .C("tinystan_api_version", major = integer(1), minor = integer(1),
+        patch = integer(1), PACKAGE = lib_name)
+
+    if (api_ver$major != current_version_list$major) {
+        msg = paste0("Incompatible TinyStan API version. Expected ", paste(current_version_list,
+            collapse = "."), " but found ", paste(api_ver, collapse = "."), ".\nYou need to re-compile your model.")
+        stop(msg)
+    } else if (api_ver$minor != current_version_list$minor || api_ver$patch != current_version_list$patch) {
+        msg = paste0("TinyStan API version mismatch. Expected ", paste(current_version_list,
+            collapse = "."), " but found ", paste(api_ver, collapse = "."), ".\nYou may need to re-compile your model.")
+        warning(msg)
+    }
+
     ret <- list(lib = lib, lib_name = lib_name, sep = sep, code = code, built_with_so = built_with_so)
     class(ret) <- c("tinystan_model", class(ret))
     return(ret)
@@ -49,6 +63,12 @@ print.tinystan_model <- function(model, ...) {
 #'@export
 api_version = function(stan_model) {
     .C("tinystan_api_version", major = integer(1), minor = integer(1), patch = integer(1),
+        PACKAGE = stan_model$lib_name)
+}
+
+#'@export
+stan_version = function(stan_model) {
+    .C("tinystan_stan_version", major = integer(1), minor = integer(1), patch = integer(1),
         PACKAGE = stan_model$lib_name)
 }
 

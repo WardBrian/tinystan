@@ -1,4 +1,6 @@
 current_version <- packageVersion("tinystan")
+current_version_list <- list(major = current_version$major, minor = current_version$minor,
+    patch = current_version$patch)
 HOME_TINYSTAN <- path.expand(file.path("~", ".tinystan"))
 CURRENT_TINYSTAN <- file.path(HOME_TINYSTAN, paste0("tinystan-", current_version))
 
