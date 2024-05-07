@@ -26,6 +26,25 @@ def test_compile_good():
     assert lib.exists()
 
 
+def test_compile_user_header():
+    stanfile = STAN_FOLDER / "external" / "external.stan"
+    lib = tinystan.compile.generate_so_name(stanfile)
+    lib.unlink(missing_ok=True)
+
+    with pytest.raises(RuntimeError, match=r"declared without specifying a definition"):
+        tinystan.compile_model(stanfile)
+
+    with pytest.raises(RuntimeError, match=r"USER_HEADER"):
+        tinystan.compile_model(stanfile, stanc_args=["--allow-undefined"])
+
+    header = stanfile.parent / "make_odds.hpp"
+    res = tinystan.compile_model(
+        stanfile, stanc_args=["--allow-undefined"], make_args=[f"USER_HEADER={header}"]
+    )
+    assert lib.samefile(res)
+    assert lib.exists()
+
+
 def test_compile_bad_ext():
     not_stanfile = STAN_FOLDER / "bernoulli" / "bernoulli.data.json"
     with pytest.raises(ValueError, match=r".stan"):

@@ -102,6 +102,19 @@ Flags for :command:`stanc3` can also be set here
     # pedantic mode and level 1 optimization
     STANCFLAGS+= --warn-pedantic --O1
 
+
+Using External C++ Code
+_______________________
+
+TinyStan supports the same `capability to plug in external C++ code as CmdStan <https://mc-stan.org/docs/cmdstan-guide/external_code.html>`_.
+
+Namely, you can declare a function in your Stan model and then define it in a separate C++ file.
+This requires passing the ``--allow-undefined`` flag to the Stan compiler when building your model.
+The :makevar:`USER_HEADER` variable must point to the C++ file containing the function definition.
+By default, this will be the file :file:`user_header.hpp` in the same directory as the Stan model.
+
+For a more complete example, consult the `CmdStan documentation <https://mc-stan.org/docs/cmdstan-guide/external_code.html>`_.
+
 Using Pre-Existing Stan Installations
 _____________________________________
 
