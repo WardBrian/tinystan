@@ -1,6 +1,6 @@
 
-Welcome to TinyStan's documentation!
-====================================
+TinyStan -- A lightweight Stan interface
+========================================
 
 .. warning::
    This project is still under active development. The API is not yet stable, and the documentation is incomplete. Using before a 1.0 release is not recommended for most users.

@@ -16,6 +16,9 @@ INC_FIRST ?= -I $(STAN)src -I $(RAPIDJSON)
 # TinyStan always wants multithreading support
 STAN_THREADS=true
 
+# We can bump to C++17, even if Stan hasn't yet
+CXXFLAGS_LANG ?= -std=c++17
+
 # makefiles needed for math library
 include $(MATH)make/compiler_flags
 include $(MATH)make/libraries
@@ -30,8 +33,8 @@ ifeq ($(OS),Windows_NT)
 	override CXXFLAGS += -Wa,-mbig-obj
 endif
 
-# set flags for stanc compiler (math calls MIGHT? set STAN_OPENCL)
 ifdef STAN_OPENCL
+	# set flags for stanc compiler
 	override STANCFLAGS += --use-opencl
 	STAN_FLAG_OPENCL=_opencl
 else
@@ -81,10 +84,10 @@ endif
 	$(LINK.cpp) -shared -lm -o $(patsubst %.o, %_model.so, $(subst \,/,$<)) $(subst \,/,$*.o) $(TINYSTAN_O) $(LDLIBS) $(SUNDIALS_TARGETS) $(MPI_TARGETS) $(TBB_TARGETS)
 
 # build all test models at once
-TEST_MODEL_NAMES = $(patsubst $(TINYSTAN_ROOT)/test_models/%/, %, $(sort $(dir $(wildcard $(TINYSTAN_ROOT)/test_models/*/))))
+ALL_TEST_MODEL_NAMES = $(patsubst $(TINYSTAN_ROOT)/test_models/%/, %, $(sort $(dir $(wildcard $(TINYSTAN_ROOT)/test_models/*/))))
 # these are for compilation testing in the interfaces
 SKIPPED_TEST_MODEL_NAMES = syntax_error external
-TEST_MODEL_NAMES := $(filter-out $(SKIPPED_TEST_MODEL_NAMES), $(TEST_MODEL_NAMES))
+TEST_MODEL_NAMES := $(filter-out $(SKIPPED_TEST_MODEL_NAMES), $(ALL_TEST_MODEL_NAMES))
 TEST_MODEL_LIBS = $(join $(addprefix test_models/, $(TEST_MODEL_NAMES)), $(addsuffix _model.so, $(addprefix /, $(TEST_MODEL_NAMES))))
 
 .PHONY: test_models
@@ -102,8 +105,9 @@ format:
 .PHONY: clean
 clean:
 	$(RM) $(SRC)/*.o
+	$(RM) test_models/**/*.so
+	$(RM) $(join $(addprefix $(BS_ROOT)/test_models/, $(TEST_MODEL_NAMES)), $(addsuffix .hpp, $(addprefix /, $(TEST_MODEL_NAMES))))
 	$(RM) bin/stanc$(EXE)
-	$(RM) $(TEST_MODEL_LIBS)
 
 .PHONY: stan-update stan-update-version
 stan-update:
