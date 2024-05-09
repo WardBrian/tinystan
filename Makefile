@@ -53,8 +53,8 @@ $(TINYSTAN_O) : $(TINYSTAN_DEPS)
 	$(COMPILE.cpp) $(OUTPUT_OPTION) $(LDLIBS) $<
 
 
+# support user header file for undefined functions
 ifneq ($(findstring allow-undefined,$(STANCFLAGS)),)
-
 USER_HEADER ?= $(dir $(MAKECMDGOALS))user_header.hpp
 USER_INCLUDE = -include $(USER_HEADER)
 # Give a better error message if the USER_HEADER is not found
@@ -68,15 +68,32 @@ $(USER_HEADER):
 	@exit 1
 endif
 
+
+# save compilation time by precompiling the model header
+PRECOMPILED_HEADERS ?= false
+ifeq ($(PRECOMPILED_HEADERS),true)
+PRECOMPILED_MODEL_HEADER=$(STAN)src/stan/model/model_header.hpp.gch/model_header$(STAN_FLAGS)_$(CXX_MAJOR)_$(CXX_MINOR).hpp.gch
+
+$(PRECOMPILED_MODEL_HEADER): $(STAN)src/stan/model/model_header.hpp
+	@echo ''
+	@echo '--- Compiling pre-compiled header. ---'
+	@mkdir -p $(dir $@)
+	$(COMPILE.cpp) $< $(OUTPUT_OPTION)
+
+ifeq ($(CXX_TYPE),clang)
+PRECOMPILED_HEADER_INCLUDE = -include-pch $(PRECOMPILED_MODEL_HEADER)
+endif
+endif
+
 # generate .hpp file from .stan file using stanc
 %.hpp : %.stan $(STANC)
 	@echo ''
 	@echo '--- Translating Stan model to C++ code ---'
 	$(STANC) $(STANCFLAGS) --o=$(subst  \,/,$@) $(subst  \,/,$<)
 
-%.o : %.hpp $(USER_HEADER)
+%.o : %.hpp $(USER_HEADER) $(PRECOMPILED_MODEL_HEADER)
 	@echo '--- Compiling C++ code ---'
-	$(COMPILE.cpp) $(USER_INCLUDE) -x c++ -o $(subst  \,/,$*).o $(subst \,/,$<)
+	$(COMPILE.cpp) $(PRECOMPILED_HEADER_INCLUDE) $(USER_INCLUDE) -x c++ -o $(subst  \,/,$*).o $(subst \,/,$<)
 
 # builds executable (suffix depends on platform)
 %_model.so : %.o $(TINYSTAN_O) $(SUNDIALS_TARGETS) $(MPI_TARGETS) $(TBB_TARGETS)
@@ -104,9 +121,10 @@ format:
 
 .PHONY: clean
 clean:
-	$(RM) $(SRC)/*.o
-	$(RM) test_models/**/*.so
-	$(RM) $(join $(addprefix $(BS_ROOT)/test_models/, $(TEST_MODEL_NAMES)), $(addsuffix .hpp, $(addprefix /, $(TEST_MODEL_NAMES))))
+	$(RM) $(SRC)*.o $(SRC)*.d
+	$(RM) -r $(STAN)src/stan/model/model_header.hpp.gch/
+	$(RM) $(TINYSTAN_ROOT)/test_models/**/*.so
+	$(RM) $(join $(addprefix $(TINYSTAN_ROOT)/test_models/, $(TEST_MODEL_NAMES)), $(addsuffix .hpp, $(addprefix /, $(TEST_MODEL_NAMES))))
 	$(RM) bin/stanc$(EXE)
 
 .PHONY: stan-update stan-update-version
