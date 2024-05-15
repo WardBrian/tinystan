@@ -437,7 +437,7 @@ class Model:
         num_warmup: int = 1000,
         num_samples: int = 1000,
         metric: HMCMetric = HMCMetric.DIAGONAL,
-        init_inv_metric: Optional[StanData] = None,
+        init_inv_metric: Optional[np.ndarray] = None,
         save_metric: bool = False,
         adapt: bool = True,
         delta: float = 0.8,
@@ -490,10 +490,11 @@ class Model:
             The type of mass matrix to use in the sampler.
             The options are ``UNIT``, ``DENSE``, and ``DIAGONAL``.
             By default HMCMetric.DIAGONAL
-        init_inv_metric : str | dict | None, optional
+        init_inv_metric : Optional[np.ndarray], optional
             Initial value for the mass matrix used by the sampler.
-            This can be a path to a JSON file, a JSON string, or a dictionary.
-            By default, ""
+            Valid shapes depend on the value of ``metric``. Can have
+            a leading dimension of ``num_chains`` to specify different
+            initial metrics for each chain.
         save_metric : bool, optional
             Whether to report the final mass matrix, by default False
         adapt : bool, optional

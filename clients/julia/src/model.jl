@@ -217,7 +217,7 @@ function sample(
     num_warmup::Int = 1000,
     num_samples::Int = 1000,
     metric::HMCMetric = DIAGONAL,
-    init_inv_metric::Union{Nothing,Array{Float64}} = nothing,
+    init_inv_metric::Union{Nothing,Array{Float64},Array{Float64,2},Array{Float64,3}} = nothing,
     save_metric::Bool = false,
     adapt::Bool = true,
     delta::Float64 = 0.8,
