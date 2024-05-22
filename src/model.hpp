@@ -45,6 +45,11 @@ class TinyStanModel {
     free(param_names);
   }
 
+  TinyStanModel(const TinyStanModel &) = delete;
+  TinyStanModel(TinyStanModel &&) = delete;
+  TinyStanModel operator=(const TinyStanModel &) = delete;
+  TinyStanModel operator=(TinyStanModel &&) = delete;
+
   stan::model::model_base *model;
   unsigned int seed;
   size_t num_free_params;
