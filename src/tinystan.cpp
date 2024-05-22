@@ -39,9 +39,8 @@ extern "C" {
 
 TinyStanModel *tinystan_create_model(const char *data, unsigned int seed,
                                      TinyStanError **err) {
-  TINYSTAN_TRY_CATCH({ return new TinyStanModel(data, seed); })
-
-  return nullptr;
+  return error::catch_exceptions(
+      err, [&]() { return new TinyStanModel(data, seed); });
 }
 
 void tinystan_destroy_model(TinyStanModel *model) { delete model; }
@@ -65,7 +64,7 @@ int tinystan_sample(const TinyStanModel *tmodel, size_t num_chains,
                     double stepsize_jitter, int max_depth, int refresh,
                     int num_threads, double *out, size_t out_size,
                     double *metric_out, TinyStanError **err) {
-  TINYSTAN_TRY_CATCH({
+  return error::catch_exceptions(err, [&]() {
     error::check_positive("num_chains", num_chains);
     error::check_positive("id", id);
     error::check_nonnegative("init_radius", init_radius);
@@ -186,9 +185,7 @@ int tinystan_sample(const TinyStanModel *tmodel, size_t num_chains,
     }
 
     return return_code;
-  })
-
-  return -1;
+  });
 }
 
 int tinystan_pathfinder(const TinyStanModel *tmodel, size_t num_paths,
@@ -201,8 +198,7 @@ int tinystan_pathfinder(const TinyStanModel *tmodel, size_t num_paths,
                         int num_multi_draws, bool calculate_lp,
                         bool psis_resample, int refresh, int num_threads,
                         double *out, size_t out_size, TinyStanError **err) {
-  TINYSTAN_TRY_CATCH({
-    // argument validation
+  return error::catch_exceptions(err, [&]() {
     error::check_positive("num_paths", num_paths);
     error::check_positive("num_draws", num_draws);
     error::check_positive("id", id);
@@ -262,9 +258,7 @@ int tinystan_pathfinder(const TinyStanModel *tmodel, size_t num_paths,
     }
 
     return return_code;
-  })
-
-  return -1;
+  });
 }
 
 int tinystan_optimize(const TinyStanModel *tmodel, const char *init,
@@ -276,7 +270,7 @@ int tinystan_optimize(const TinyStanModel *tmodel, const char *init,
                       double tol_grad, double tol_rel_grad, double tol_param,
                       int refresh, int num_threads, double *out,
                       size_t out_size, TinyStanError **err) {
-  TINYSTAN_TRY_CATCH({
+  return error::catch_exceptions(err, [&]() {
     error::check_positive("id", id);
     error::check_positive("num_iterations", num_iterations);
     error::check_nonnegative("init_radius", init_radius);
@@ -363,9 +357,7 @@ int tinystan_optimize(const TinyStanModel *tmodel, const char *init,
     }
 
     return return_code;
-  })
-
-  return -1;
+  });
 }
 
 int tinystan_laplace_sample(const TinyStanModel *tmodel,
@@ -375,7 +367,7 @@ int tinystan_laplace_sample(const TinyStanModel *tmodel,
                             int refresh, int num_threads, double *out,
                             size_t out_size, double *hessian_out,
                             TinyStanError **err) {
-  TINYSTAN_TRY_CATCH({
+  return error::catch_exceptions(err, [&]() {
     error::check_positive("num_draws", num_draws);
 
     util::init_threading(num_threads);
@@ -406,8 +398,7 @@ int tinystan_laplace_sample(const TinyStanModel *tmodel,
       }
     }
     return return_code;
-  })
-  return -1;
+  });
 }
 
 const char *tinystan_get_error_message(const TinyStanError *err) {
