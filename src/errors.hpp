@@ -19,6 +19,18 @@ class TinyStanError {
 
   ~TinyStanError() { free(this->msg); }
 
+  TinyStanError(const TinyStanError &other)
+      : msg(strdup(other.msg)), type(other.type) {}
+
+  TinyStanError &operator=(const TinyStanError &other) {
+    if (this != &other) {
+      free(this->msg);
+      this->msg = strdup(other.msg);
+      this->type = other.type;
+    }
+    return *this;
+  }
+
   char *msg;
   TinyStanErrorType type;
 };
@@ -63,7 +75,7 @@ namespace error {
 class error_logger : public stan::callbacks::logger {
  public:
   error_logger(bool print_non_errors) : print(print_non_errors){};
-  ~error_logger(){};
+  virtual ~error_logger(){};
 
   void info(const std::string &s) override {
     if (print && !s.empty()) {
