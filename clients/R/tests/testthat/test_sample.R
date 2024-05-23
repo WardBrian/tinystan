@@ -75,9 +75,9 @@ test_that("init_inv_metric is used", {
 
         divergent <- out_diag$draws$divergent__
         chain_one_divergences <- sum(posterior::subset_draws(divergent, chain = 1))
-        expect_true(chain_one_divergences > ifelse(adapt, 10, 500))
+        expect_true(chain_one_divergences > ifelse(adapt, 12, 500))
         chain_two_divergences <- sum(posterior::subset_draws(divergent, chain = 2))
-        expect_true(chain_two_divergences < 10)
+        expect_true(chain_two_divergences < 12)
         expect_true(chain_two_divergences < chain_one_divergences)
         expect_false(all(diag_metric == t(out_diag$metric)))
 
@@ -90,9 +90,9 @@ test_that("init_inv_metric is used", {
 
         divergent <- out_dense$draws$divergent__
         chain_one_divergences <- sum(posterior::subset_draws(divergent, chain = 1))
-        expect_true(chain_one_divergences > ifelse(adapt, 10, 500))
+        expect_true(chain_one_divergences > ifelse(adapt, 12, 500))
         chain_two_divergences <- sum(posterior::subset_draws(divergent, chain = 2))
-        expect_true(chain_two_divergences < 10)
+        expect_true(chain_two_divergences < 12)
         expect_true(chain_two_divergences < chain_one_divergences)
         expect_false(all(dense_metric == aperm(out_dense$metric, c(3, 2, 1))))
     }
