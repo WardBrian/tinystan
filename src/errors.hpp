@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <mutex>
 #include <stdexcept>
+#include <type_traits>
 
 #include "logging.hpp"
 
@@ -35,37 +36,53 @@ class TinyStanError {
   TinyStanErrorType type;
 };
 
-/**
- * Macro for the repeated try-catch pattern used in all our wrapper functions.
- *
- * Note: __VA_ARGS__ is a special macro that expands to the arguments passed to
- * the macro. It is needed because commas can appear in the body of the code
- * passed to the macro, and the preprocessor would interpret them as argument
- * separators.
- */
-#define TINYSTAN_TRY_CATCH(...)                                      \
-  try {                                                              \
-    __VA_ARGS__                                                      \
-  } catch (const tinystan::error::interrupt_exception &e) {          \
-    if (err != nullptr) {                                            \
-      *err = new TinyStanError("", TinyStanErrorType::interrupt);    \
-    }                                                                \
-  } catch (const std::invalid_argument &e) {                         \
-    if (err != nullptr) {                                            \
-      *err = new TinyStanError(e.what(), TinyStanErrorType::config); \
-    }                                                                \
-  } catch (const std::exception &e) {                                \
-    if (err != nullptr) {                                            \
-      *err = new TinyStanError(e.what());                            \
-    }                                                                \
-  } catch (...) {                                                    \
-    if (err != nullptr) {                                            \
-      *err = new TinyStanError("Unknown error");                     \
-    }                                                                \
-  }
-
 namespace tinystan {
 namespace error {
+
+/**
+ * Exception thrown when the user interrupts the program.
+ * See tinystan::interrupt::tinystan_interrupt_handler for more details.
+ */
+class interrupt_exception : public std::exception {};
+
+/**
+ * Catches exceptions and stores them in a TinyStanError.
+ *
+ * This returns the result of the function if it succeeds.
+ * If it fails, it returns -1 if the function returns an int,
+ * nullptr if the function returns a pointer, and void otherwise.
+ */
+template <typename F>
+inline auto catch_exceptions(TinyStanError **err, F f) {
+  try {
+    return f();
+  } catch (const tinystan::error::interrupt_exception &e) {
+    if (err != nullptr) {
+      *err = new TinyStanError("", TinyStanErrorType::interrupt);
+    }
+  } catch (const std::invalid_argument &e) {
+    if (err != nullptr) {
+      *err = new TinyStanError(e.what(), TinyStanErrorType::config);
+    }
+  } catch (const std::exception &e) {
+    if (err != nullptr) {
+      *err = new TinyStanError(e.what());
+    }
+  } catch (...) {
+    if (err != nullptr) {
+      *err = new TinyStanError("Unknown error");
+    }
+  }
+
+  using Result = std::invoke_result_t<F>;
+  if constexpr (std::is_same_v<Result, int>) {
+    return -1;
+  } else if constexpr (std::is_pointer_v<Result>) {
+    return static_cast<Result>(nullptr);
+  } else {
+    static_assert(std::is_same_v<Result, void>, "Unexpected return type");
+  }
+}
 
 /**
  * Logger which captures errors for later retrieval.
@@ -170,12 +187,6 @@ void check_between(const char *name, double val, double lb, double ub) {
     throw std::invalid_argument(msg.str());
   }
 }
-
-/**
- * Exception thrown when the user interrupts the program.
- * See tinystan::interrupt::tinystan_interrupt_handler for more details.
- */
-class interrupt_exception : public std::exception {};
 
 }  // namespace error
 }  // namespace tinystan
