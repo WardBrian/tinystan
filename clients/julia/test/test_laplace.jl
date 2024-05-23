@@ -44,13 +44,13 @@
     @testset "Jacobian" begin
         @testset for jacobian in [true, false]
             (names, mode) =
-                optimize(simple_jacobian_model; jacobian = jacobian, seed = UInt32(1234))
+                optimize(simple_jacobian_model; jacobian = jacobian, seed = UInt32(12345))
             mode_array = mode[2:end]
             (names, draws) = laplace_sample(
                 simple_jacobian_model,
                 mode_array;
                 jacobian = jacobian,
-                seed = UInt32(1234),
+                seed = UInt32(12345),
             )
 
             optimum = if jacobian

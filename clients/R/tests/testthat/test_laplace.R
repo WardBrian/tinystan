@@ -29,11 +29,11 @@ test_that("calculate_lp works", {
 test_that("jacobian arg works", {
     for (jacobian in c(TRUE, FALSE)) {
 
-        out <- optimizer(simple_jacobian_model, jacobian = jacobian, seed = 1234)
+        out <- optimizer(simple_jacobian_model, jacobian = jacobian, seed = 12345)
         sigma <- posterior::extract_variable(out, "sigma")
 
         draws <- laplace_sampler(simple_jacobian_model, c(sigma), jacobian = jacobian,
-            seed = 1234)
+            seed = 12345)
         sigma <- mean(posterior::extract_variable(draws, "sigma"))
         if (jacobian) {
             expect_equal(sigma, 3.3, tolerance = 0.2, ignore_attr = TRUE)

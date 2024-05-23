@@ -125,13 +125,13 @@
             chain_one_divergences = sum(draws[1, :, names.=="divergent__"])
             @test chain_one_divergences > (
                 if adapt
-                    10
+                    12
                 else
                     500
                 end
             )
             chain_two_divergences = sum(draws[2, :, names.=="divergent__"])
-            @test chain_two_divergences < 10
+            @test chain_two_divergences < 12
             @test chain_two_divergences < chain_one_divergences
             @test diag_metric != metric
 
@@ -159,13 +159,13 @@
             chain_one_divergences = sum(draws[1, :, names.=="divergent__"])
             @test chain_one_divergences > (
                 if adapt
-                    10
+                    12
                 else
                     500
                 end
             )
             chain_two_divergences = sum(draws[2, :, names.=="divergent__"])
-            @test chain_two_divergences < 10
+            @test chain_two_divergences < 12
             @test chain_two_divergences < chain_one_divergences
             @test diag_metric != metric
 

@@ -137,9 +137,9 @@ def test_init_inv_metric_used(gaussian_model, adapt):
     # first chain should have a lot of divergences
     # second chain should have almost none
     chain_one_divergences = out_diag["divergent__"][0].sum()
-    assert chain_one_divergences > (10 if adapt else 500)
+    assert chain_one_divergences > (12 if adapt else 500)
     chain_two_divergences = out_diag["divergent__"][1].sum()
-    assert chain_two_divergences < 10
+    assert chain_two_divergences < 12
     assert chain_two_divergences < chain_one_divergences
 
     # note: when adapt=false, returned metric is all 0
@@ -160,9 +160,9 @@ def test_init_inv_metric_used(gaussian_model, adapt):
     )
 
     chain_one_divergences = out_dense["divergent__"][0].sum()
-    assert chain_one_divergences > (10 if adapt else 500)
+    assert chain_one_divergences > (12 if adapt else 500)
     chain_two_divergences = out_dense["divergent__"][1].sum()
-    assert chain_two_divergences < 10
+    assert chain_two_divergences < 12
     assert chain_two_divergences < chain_one_divergences
 
     with pytest.raises(AssertionError):

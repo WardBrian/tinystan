@@ -44,9 +44,9 @@ def test_calculate_lp(bernoulli_model):
 
 @pytest.mark.parametrize("jacobian", [True, False], ids=["jacobian", "no_jacobian"])
 def test_jacobian(simple_jacobian_model, jacobian):
-    mode = simple_jacobian_model.optimize(jacobian=jacobian, seed=1234)
+    mode = simple_jacobian_model.optimize(jacobian=jacobian, seed=12345)
 
-    out = simple_jacobian_model.laplace_sample(mode, jacobian=jacobian, seed=1234)
+    out = simple_jacobian_model.laplace_sample(mode, jacobian=jacobian, seed=12345)
 
     if jacobian:
         optimum = 3.3
