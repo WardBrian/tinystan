@@ -74,6 +74,13 @@ PRECOMPILED_HEADERS ?= false
 ifeq ($(PRECOMPILED_HEADERS),true)
 PRECOMPILED_MODEL_HEADER=$(STAN)src/stan/model/model_header.hpp.gch/model_header$(STAN_FLAGS)_$(CXX_MAJOR)_$(CXX_MINOR).hpp.gch
 
+$(patsubst %.hpp.gch,%.d,$(PRECOMPILED_MODEL_HEADER)) : DEPTARGETS = -MT $@
+$(patsubst %.hpp.gch,%.d,$(PRECOMPILED_MODEL_HEADER)) : $(STAN)src/stan/model/model_header.hpp
+	@mkdir -p $(dir $@)
+	$(COMPILE.cpp) $(DEPFLAGS) $<
+
+-include $(patsubst %.hpp.gch,%.d,$(PRECOMPILED_MODEL_HEADER))
+
 $(PRECOMPILED_MODEL_HEADER): $(STAN)src/stan/model/model_header.hpp
 	@echo ''
 	@echo '--- Compiling pre-compiled header. ---'
