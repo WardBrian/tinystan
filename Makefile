@@ -17,6 +17,7 @@ INC_FIRST ?= -I $(STAN)src -I $(RAPIDJSON)
 STAN_THREADS=true
 
 # We can bump to C++17, even if Stan hasn't yet
+STAN_HAS_CXX17 ?= true
 CXXFLAGS_LANG ?= -std=c++17
 
 # makefiles needed for math library
@@ -102,7 +103,6 @@ endif
 	@echo '--- Compiling C++ code ---'
 	$(COMPILE.cpp) $(PRECOMPILED_HEADER_INCLUDE) $(USER_INCLUDE) -x c++ -o $(subst  \,/,$*).o $(subst \,/,$<)
 
-# builds executable (suffix depends on platform)
 %_model.so : %.o $(TINYSTAN_O) $(SUNDIALS_TARGETS) $(MPI_TARGETS) $(TBB_TARGETS)
 	@echo '--- Linking C++ code ---'
 	$(LINK.cpp) -shared -lm -o $(patsubst %.o, %_model.so, $(subst \,/,$<)) $(subst \,/,$*.o) $(TINYSTAN_O) $(LDLIBS) $(SUNDIALS_TARGETS) $(MPI_TARGETS) $(TBB_TARGETS)
@@ -205,3 +205,15 @@ $(MATH)make/% :
 	@echo ''
 	@echo 'And try building again'
 	@exit 1
+
+# EMSCRIPTEN is defined by emmake, so we can use it to detect if we're in an emscripten environment
+ifneq (,$(EMSCRIPTEN))
+%.js : %.o $(TINYSTAN_O) $(SUNDIALS_TARGETS) $(MPI_TARGETS) $(TBB_TARGETS)
+	@echo '--- Linking C++ code ---'
+	$(LINK.cpp) -lm -o $(patsubst %.o, %.js, $(subst \,/,$<)) $(subst \,/,$*.o) $(TINYSTAN_O) $(LDLIBS) $(SUNDIALS_TARGETS) $(MPI_TARGETS) $(TBB_TARGETS)
+else
+%.js :
+	@echo 'ERROR: Emscripten is required to compile to WebAssembly.'
+	@echo 'Please install Emscripten and make sure you are using `emmake`.'
+	@exit 1
+endif
