@@ -76,6 +76,7 @@ ifeq ($(PRECOMPILED_HEADERS),true)
 PRECOMPILED_MODEL_HEADER=$(STAN)src/stan/model/model_header.hpp.gch/model_header$(STAN_FLAGS)_$(CXX_MAJOR)_$(CXX_MINOR).hpp.gch
 
 $(patsubst %.hpp.gch,%.d,$(PRECOMPILED_MODEL_HEADER)) : DEPTARGETS = -MT $@
+$(patsubst %.hpp.gch,%.d,$(PRECOMPILED_MODEL_HEADER)) : DEPFLAGS_OS = -M -E
 $(patsubst %.hpp.gch,%.d,$(PRECOMPILED_MODEL_HEADER)) : $(STAN)src/stan/model/model_header.hpp
 	@mkdir -p $(dir $@)
 	$(COMPILE.cpp) $(DEPFLAGS) $<
