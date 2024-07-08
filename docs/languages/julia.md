@@ -51,7 +51,7 @@ Or, since you have already downloaded the repository, you can run
 from the TinyStan folder.
 
 
-The first time you compile a model, the BridgeStan source code for your current version will be downloaded to a hidden directory in the users `HOME` directory.
+The first time you compile a model, the TinyStan source code for your current version will be downloaded to a hidden directory in the users `HOME` directory.
 
 
 To use the TinyStan source you've manually downloaded instead of one the package will download for you, you must use [`set_tinystan_path()`](TinyStan.set_tinystan_path!) or the `$TINYSTAN` environment variable.
@@ -125,7 +125,7 @@ Run Stan's No-U-Turn Sampler (NUTS) to sample from the posterior. An in-depth ex
 Returns a tuple of the parameter names, the draws, and the metric if `save_metric` is true.
 
 
-<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L169-L179' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L197-L207' class='documenter-source'>source</a><br>
 
 <a id='TinyStan.HMCMetric' href='#TinyStan.HMCMetric'>#</a>
 **`TinyStan.HMCMetric`** &mdash; *Type*.
@@ -153,7 +153,7 @@ Run the Pathfinder algorithm to approximate the posterior. See [Stan's documenta
 Returns a tuple of the parameter names and the draws.
 
 
-<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L309-L317' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L337-L345' class='documenter-source'>source</a><br>
 
 <a id='TinyStan.optimize' href='#TinyStan.optimize'>#</a>
 **`TinyStan.optimize`** &mdash; *Function*.
@@ -171,7 +171,7 @@ This will find either the maximum a posteriori (MAP) estimate or the maximum lik
 Returns a tuple of the parameter names and the optimized values.
 
 
-<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L407-L418' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L435-L446' class='documenter-source'>source</a><br>
 
 <a id='TinyStan.OptimizationAlgorithm' href='#TinyStan.OptimizationAlgorithm'>#</a>
 **`TinyStan.OptimizationAlgorithm`** &mdash; *Type*.
@@ -199,7 +199,7 @@ Sample from the Laplace approximation of the posterior centered at the provided 
 Returns a tuple of the parameter names and the draws.
 
 
-<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L481-L490' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L509-L518' class='documenter-source'>source</a><br>
 
 
 <a id='Compilation-utilities'></a>

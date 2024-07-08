@@ -30,7 +30,7 @@ Or, since you have already downloaded the repository, you can run
 
 from the TinyStan folder.
 
-The first time you compile a model, the BridgeStan source code for your current version
+The first time you compile a model, the TinyStan source code for your current version
 will be downloaded to a hidden directory in the users `HOME` directory.
 
 To use the TinyStan source you've manually downloaded instead of
