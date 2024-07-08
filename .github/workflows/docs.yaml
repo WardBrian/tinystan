@@ -3,24 +3,24 @@ name: Build TinyStan docs
 on:
   push:
     branches:
-      - 'main'
+      - "main"
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version of TinyStan docs to build'
+        description: "Version of TinyStan docs to build"
         required: false
         type: string
-        default: ''
+        default: ""
   workflow_call:
     inputs:
       version:
-        description: 'Version of TinyStan docs to build'
+        description: "Version of TinyStan docs to build"
         required: true
         type: string
   release:
     types: [published]
 
-permissions: 
+permissions:
   contents: write
 
 jobs:
@@ -52,7 +52,6 @@ jobs:
       - name: Set up Julia
         uses: julia-actions/setup-julia@v2
 
-
       - name: Install R
         uses: r-lib/actions/setup-r@v2.9.0
 
@@ -62,6 +61,10 @@ jobs:
           packages: |
             any::roxygen2
             github::Genentech/rd2markdown
+            any::R6
+            any::testthat
+            any::devtools
+            any::posterior
 
       - name: Install packages
         run: |
@@ -115,4 +118,3 @@ jobs:
           branch: gh-pages
           directory: docs/_build/ts-docs
           force: true
-
