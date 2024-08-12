@@ -333,7 +333,9 @@
     end
 
     @testset "Model without parameters" begin
-        @test_throws "Model has no parameters to sample" sample(empty_model)
+        (names, draws, metric) = sample(empty_model; save_metric=true)
+        @test length(names) == 7 # HMC parameters only
+        @test prod(size(metric)) == 0
     end
 
     @testset "Bad num_warmup" begin

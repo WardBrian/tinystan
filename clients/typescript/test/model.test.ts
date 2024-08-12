@@ -33,9 +33,11 @@ describe("test tinystan code with a mocked WASM module", () => {
       const { mockedModule, model } = await getMockedModel({
         numFreeParams: 0,
       });
-      expect(() => model.sample({})).toThrow(/no parameters/);
+      const {metric} = model.sample({save_metric:true});
 
-      expect(mockedModule._tinystan_sample).toHaveBeenCalledTimes(0);
+      expect(metric?.[0]?.length).toEqual(0);
+
+      expect(mockedModule._tinystan_sample).toHaveBeenCalledTimes(1);
     });
 
     test("failure in model construction throws", async () => {

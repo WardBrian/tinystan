@@ -167,9 +167,6 @@ sampler.tinystan_model = function(model, data = "", num_chains = 4, inits = NULL
 
     with_model(model, data, seed, {
         free_params <- get_free_params(model, model_ptr)
-        if (free_params == 0) {
-            stop("Model has no parameters to sample")
-        }
 
         params <- c(HMC_SAMPLER_VARIABLES, get_parameter_names(model, model_ptr))
         num_params <- length(params)
