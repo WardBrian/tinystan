@@ -557,8 +557,6 @@ class Model:
 
         with self._get_model(data, seed) as model:
             model_params = self._num_free_params(model)
-            if model_params == 0:
-                raise ValueError("Model has no parameters to sample.")
 
             param_names = HMC_SAMPLER_VARIABLES + self._get_parameter_names(model)
 

@@ -166,9 +166,6 @@ export default class StanModel {
       const n_params = paramNames.length;
 
       const free_params = this.m._tinystan_model_num_free_params(model);
-      if (free_params === 0) {
-        throw new Error("Model has no parameters to sample.");
-      }
 
       // TODO: allow init_inv_metric to be specified
       const init_inv_metric_ptr = NULL;

@@ -250,9 +250,6 @@ function sample(
 
     with_model(model, data, seed) do model_ptr
         free_params = num_free_params(model, model_ptr)
-        if free_params == 0
-            error("Model has no parameters to sample")
-        end
 
         param_names = cat(HMC_SAMPLER_VARIABLES, get_names(model, model_ptr), dims = 1)
         num_params = length(param_names)

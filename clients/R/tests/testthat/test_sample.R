@@ -200,7 +200,7 @@ test_that("bad num_warmup handled properly", {
 
 test_that("model with no params fails", {
 
-    expect_error(sampler(empty_model), "Model has no parameters")
+    expect_no_error(sampler(empty_model))
 
 })
 

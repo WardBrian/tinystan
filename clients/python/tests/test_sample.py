@@ -310,9 +310,9 @@ def test_bad_num_warmup(bernoulli_model):
 
 
 def test_model_no_params(empty_model):
-    with pytest.raises(ValueError, match="Model has no parameters to sample"):
-        empty_model.sample()
-
+    fit = empty_model.sample(save_metric=True)
+    assert len(fit.parameters) == 7 # just HMC parameters
+    assert fit.metric.size == 0
 
 @pytest.mark.parametrize(
     "arg, value, match",
