@@ -26,10 +26,10 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Set up Python 3.11
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: 3.12
 
       - name: Set up Julia
         uses: julia-actions/setup-julia@v2
@@ -40,6 +40,7 @@ jobs:
           sed -i 's/Version:.*/Version: ${{ inputs.new_version }}/' clients/R/DESCRIPTION
           sed -i 's/version = .*/version = "${{ inputs.new_version }}"/' clients/julia/Project.toml
           sed -i 's/__version__ = .*/__version__ = "${{ inputs.new_version }}"/' clients/python/tinystan/__version.py
+          sed -i 's/"version": ".*",/"version": "${{ inputs.new_version }}",/' clients/typescript/package.json
 
           sed -i 's/#define TINYSTAN_MAJOR .*/#define TINYSTAN_MAJOR '"$(echo ${{ inputs.new_version }} | cut -d. -f1)"'/' src/version.hpp
           sed -i 's/#define TINYSTAN_MINOR .*/#define TINYSTAN_MINOR '"$(echo ${{ inputs.new_version }} | cut -d. -f2)"'/' src/version.hpp
@@ -103,3 +104,5 @@ jobs:
       #     sha: ${{ steps.commit.outputs.sha }}
       #     body: |
       #       @JuliaRegistrator register subdir=clients/julia
+
+      # TODO: add npm release step
