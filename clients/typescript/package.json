@@ -52,6 +52,11 @@
     "sourcemap": true,
     "clean": true
   },
+  "prettier": {
+    "tabWidth": 2,
+    "semi": true,
+    "arrowParens": "avoid"
+  },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.15.3",
     "@vitest/coverage-v8": "^1.6.0",
