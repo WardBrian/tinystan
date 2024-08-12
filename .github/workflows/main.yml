@@ -211,3 +211,20 @@ jobs:
         env:
           TINYSTAN: ${{ github.workspace }}
 
+  typescript:
+    # needs: [build] # all tests are mocked at the moment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'yarn'
+          cache-dependency-path: clients/typescript/yarn.lock
+      - name: Install typescript dependencies
+        run: cd clients/typescript; yarn
+      - name: Run tests
+        run: cd clients/typescript; yarn test
+
