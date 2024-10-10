@@ -74,7 +74,7 @@ $(sort $($(patsubst %.c,%.o, $(wildcard $(SUNDIALS)/src/arkode/*.c)))) : %.o : %
 
 SUNDIALS_TARGETS += $(SUNDIALS)/lib/libsundials_arkode.a
 
-%.o: CPPFLAGS += -I $(TORSTEN) -include $(TORSTEN)torsten_include.hpp
+CPPFLAGS += -I $(TORSTEN)
 # Adding Torsten functions making MPL list too long, need adjust list size
 override CXXFLAGS += -DBOOST_MPL_CFG_NO_PREPROCESSED_HEADERS -DBOOST_MPL_LIMIT_LIST_SIZE=30
 
@@ -123,7 +123,7 @@ $(PRECOMPILED_MODEL_HEADER): $(STAN)src/stan/model/model_header.hpp
 	@echo ''
 	@echo '--- Compiling pre-compiled header. ---'
 	@mkdir -p $(dir $@)
-	$(COMPILE.cpp) $< $(OUTPUT_OPTION)
+	$(COMPILE.cpp)  -include $(TORSTEN)torsten_include.hpp $< $(OUTPUT_OPTION)
 
 ifeq ($(CXX_TYPE),clang)
 PRECOMPILED_HEADER_INCLUDE = -include-pch $(PRECOMPILED_MODEL_HEADER)
@@ -138,7 +138,7 @@ endif
 
 %.o : %.hpp $(USER_HEADER) $(PRECOMPILED_MODEL_HEADER)
 	@echo '--- Compiling C++ code ---'
-	$(COMPILE.cpp) $(PRECOMPILED_HEADER_INCLUDE) $(USER_INCLUDE) -x c++ -o $(subst  \,/,$*).o $(subst \,/,$<)
+	$(COMPILE.cpp) $(PRECOMPILED_HEADER_INCLUDE) $(USER_INCLUDE)  -include $(TORSTEN)torsten_include.hpp -x c++ -o $(subst  \,/,$*).o $(subst \,/,$<)
 
 %_model.so : %.o $(TINYSTAN_O) $(SUNDIALS_TARGETS) $(MPI_TARGETS) $(TBB_TARGETS)
 	@echo '--- Linking C++ code ---'
