@@ -49,6 +49,37 @@ endif
 STAN_FLAGS=$(STAN_FLAG_OPENCL)$(STAN_FLAG_SERIAL)
 
 
+# TORSTEN
+TORSTEN ?= $(TINYSTAN_ROOT)/torsten/
+
+SUNDIALS_ARKODE := $(patsubst %.c,%.o,\
+  $(wildcard $(SUNDIALS)/src/arkode/*.c) \
+  $(wildcard $(SUNDIALS)/src/sundials/*.c) \
+  $(wildcard $(SUNDIALS)/src/sunmatrix/band/[^f]*.c) \
+  $(wildcard $(SUNDIALS)/src/sunmatrix/dense/[^f]*.c) \
+  $(wildcard $(SUNDIALS)/src/sunlinsol/band/[^f]*.c) \
+  $(wildcard $(SUNDIALS)/src/sunlinsol/dense/[^f]*.c) \
+  $(wildcard $(SUNDIALS)/src/sunnonlinsol/newton/[^f]*.c) \
+  $(wildcard $(SUNDIALS)/src/sunnonlinsol/fixedpoint/[^f]*.c))
+
+$(SUNDIALS)/lib/libsundials_arkode.a: $(SUNDIALS_ARKODE)
+	@mkdir -p $(dir $@)
+	$(AR) -rs $@ $^
+
+$(sort $($(patsubst %.c,%.o, $(wildcard $(SUNDIALS)/src/arkode/*.c)))) : CXXFLAGS = $(CXXFLAGS_SUNDIALS) $(CXXFLAGS_OS) $(CXXFLAGS_OPTIM_SUNDIALS) -O$(O) $(INC_SUNDIALS)
+$(sort $($(patsubst %.c,%.o, $(wildcard $(SUNDIALS)/src/arkode/*.c)))) : CPPFLAGS = $(CPPFLAGS_SUNDIALS) $(CPPFLAGS_OS) $(CPPFLAGS_OPTIM_SUNDIALS) -O$(O)
+$(sort $($(patsubst %.c,%.o, $(wildcard $(SUNDIALS)/src/arkode/*.c)))) : %.o : %.c
+	@mkdir -p $(dir $@)
+	$(COMPILE.cpp) -x c -include $(SUNDIALS)/include/stan_sundials_printf_override.hpp $< $(OUTPUT_OPTION)
+
+SUNDIALS_TARGETS += $(SUNDIALS)/lib/libsundials_arkode.a
+
+%.o: CPPFLAGS += -I $(TORSTEN) -include $(TORSTEN)torsten_include.hpp
+# Adding Torsten functions making MPL list too long, need adjust list size
+override CXXFLAGS += -DBOOST_MPL_CFG_NO_PREPROCESSED_HEADERS -DBOOST_MPL_LIMIT_LIST_SIZE=30
+
+# END TORSTEN
+
 TINYSTAN_O = $(patsubst %.cpp,%$(STAN_FLAGS).o,$(SRC)tinystan.cpp)
 TINYSTAN_DEPS := $(SRC)tinystan.cpp $(SRC)R_shims.cpp $(wildcard $(SRC)*.hpp) $(wildcard $(SRC)*.h)
 include $(SRC)tinystan.d
@@ -160,7 +191,7 @@ print-%  : ; @echo $* = $($*) ;
 STANC_DL_RETRY = 5
 STANC_DL_DELAY = 10
 STANC3_TEST_BIN_URL ?=
-STANC3_VERSION ?= v2.36.0
+STANC3_VERSION ?= testing
 
 ifeq ($(OS),Windows_NT)
  OS_TAG := windows
@@ -185,14 +216,16 @@ else ifeq ($(OS),Linux)
  endif
 endif
 
+
+#  from https://github.com/WardBrian/stanc3/tree/torsten-stanc3
 ifeq ($(OS_TAG),windows)
 $(STANC):
 	@mkdir -p $(dir $@)
-	$(shell echo "curl -L https://github.com/stan-dev/stanc3/releases/download/$(STANC3_VERSION)/$(OS_TAG)-stanc -o $(STANC) --retry $(STANC_DL_RETRY) --retry-delay $(STANC_DL_DELAY)")
+	$(shell echo "curl -L https://github.com/WardBrian/stanc3/releases/download/$(STANC3_VERSION)/$(OS_TAG)-stanc -o $(STANC) --retry $(STANC_DL_RETRY) --retry-delay $(STANC_DL_DELAY)")
 else
 $(STANC):
 	@mkdir -p $(dir $@)
-	curl -L https://github.com/stan-dev/stanc3/releases/download/$(STANC3_VERSION)/$(OS_TAG)$(ARCH_TAG)-stanc -o $(STANC) --retry $(STANC_DL_RETRY) --retry-delay $(STANC_DL_DELAY)
+	curl -L https://github.com/WardBrian/stanc3/releases/download/$(STANC3_VERSION)/$(OS_TAG)$(ARCH_TAG)-stanc -o $(STANC) --retry $(STANC_DL_RETRY) --retry-delay $(STANC_DL_DELAY)
 	chmod +x $(STANC)
 endif
 
