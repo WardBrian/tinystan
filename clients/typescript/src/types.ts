@@ -1,13 +1,43 @@
+/**
+ * @typedef {Object} StanVariableInputs
+ * A type holding named inputs to a Stan model,
+ * e.g. the data or initial values.
+ */
 export type StanVariableInputs = Record<string, unknown>;
 
+/**
+ * @typedef {Function} PrintCallback
+ * A callback for printing output from the Stan model.
+ * @param {string} s The string to print.
+ * @returns {void}
+ */
 export type PrintCallback = (s: string) => void;
 
+/**
+ * The metric used for the HMC sampler.
+ * @enum {number}
+ * @readonly
+ * @property {0} UNIT - Unit metric.
+ * @property {1} DENSE - Dense metric.
+ * @property {2} DIAGONAL - Diagonal metric.
+ */
 export enum HMCMetric {
   UNIT = 0,
   DENSE = 1,
   DIAGONAL = 2,
 }
 
+/**
+ * @typedef {Object} StanDraws
+ * A type holding the result of a Stan sampling run.
+ * @property {string[]} paramNames The names of the parameters in
+ * the model.
+ * @property {number[][]} draws A 2D array of draws from the posterior.
+ * The first dimension is the number of samples, and the second dimension
+ * is the number of parameters.
+ * @property {number[][] | number[][][]} metric The metric used for the
+ * HMC sampler. If the metric is not saved, this field is not present.
+ */
 export type StanDraws = {
   paramNames: string[];
   draws: number[][];

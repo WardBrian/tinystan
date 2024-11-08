@@ -15,6 +15,7 @@ All language interfaces expose the same core functionality from the
     languages/python
     languages/julia
     languages/r
+    languages/js
     languages/c-api
 
 
