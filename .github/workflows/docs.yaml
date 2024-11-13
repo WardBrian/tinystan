@@ -49,6 +49,13 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install pandoc doxygen -y
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'yarn'
+          cache-dependency-path: clients/typescript/yarn.lock
+
       - name: Set up Julia
         uses: julia-actions/setup-julia@v2
 

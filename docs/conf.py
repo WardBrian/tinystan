@@ -189,8 +189,9 @@ else:
 
 try:
     print("Building JS doc")
+    yarn = os.getenv("YARN", "yarn").split()
     ret = subprocess.run(
-        ["npm", "run", "--silent", "doc"],
+        yarn + ["--silent", "doc"],
         cwd=pathlib.Path(__file__).parent.parent / "clients" / "typescript",
         check=True,
         capture_output=True,
@@ -198,6 +199,7 @@ try:
     )
     with open("./languages/js.md", "w") as f:
         f.write(ret.stdout)
+        
 except Exception as e:
     # fail loudly in Github Actions
     if RUNNING_IN_CI:
