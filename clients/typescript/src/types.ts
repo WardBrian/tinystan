@@ -1,5 +1,5 @@
 /**
- * @typedef {Object} StanVariableInputs
+ * @typedef {Record<string, unknown>} StanVariableInputs
  * A type holding named inputs to a Stan model,
  * e.g. the data or initial values.
  */
@@ -44,6 +44,46 @@ export type StanDraws = {
   metric?: number[][] | number[][][];
 };
 
+/**
+ * @typedef {Object} SamplerParams
+ * Parameters for the HMC sampler.
+ * @property {string | StanVariableInputs} [data=""] The data for the model.
+ * @property {number} [num_chains=4] The number of chains to run.
+ * @property {string | StanVariableInputs | string[] | StanVariableInputs[]} [inits=""]
+ * The initial values for the sampler. If an array, must have length `num_chains`.
+ * @property {number | null} [seed] The seed for the random number generator.
+ * If unspecified, a random seed will be generated.
+ * @property {number} [id=1] The ID for the first chain.
+ * @property {number} [init_radius=2.0] Radius to initialize unspecified parameters within.
+ * The parameter values are drawn uniformly from the interval
+ * `[-init_radius, init_radius]` on the unconstrained scale.
+ * @property {number} [num_warmup=1000] The number of warmup iterations to run.
+ * @property {number} [num_samples=1000] The number of samples to draw after warmup.
+ * @property {HMCMetric} [metric=HMCMetric.DENSE] The type of mass matrix to use in the sampler.
+ * @property {boolean} [save_metric=false] Whether to report the final mass matrix.
+ * @property {number[] | number[][] | number[][][] | null} [init_inv_metric]
+ * The initial inverse metric to use. Currently, this argument is unused.
+ * @property {boolean} [adapt=true] Whether the sampler should adapt the step size and metric,
+ * @property {number} [delta=0.8] Target acceptance rate.
+ * @property {number} [gamma=0.05] Adaptation regularization scale.
+ * @property {number} [kappa=0.75] Adaptation relaxation exponent.
+ * @property {number} [t0=10.0] Adaptation iteration offset.
+ * @property {number} [init_buffer=75] Number of warmup samples to use for initial
+ * step size adaptation.
+ * @property {number} [term_buffer=50] Number of warmup samples to use for step size
+ * adaptation after the metric is adapted.
+ * @property {number} [window=25] Initial number of iterations to use for metric adaptation,
+ * which is doubled each time the adaptation window is hit.
+ * @property {boolean} [save_warmup=false] Whether to save the warmup draws.
+ * @property {number} [stepsize=1.0] Initial step size for the sampler.
+ * @property {number} [stepsize_jitter=0.0] Amount of random jitter to add to the step size.
+ * @property {number} [max_depth=10] Maximum tree depth for the NUTS sampler.
+ * @property {number} [refresh=0] Number of iterations between progress messages.
+ * If 0, no output is printed.
+ * @property {number} [num_threads=-1] Number of threads to use for sampling.
+ * If -1, the number of threads is determined by the number of available CPU cores.
+ * May not be supported in all environments, and requires specific compilation flags.
+ */
 export interface SamplerParams {
   data: string | StanVariableInputs;
   num_chains: number;
@@ -99,6 +139,43 @@ interface PathfinderUniqueParams {
   num_threads: number;
 }
 
+/**
+ * @typedef {Object} PathfinderParams
+ * Parameters for the Pathfinder algorithm.
+ * @property {string | StanVariableInputs} [data=""] The data for the model.
+ * @property {number} [num_paths=4] The number of individual paths to run.
+ * @property {string | StanVariableInputs | string[] | StanVariableInputs[]} [inits=""]
+ * The initial values for the algorithm. If an array, must have length `num_paths`.
+ * @property {number | null} [seed] The seed for the random number generator.
+ * If unspecified, a random seed will be generated.
+ * @property {number} [id=1] The ID for the first path.
+ * @property {number} [init_radius=2.0] Radius to initialize unspecified parameters within.
+ * The parameter values are drawn uniformly from the interval
+ * `[-init_radius, init_radius]` on the unconstrained scale.
+ * @property {number} [num_draws=1000] The number of draws to take for each path.
+ * @property {number} [max_history_size=5] History size used by the internal L-BFGS algorithm
+ * to approximate the Hessian.
+ * @property {number} [init_alpha=0.001] Initial step size for the internal L-BFGS algorithm.
+ * @property {number} [tol_obj=1e-12] Convergence tolerance for the objective function.
+ * @property {number} [tol_rel_obj=1e4] Relative convergence tolerance for the objective function.
+ * @property {number} [tol_grad=1e-8] Convergence tolerance for the gradient norm.
+ * @property {number} [tol_rel_grad=1e7] Relative convergence tolerance for the gradient norm.
+ * @property {number} [tol_param=1e-8] Convergence tolerance for the changes in parameters.
+ * @property {number} [num_iterations=1000] Maximum number of iterations for the internal
+ * L-BFGS algorithm.
+ * @property {number} [num_elbo_draws=25] Number of Monte Carlo draws used to estimate the ELBO.
+ * @property {number} [num_multi_draws=1000] Number of draws returned by Multi-Pathfinder.
+ * @property {boolean} [calculate_lp=true] Whether to calculate the log probability of the
+ * approximate draws.
+ * If false, this also implies `psis_resample=false`.
+ * @property {boolean} [psis_resample=true] Whether to use Pareto smoothed importance sampling on
+ * the approximate draws. If false, all `num_paths * num_draws` approximate samples will be returned.
+ * @property {number} [refresh=0] Number of iterations between progress messages.
+ * If 0, no output is printed.
+ * @property {number} [num_threads=-1] Number of threads to use for Pathfinder.
+ * If -1, the number of threads is determined by the number of available CPU cores.
+ * May not be supported in all environments, and requires specific compilation flags.
+ */
 export type PathfinderParams = LBFGSConfig & PathfinderUniqueParams;
 
 // ------------- internal types -------------

@@ -42,11 +42,11 @@ export default class StanModel {
   /**
    * Load a StanModel from a WASM module
    *
-   * @param createModule A function that resolves to a WASM module. This is
-   * much like the one Emscripten creates when you pass -sMODULARIZE
-   * @param {PrintCallback | null} printCallback A callback that will be called with any print statements from Stan.
-   * If null, this will default to console.log
-   * @returns {Promise<StanModel>} A promise that resolves to a StanModel
+   * @param {Function} createModule A function that resolves to a WASM module. This is
+   * much like the one Emscripten creates for you with `-sMODULARIZE`
+   * @param {PrintCallback | null} printCallback A callback that will be called
+   * with any print statements from Stan. If null, this will default to `console.log`
+   * @returns {Promise<StanModel>} A promise that resolves to a `StanModel`
    */
   public static async load(
     createModule: (proto?: object) => Promise<WasmModule>,
@@ -132,7 +132,7 @@ export default class StanModel {
 
   /**
    * Sample using NUTS-HMC.
-   * @param {SamplerParams} p A (partially-specified) SamplerParams object.
+   * @param {SamplerParams} p A (partially-specified) `SamplerParams` object.
    * If a property is not specified, the default value will be used.
    * @returns {StanDraws} A StanDraws object containing the parameter names and the draws.
    */
@@ -303,6 +303,13 @@ export default class StanModel {
     });
   }
 
+  /**
+   * Approximate the posterior using Pathfinder.
+   * @param {PathfinderParams} p A (partially-specified) `PathfinderParams` object.
+   * If a property is not specified, the default value will be used.
+   * @returns {StanDraws} A StanDraws object containing the parameter names and the
+   * approximate draws.
+   */
   public pathfinder(p: Partial<PathfinderParams>): StanDraws {
     const {
       data,
