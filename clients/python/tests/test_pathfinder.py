@@ -133,6 +133,22 @@ def test_inits(multimodal_model, temp_json):
     assert np.all(out3["mu"] < 0)
 
 
+def test_inits_mode(multimodal_model):
+    # initializing at mode means theres nowhere to go
+    init1 = {"mu": -100}
+
+    with pytest.raises(
+        RuntimeError, match="None of the LBFGS iterations completed successfully"
+    ):
+        multimodal_model.pathfinder(inits=init1)
+
+    # also for single path
+    with pytest.raises(
+        RuntimeError, match="None of the LBFGS iterations completed successfully"
+    ):
+        multimodal_model.pathfinder(inits=init1, num_paths=1, psis_resample=False)
+
+
 def test_bad_data(bernoulli_model):
     data = {"N": -1}
     with pytest.raises(RuntimeError, match="greater than or equal to 0"):
