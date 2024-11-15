@@ -18,15 +18,18 @@ Examples of the build (and usage) can be found in the following projects:
 - [Stan Playground](https://github.com/flatironinstitute/stan-playground) ([Emscripten config](https://github.com/flatironinstitute/stan-playground/blob/main/backend/local.mk))
 
 Note that, among other things, a more recent version of TBB must be used,
-as WebAssembly was not supported in the version Stan vendors.
+as WebAssembly is not supported in the version Stan currently vendors.
 
 ## Installation
 
 The Typescript interface is [available on npm](https://www.npmjs.com/package/tinystan).
 To install it, run:
 ```shell
-npm install tinystan --save # npm
-yarn add tinystan           # or yarn
+npm install tinystan --save
+```
+or
+```shell
+yarn add tinystan
 ```
 
 <!-- hack to fix generated links
@@ -78,7 +81,7 @@ like memory management and error handling.</p>
 <p>Sample using NUTS-HMC.</p>
 
 **Kind**: instance method of [`StanModel`]  
-**Returns**: [`StanDraws`] - <p>A StanDraws object containing the parameter names and the draws.</p>  
+**Returns**: [`StanDraws`] - <p>A StanDraws object containing the parameter names and the draws</p>  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -91,7 +94,7 @@ like memory management and error handling.</p>
 
 **Kind**: instance method of [`StanModel`]  
 **Returns**: [`StanDraws`] - <p>A StanDraws object containing the parameter names and the
-approximate draws.</p>  
+approximate draws</p>  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -100,7 +103,7 @@ approximate draws.</p>
 
 #### stanModel.stanVersion()
 
-<p>Get the version of the Stan library being used</p>
+<p>Get the version of the Stan library being used.</p>
 
 **Kind**: instance method of [`StanModel`]  
 **Returns**: `string` - <p>The version of the Stan library being used,
@@ -108,15 +111,15 @@ in the form &quot;major.minor.patch&quot;</p>
 
 #### StanModel.load(createModule, printCallback)
 
-<p>Load a StanModel from a WASM module</p>
+<p>Load a StanModel from a WASM module.</p>
 
 **Kind**: static method of [`StanModel`]  
 **Returns**: `Promise.<StanModel>` - <p>A promise that resolves to a <code>StanModel</code></p>  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| createModule | `function` | <p>A function that resolves to a WASM module. This is much like the one Emscripten creates for you with <code>-sMODULARIZE</code></p> |
-| printCallback | [`PrintCallback`] \| `null` | <p>A callback that will be called with any print statements from Stan. If null, this will default to <code>console.log</code></p> |
+| createModule | `function` | <p>A function that resolves to a WASM module. This is much like the one Emscripten creates for you with <code>-sMODULARIZE</code>.</p> |
+| printCallback | [`PrintCallback`] \| `null` | <p>A callback that will be called with any print statements from Stan. If null, this will default to <code>console.log</code>.</p> |
 
 
 ### HMCMetric
@@ -161,9 +164,9 @@ e.g. the data or initial values.</p>
 
 | Name | Type | Description |
 | --- | --- | --- |
-| paramNames | `Array.<string>` | <p>The names of the parameters in the model.</p> |
+| paramNames | `Array.<string>` | <p>The names of the parameters in the model</p> |
 | draws | `Array.<Array.<number>>` | <p>A 2D array of draws from the posterior. The first dimension is the number of samples, and the second dimension is the number of parameters.</p> |
-| metric | `Array.<Array.<number>>` \| `Array.<Array.<Array.<number>>>` | <p>The metric used for the HMC sampler. If the metric is not saved, this field is not present.</p> |
+| metric | `Array.<Array.<number>>` \| `Array.<Array.<Array.<number>>>` \| `undefined` | <p>The metric used for the HMC sampler. If the metric is not saved, this field is not present.</p> |
 
 
 ### SamplerParams
@@ -175,31 +178,31 @@ e.g. the data or initial values.</p>
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| \[data\] | `string` \| [`StanVariableInputs`] | `'&quot;&quot;'` | <p>The data for the model.</p> |
-| \[num_chains\] | `number` | `4` | <p>The number of chains to run.</p> |
+| \[data\] | `string` \| [`StanVariableInputs`] | `'&quot;&quot;'` | <p>The data for the model</p> |
+| \[num_chains\] | `number` | `4` | <p>The number of chains to run</p> |
 | \[inits\] | `string` \| [`StanVariableInputs`] \| `Array.<string>` \| `Array.<StanVariableInputs>` | `'&quot;&quot;'` | <p>The initial values for the sampler. If an array, must have length <code>num_chains</code>.</p> |
 | \[seed\] | `number` \| `null` |  | <p>The seed for the random number generator. If unspecified, a random seed will be generated.</p> |
-| \[id\] | `number` | `1` | <p>The ID for the first chain.</p> |
+| \[id\] | `number` | `1` | <p>The ID for the first chain</p> |
 | \[init_radius\] | `number` | `2.0` | <p>Radius to initialize unspecified parameters within. The parameter values are drawn uniformly from the interval <code>[-init_radius, init_radius]</code> on the unconstrained scale.</p> |
-| \[num_warmup\] | `number` | `1000` | <p>The number of warmup iterations to run.</p> |
-| \[num_samples\] | `number` | `1000` | <p>The number of samples to draw after warmup.</p> |
-| \[metric\] | `HMCMetric` | `HMCMetric.DENSE` | <p>The type of mass matrix to use in the sampler.</p> |
-| \[save_metric\] | `boolean` | `false` | <p>Whether to report the final mass matrix.</p> |
+| \[num_warmup\] | `number` | `1000` | <p>The number of warmup iterations to run</p> |
+| \[num_samples\] | `number` | `1000` | <p>The number of samples to draw after warmup</p> |
+| \[metric\] | `HMCMetric` | `HMCMetric.DENSE` | <p>The type of mass matrix to use in the sampler</p> |
+| \[save_metric\] | `boolean` | `false` | <p>Whether to report the final mass matrix</p> |
 | \[init_inv_metric\] | `Array.<number>` \| `Array.<Array.<number>>` \| `Array.<Array.<Array.<number>>>` \| `null` |  | <p>The initial inverse metric to use. Currently, this argument is unused.</p> |
-| \[adapt\] | `boolean` | `true` | <p>Whether the sampler should adapt the step size and metric,</p> |
-| \[delta\] | `number` | `0.8` | <p>Target acceptance rate.</p> |
-| \[gamma\] | `number` | `0.05` | <p>Adaptation regularization scale.</p> |
-| \[kappa\] | `number` | `0.75` | <p>Adaptation relaxation exponent.</p> |
-| \[t0\] | `number` | `10.0` | <p>Adaptation iteration offset.</p> |
+| \[adapt\] | `boolean` | `true` | <p>Whether the sampler should adapt the step size and metric</p> |
+| \[delta\] | `number` | `0.8` | <p>Target acceptance rate</p> |
+| \[gamma\] | `number` | `0.05` | <p>Adaptation regularization scale</p> |
+| \[kappa\] | `number` | `0.75` | <p>Adaptation relaxation exponent</p> |
+| \[t0\] | `number` | `10.0` | <p>Adaptation iteration offset</p> |
 | \[init_buffer\] | `number` | `75` | <p>Number of warmup samples to use for initial step size adaptation.</p> |
-| \[term_buffer\] | `number` | `50` | <p>Number of warmup samples to use for step size adaptation after the metric is adapted.</p> |
-| \[window\] | `number` | `25` | <p>Initial number of iterations to use for metric adaptation, which is doubled each time the adaptation window is hit.</p> |
-| \[save_warmup\] | `boolean` | `false` | <p>Whether to save the warmup draws.</p> |
-| \[stepsize\] | `number` | `1.0` | <p>Initial step size for the sampler.</p> |
-| \[stepsize_jitter\] | `number` | `0.0` | <p>Amount of random jitter to add to the step size.</p> |
-| \[max_depth\] | `number` | `10` | <p>Maximum tree depth for the NUTS sampler.</p> |
+| \[term_buffer\] | `number` | `50` | <p>Number of warmup samples to use for step size adaptation after the metric is adapted</p> |
+| \[window\] | `number` | `25` | <p>Initial number of iterations to use for metric adaptation, which is doubled each time the adaptation window is hit</p> |
+| \[save_warmup\] | `boolean` | `false` | <p>Whether to save the warmup draws</p> |
+| \[stepsize\] | `number` | `1.0` | <p>Initial step size for the sampler</p> |
+| \[stepsize_jitter\] | `number` | `0.0` | <p>Amount of random jitter to add to the step size</p> |
+| \[max_depth\] | `number` | `10` | <p>Maximum tree depth for the NUTS sampler</p> |
 | \[refresh\] | `number` | `0` | <p>Number of iterations between progress messages. If 0, no output is printed.</p> |
-| \[num_threads\] | `number` | `-1` | <p>Number of threads to use for sampling. If -1, the number of threads is determined by the number of available CPU cores. May not be supported in all environments, and requires specific compilation flags.</p> |
+| \[num_threads\] | `number` | `-1` | <p>Number of threads to use for sampling. If -1, the number of threads is determined by the number of available CPU cores. May not be supported in all environments, and requires extra configuration during the Emscripten compilation.</p> |
 
 
 ### PathfinderParams
@@ -211,27 +214,27 @@ e.g. the data or initial values.</p>
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| \[data\] | `string` \| [`StanVariableInputs`][1] | `'&quot;&quot;'` | <p>The data for the model.</p> |
-| \[num_paths\] | `number` | `4` | <p>The number of individual paths to run.</p> |
+| \[data\] | `string` \| [`StanVariableInputs`][1] | `'&quot;&quot;'` | <p>The data for the model</p> |
+| \[num_paths\] | `number` | `4` | <p>The number of individual paths to run</p> |
 | \[inits\] | `string` \| [`StanVariableInputs`] \| `Array.<string>` \| `Array.<StanVariableInputs>` | `'&quot;&quot;'` | <p>The initial values for the algorithm. If an array, must have length <code>num_paths</code>.</p> |
 | \[seed\] | `number` \| `null` |  | <p>The seed for the random number generator. If unspecified, a random seed will be generated.</p> |
-| \[id\] | `number` | `1` | <p>The ID for the first path.</p> |
+| \[id\] | `number` | `1` | <p>The ID for the first path</p> |
 | \[init_radius\] | `number` | `2.0` | <p>Radius to initialize unspecified parameters within. The parameter values are drawn uniformly from the interval <code>[-init_radius, init_radius]</code> on the unconstrained scale.</p> |
-| \[num_draws\] | `number` | `1000` | <p>The number of draws to take for each path.</p> |
-| \[max_history_size\] | `number` | `5` | <p>History size used by the internal L-BFGS algorithm to approximate the Hessian.</p> |
-| \[init_alpha\] | `number` | `0.001` | <p>Initial step size for the internal L-BFGS algorithm.</p> |
-| \[tol_obj\] | `number` | `1e-12` | <p>Convergence tolerance for the objective function.</p> |
-| \[tol_rel_obj\] | `number` | `1e4` | <p>Relative convergence tolerance for the objective function.</p> |
-| \[tol_grad\] | `number` | `1e-8` | <p>Convergence tolerance for the gradient norm.</p> |
-| \[tol_rel_grad\] | `number` | `1e7` | <p>Relative convergence tolerance for the gradient norm.</p> |
-| \[tol_param\] | `number` | `1e-8` | <p>Convergence tolerance for the changes in parameters.</p> |
-| \[num_iterations\] | `number` | `1000` | <p>Maximum number of iterations for the internal L-BFGS algorithm.</p> |
-| \[num_elbo_draws\] | `number` | `25` | <p>Number of Monte Carlo draws used to estimate the ELBO.</p> |
-| \[num_multi_draws\] | `number` | `1000` | <p>Number of draws returned by Multi-Pathfinder.</p> |
+| \[num_draws\] | `number` | `1000` | <p>The number of draws to take for each path</p> |
+| \[max_history_size\] | `number` | `5` | <p>History size used by the internal L-BFGS algorithm to approximate the Hessian</p> |
+| \[init_alpha\] | `number` | `0.001` | <p>Initial step size for the internal L-BFGS algorithm</p> |
+| \[tol_obj\] | `number` | `1e-12` | <p>Convergence tolerance for the objective function</p> |
+| \[tol_rel_obj\] | `number` | `1e4` | <p>Relative convergence tolerance for the objective function</p> |
+| \[tol_grad\] | `number` | `1e-8` | <p>Convergence tolerance for the gradient norm</p> |
+| \[tol_rel_grad\] | `number` | `1e7` | <p>Relative convergence tolerance for the gradient norm</p> |
+| \[tol_param\] | `number` | `1e-8` | <p>Convergence tolerance for the changes in parameters</p> |
+| \[num_iterations\] | `number` | `1000` | <p>Maximum number of iterations for the internal L-BFGS algorithm</p> |
+| \[num_elbo_draws\] | `number` | `25` | <p>Number of Monte Carlo draws used to estimate the ELBO</p> |
+| \[num_multi_draws\] | `number` | `1000` | <p>Number of draws returned by Multi-Pathfinder</p> |
 | \[calculate_lp\] | `boolean` | `true` | <p>Whether to calculate the log probability of the approximate draws. If false, this also implies <code>psis_resample=false</code>.</p> |
 | \[psis_resample\] | `boolean` | `true` | <p>Whether to use Pareto smoothed importance sampling on the approximate draws. If false, all <code>num_paths * num_draws</code> approximate samples will be returned.</p> |
 | \[refresh\] | `number` | `0` | <p>Number of iterations between progress messages. If 0, no output is printed.</p> |
-| \[num_threads\] | `number` | `-1` | <p>Number of threads to use for Pathfinder. If -1, the number of threads is determined by the number of available CPU cores. May not be supported in all environments, and requires specific compilation flags.</p> |
+| \[num_threads\] | `number` | `-1` | <p>Number of threads to use for Pathfinder. If -1, the number of threads is determined by the number of available CPU cores. May not be supported in all environments, and requires extra configuration during the Emscripten compilation.</p> |
 
 <!-- LINKS -->
 

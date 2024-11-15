@@ -40,12 +40,12 @@ export default class StanModel {
   }
 
   /**
-   * Load a StanModel from a WASM module
+   * Load a StanModel from a WASM module.
    *
    * @param {Function} createModule A function that resolves to a WASM module. This is
-   * much like the one Emscripten creates for you with `-sMODULARIZE`
+   * much like the one Emscripten creates for you with `-sMODULARIZE`.
    * @param {PrintCallback | null} printCallback A callback that will be called
-   * with any print statements from Stan. If null, this will default to `console.log`
+   * with any print statements from Stan. If null, this will default to `console.log`.
    * @returns {Promise<StanModel>} A promise that resolves to a `StanModel`
    */
   public static async load(
@@ -95,7 +95,7 @@ export default class StanModel {
     }
   }
 
-  /*
+  /** @ignore
    * withModel serves as something akin to a context manager in
    * Python. It accepts the arguments needed to construct a model
    * (data and seed) and a callback.
@@ -134,7 +134,7 @@ export default class StanModel {
    * Sample using NUTS-HMC.
    * @param {SamplerParams} p A (partially-specified) `SamplerParams` object.
    * If a property is not specified, the default value will be used.
-   * @returns {StanDraws} A StanDraws object containing the parameter names and the draws.
+   * @returns {StanDraws} A StanDraws object containing the parameter names and the draws
    */
   public sample(p: Partial<SamplerParams>): StanDraws {
     const {
@@ -308,7 +308,7 @@ export default class StanModel {
    * @param {PathfinderParams} p A (partially-specified) `PathfinderParams` object.
    * If a property is not specified, the default value will be used.
    * @returns {StanDraws} A StanDraws object containing the parameter names and the
-   * approximate draws.
+   * approximate draws
    */
   public pathfinder(p: Partial<PathfinderParams>): StanDraws {
     const {
@@ -416,7 +416,7 @@ export default class StanModel {
   }
 
   /**
-   * Get the version of the Stan library being used
+   * Get the version of the Stan library being used.
    * @returns {string} The version of the Stan library being used,
    * in the form "major.minor.patch"
    */

@@ -2,7 +2,7 @@
 Language Interfaces
 ===================
 
-TinyStan currently has clients in four languages, a public C API
+TinyStan currently has clients in five languages, a public C API
 which underlies all the clients, and an example of a standalone program
 written in C.
 

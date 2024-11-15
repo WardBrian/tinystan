@@ -18,15 +18,18 @@ Examples of the build (and usage) can be found in the following projects:
 - [Stan Playground](https://github.com/flatironinstitute/stan-playground) ([Emscripten config](https://github.com/flatironinstitute/stan-playground/blob/main/backend/local.mk))
 
 Note that, among other things, a more recent version of TBB must be used,
-as WebAssembly was not supported in the version Stan vendors.
+as WebAssembly is not supported in the version Stan currently vendors.
 
 ## Installation
 
 The Typescript interface is [available on npm](https://www.npmjs.com/package/tinystan).
 To install it, run:
 ```shell
-npm install tinystan --save # npm
-yarn add tinystan           # or yarn
+npm install tinystan --save
+```
+or
+```shell
+yarn add tinystan
 ```
 
 <!-- hack to fix generated links
