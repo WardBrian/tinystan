@@ -36,7 +36,8 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "format": "prettier . --write",
-    "attw": "attw --pack ."
+    "attw": "attw --pack .",
+    "doc": "jsdoc2md --template ./doc/language-doc.hbs --plugin @godaddy/dmd --heading-depth=3 --configure ./doc/jsdoc2md.json --files src/*.ts "
   },
   "tsup": {
     "entry": [
@@ -59,14 +60,20 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.15.3",
+    "@babel/cli": "^7.25.9",
+    "@babel/core": "^7.26.0",
+    "@babel/preset-env": "^7.26.0",
+    "@babel/preset-typescript": "^7.26.0",
+    "@godaddy/dmd": "^1.0.4",
     "@vitest/coverage-v8": "^1.6.0",
     "eslint": "^9.4.0",
+    "jsdoc-babel": "^0.5.0",
+    "jsdoc-to-markdown": "^9.0.5",
     "prettier": "^3.3.1",
     "tsup": "^8.1.0",
-    "typescript": "^5.2.2",
+    "typescript": "^5.6.3",
     "vitest": "^1.6.0"
   },
-  "dependencies": {},
   "publishConfig": {
     "access": "public"
   }

@@ -22,6 +22,11 @@ type model_ptr = internalTypes["model_ptr"];
 type error_ptr = internalTypes["error_ptr"];
 type cstr = internalTypes["cstr"];
 
+/**
+ * StanModel is a class that wraps the WASM module and provides a
+ * higher-level interface to the Stan library, abstracting away things
+ * like memory management and error handling.
+ */
 export default class StanModel {
   private m: WasmModule;
   private printCallback: PrintCallback | null;
@@ -34,6 +39,15 @@ export default class StanModel {
     this.sep = String.fromCharCode(m._tinystan_separator_char());
   }
 
+  /**
+   * Load a StanModel from a WASM module.
+   *
+   * @param {Function} createModule A function that resolves to a WASM module. This is
+   * much like the one Emscripten creates for you with `-sMODULARIZE`.
+   * @param {PrintCallback | null} printCallback A callback that will be called
+   * with any print statements from Stan. If null, this will default to `console.log`.
+   * @returns {Promise<StanModel>} A promise that resolves to a `StanModel`
+   */
   public static async load(
     createModule: (proto?: object) => Promise<WasmModule>,
     printCallback: PrintCallback | null,
@@ -81,7 +95,7 @@ export default class StanModel {
     }
   }
 
-  /**
+  /** @ignore
    * withModel serves as something akin to a context manager in
    * Python. It accepts the arguments needed to construct a model
    * (data and seed) and a callback.
@@ -116,6 +130,12 @@ export default class StanModel {
     }
   }
 
+  /**
+   * Sample using NUTS-HMC.
+   * @param {SamplerParams} p A (partially-specified) `SamplerParams` object.
+   * If a property is not specified, the default value will be used.
+   * @returns {StanDraws} A StanDraws object containing the parameter names and the draws
+   */
   public sample(p: Partial<SamplerParams>): StanDraws {
     const {
       data,
@@ -283,6 +303,13 @@ export default class StanModel {
     });
   }
 
+  /**
+   * Approximate the posterior using Pathfinder.
+   * @param {PathfinderParams} p A (partially-specified) `PathfinderParams` object.
+   * If a property is not specified, the default value will be used.
+   * @returns {StanDraws} A StanDraws object containing the parameter names and the
+   * approximate draws
+   */
   public pathfinder(p: Partial<PathfinderParams>): StanDraws {
     const {
       data,
@@ -388,6 +415,11 @@ export default class StanModel {
     });
   }
 
+  /**
+   * Get the version of the Stan library being used.
+   * @returns {string} The version of the Stan library being used,
+   * in the form "major.minor.patch"
+   */
   public stanVersion(): string {
     const major = this.m._malloc(4);
     const minor = this.m._malloc(4);

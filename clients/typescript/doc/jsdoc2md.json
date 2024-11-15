@@ -1,0 +1,19 @@
+{
+  "source": {
+    "includePattern": ".+\\.ts(doc|x)?$",
+    "excludePattern": ".+\\.(test|spec).ts"
+  },
+  "template": "language-doc.hbs",
+  "plugins": ["plugins/markdown", "node_modules/jsdoc-babel", "@godaddy/dmd"],
+  "heading-depth": 3,
+  "babel": {
+    "extensions": ["ts", "tsx"],
+    "ignore": ["**/*.(test|spec).ts"],
+    "babelrc": false,
+    "presets": [
+      ["@babel/preset-env", { "targets": { "node": true } }],
+      "@babel/preset-typescript"
+    ],
+    "plugins": []
+  }
+}

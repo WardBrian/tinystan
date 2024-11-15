@@ -153,7 +153,7 @@ Run the Pathfinder algorithm to approximate the posterior. See [Stan's documenta
 Returns a tuple of the parameter names and the draws.
 
 
-<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L337-L345' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L334-L342' class='documenter-source'>source</a><br>
 
 <a id='TinyStan.optimize' href='#TinyStan.optimize'>#</a>
 **`TinyStan.optimize`** &mdash; *Function*.
@@ -171,7 +171,7 @@ This will find either the maximum a posteriori (MAP) estimate or the maximum lik
 Returns a tuple of the parameter names and the optimized values.
 
 
-<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L435-L446' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L432-L443' class='documenter-source'>source</a><br>
 
 <a id='TinyStan.OptimizationAlgorithm' href='#TinyStan.OptimizationAlgorithm'>#</a>
 **`TinyStan.OptimizationAlgorithm`** &mdash; *Type*.
@@ -199,7 +199,7 @@ Sample from the Laplace approximation of the posterior centered at the provided 
 Returns a tuple of the parameter names and the draws.
 
 
-<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L509-L518' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L506-L515' class='documenter-source'>source</a><br>
 
 
 <a id='Compilation-utilities'></a>

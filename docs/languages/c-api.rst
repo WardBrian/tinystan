@@ -10,9 +10,7 @@ Please follow the :doc:`Getting Started guide <../getting-started>` to install
 TinyStan's pre-requisites and downloaded a copy of the TinyStan source code.
 
 This API is implemented in C++ and exposed to C using the ``extern "C"`` directive.
-It is used to implement all the other high-level interfaces. It can also
-be used for its own purposes, such as
-`compiling to WebAssembly <https://github.com/WardBrian/stan-web-demo>`_.
+It is used to implement all the other high-level interfaces. 
 
 
 API Reference
