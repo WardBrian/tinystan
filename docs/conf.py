@@ -18,7 +18,7 @@ import os
 
 import tinystan
 
-most_recent_release = 'v' + tinystan.__version__
+most_recent_release = "v" + tinystan.__version__
 version = os.getenv("TS_DOCS_VERSION", most_recent_release)
 if version == "latest":
     # don't display a version number for "latest" docs
@@ -44,17 +44,13 @@ extensions = [
     "myst_parser",
 ]
 
-myst_enable_extensions = [
-    "substitution"
-]
-myst_substitutions = {
-    "most_recent_release" : most_recent_release
-}
+myst_enable_extensions = ["substitution"]
+myst_substitutions = {"most_recent_release": most_recent_release}
 
-suppress_warnings = ["myst.xref_missing"] # Julia doc generates raw html links
+suppress_warnings = ["myst.xref_missing"]  # Julia doc generates raw html links
 
 templates_path = ["_templates"]
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "README.md"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "README.md", "languages/_*"]
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -113,7 +109,7 @@ intersphinx_mapping = {
     ),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "cmdstanpy": ("https://mc-stan.org/cmdstanpy/", None),
-    "bridgestan" : ("https://roualdes.github.io/bridgestan/latest/", None),
+    "bridgestan": ("https://roualdes.github.io/bridgestan/latest/", None),
 }
 
 
@@ -160,7 +156,7 @@ try:
     )
 
     # replaces the headers with more appropriate levels for embedding
-    for f in (pathlib.Path(__file__).parent / "languages" / "_r" ).iterdir():
+    for f in (pathlib.Path(__file__).parent / "languages" / "_r").iterdir():
         text = f.read_text()
         text = re.sub(r"(#+) ", r"##\1 ", text)
         f.write_text(text)
@@ -199,7 +195,7 @@ try:
     )
     with open("./languages/js.md", "w") as f:
         f.write(ret.stdout)
-        
+
 except Exception as e:
     # fail loudly in Github Actions
     if RUNNING_IN_CI:
