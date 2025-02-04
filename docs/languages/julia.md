@@ -217,7 +217,7 @@ Returns a tuple of the parameter names and the draws.
 compile_model(stan_file; stanc_args=[], make_args=[])
 ```
 
-Run TinyStan’s Makefile on a `.stan` file, creating the `.so` used by StanModel and return a path to the compiled library. Arguments to `stanc3` can be passed as a vector, for example `["--O1"]` enables level 1 compiler optimizations. Additional arguments to `make` can be passed as a vector, for example `["STAN_THREADS=true"]` enables the model's threading capabilities. If the same flags are defined in `make/local`, the versions passed here will take precedent.
+Run TinyStan’s Makefile on a `.stan` file, creating the `.so` used by StanModel and return a path to the compiled library. Arguments to `stanc3` can be passed as a vector, for example `["--O1"]` enables level 1 compiler optimizations. Additional arguments to `make` can be passed as a vector, for example `["STAN_NO_RANGE_CHECKS=true"]` will disable bounds checking in the Stan Math library. If the same flags are defined in `make/local`, the versions passed here will take precedent.
 
 This function checks that the path to TinyStan is valid and will error if it is not. This can be set with [`set_tinystan_path!()`](julia.md#TinyStan.set_tinystan_path!).
 

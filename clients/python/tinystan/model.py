@@ -162,9 +162,10 @@ class Model:
             For example, ``["--O1"]`` will enable compiler optimization level 1.
         make_args : List[str], optional
             A list of additional arguments to pass to GNU Make if the
-            model is not compiled. For example, ``["STAN_THREADS=True"]`` will enable
-            threading for the compiled model. If the same flags are defined
-            in ``make/local``, the versions passed here will take precedent.
+            model is not compiled. For example, ``["STAN_NO_RANGE_CHECKS=True"]``
+            will disable bounds checking in the Stan Math library. If the
+            same flags are defined in ``make/local``, the versions passed here
+            will take precedent.
         capture_stan_prints : bool, optional
             If ``True``, capture all ``print`` statements and output
             from Stan and print them from Python. This may have

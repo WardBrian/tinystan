@@ -20,14 +20,18 @@ namespace util {
  * previously set.
  */
 void init_threading(int num_threads) {
-  if (num_threads == -1) {
-    num_threads = std::max(1U, std::thread::hardware_concurrency());
-  }
 #ifndef STAN_THREADS
+  if (num_threads == -1) {
+    num_threads = 1;
+  }
   if (num_threads > 1) {
     throw std::invalid_argument(
         "Number of threads greater than 1 requested, but model not compiled "
         "with threading support.");
+  }
+#else
+  if (num_threads == -1) {
+    num_threads = std::max(1U, std::thread::hardware_concurrency());
   }
 #endif
   if (num_threads > 0) {
