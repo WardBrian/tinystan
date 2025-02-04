@@ -11,7 +11,7 @@ build/
 make/local
 *.pyc
 *.egg-info/
-
+dist/
 
 clients/tinystan*
 .RData

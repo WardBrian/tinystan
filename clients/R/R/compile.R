@@ -65,8 +65,8 @@ get_tinystan_path <- function() {
 #' @param stanc_arg A vector of arguments to pass to stanc3.
 #' For example, `c('--O1')` will enable compiler optimization level 1.
 #' @param make_args A vector of additional arguments to pass to Make.
-#' For example, `c('STAN_THREADS=True')` will enable
-#' threading for the compiled model. If the same flags are defined
+#' For example, `c('STAN_NO_RANGE_CHECKS=True')` will disable bounds
+#' checking in the Stan Math library. If the same flags are defined
 #' in `make/local`, the versions passed here will take precedent.
 #' @return Path to the compiled model.
 #'

@@ -10,8 +10,8 @@ compile_model(stan_file, stanc_args = NULL, make_args = NULL)
 \item{stan_file}{A path to a Stan model file.}
 
 \item{make_args}{A vector of additional arguments to pass to Make.
-For example, \code{c('STAN_THREADS=True')} will enable
-threading for the compiled model. If the same flags are defined
+For example, \code{c('STAN_NO_RANGE_CHECKS=True')} will disable bounds
+checking in the Stan Math library. If the same flags are defined
 in \code{make/local}, the versions passed here will take precedent.}
 
 \item{stanc_arg}{A vector of arguments to pass to stanc3.

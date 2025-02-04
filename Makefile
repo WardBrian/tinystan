@@ -13,8 +13,13 @@ RAPIDJSON ?= $(STAN)lib/rapidjson_1.1.0/
 # required C++ includes
 INC_FIRST ?= -I $(STAN)src -I $(RAPIDJSON)
 
-# TinyStan always wants multithreading support
-STAN_THREADS=true
+# TinyStan wants multithreading support by default
+ifndef TINYSTAN_SERIAL
+	STAN_THREADS=true
+	STAN_FLAG_SERIAL=
+else
+	STAN_FLAG_SERIAL=_serial
+endif
 
 # We can bump to C++17, even if Stan hasn't yet
 STAN_HAS_CXX17 ?= true
@@ -41,7 +46,7 @@ ifdef STAN_OPENCL
 else
 	STAN_FLAG_OPENCL=
 endif
-STAN_FLAGS=$(STAN_FLAG_OPENCL)
+STAN_FLAGS=$(STAN_FLAG_OPENCL)$(STAN_FLAG_SERIAL)
 
 
 TINYSTAN_O = $(patsubst %.cpp,%$(STAN_FLAGS).o,$(SRC)tinystan.cpp)
