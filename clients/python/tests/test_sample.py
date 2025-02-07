@@ -46,7 +46,7 @@ def test_seed(bernoulli_model):
         BERNOULLI_DATA, seed=123, num_warmup=100, num_samples=100
     )
 
-    np.testing.assert_equal(out1["theta"], out2["theta"])
+    np.testing.assert_equal(out1.data, out2.data)
 
     out3 = bernoulli_model.sample(
         BERNOULLI_DATA, seed=456, num_warmup=100, num_samples=100

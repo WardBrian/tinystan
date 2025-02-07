@@ -40,8 +40,8 @@ def test_seed(bernoulli_model, num_paths, psis_resample):
         num_paths=num_paths,
         psis_resample=psis_resample,
     )
-
-    np.testing.assert_equal(np.sort(out1["theta"]), np.sort(out2["theta"]))
+    assert out1.data.shape[1] == 5
+    np.testing.assert_equal(np.sort(out1.data, axis=0), np.sort(out2.data, axis=0))
 
     out3 = bernoulli_model.pathfinder(
         BERNOULLI_DATA,

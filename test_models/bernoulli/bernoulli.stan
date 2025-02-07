@@ -9,3 +9,6 @@ model {
   theta ~ beta(1,1);  // uniform prior on interval 0,1
   y ~ bernoulli(theta);
 }
+generated quantities {
+  int next_flip = bernoulli_rng(theta);
+}
