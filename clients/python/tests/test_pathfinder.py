@@ -25,13 +25,21 @@ def test_data(bernoulli_model):
     assert 0.2 < out2["theta"].mean() < 0.3
 
 
-def test_seed(bernoulli_model):
-    out1 = bernoulli_model.pathfinder(BERNOULLI_DATA, seed=123)
-    out2 = bernoulli_model.pathfinder(BERNOULLI_DATA, seed=123)
+@pytest.mark.parametrize("num_paths", [1, 4])
+@pytest.mark.parametrize("psis_resample", [True, False])
+def test_seed(bernoulli_model, num_paths, psis_resample):
+    out1 = bernoulli_model.pathfinder(
+        BERNOULLI_DATA, seed=123, num_paths=num_paths, psis_resample=psis_resample
+    )
+    out2 = bernoulli_model.pathfinder(
+        BERNOULLI_DATA, seed=123, num_paths=num_paths, psis_resample=psis_resample
+    )
 
     np.testing.assert_equal(out1["theta"], out2["theta"])
 
-    out3 = bernoulli_model.pathfinder(BERNOULLI_DATA, seed=456)
+    out3 = bernoulli_model.pathfinder(
+        BERNOULLI_DATA, seed=456, num_paths=num_paths, psis_resample=psis_resample
+    )
 
     with pytest.raises(AssertionError):
         np.testing.assert_equal(out1["theta"], out3["theta"])
@@ -133,24 +141,18 @@ def test_inits(multimodal_model, temp_json):
     assert np.all(out3["mu"] < 0)
 
 
-def test_inits_mode(multimodal_model):
+@pytest.mark.parametrize("num_paths", [1, 4])
+@pytest.mark.parametrize("psis_resample", [True, False])
+def test_inits_mode(multimodal_model, num_paths, psis_resample):
     # initializing at mode means theres nowhere to go
     init1 = {"mu": -100}
 
     with pytest.raises(
         RuntimeError, match="None of the LBFGS iterations completed successfully"
     ):
-        multimodal_model.pathfinder(inits=init1)
-
-    with pytest.raises(
-        RuntimeError, match="None of the LBFGS iterations completed successfully"
-    ):
-        multimodal_model.pathfinder(inits=init1, num_paths=1, psis_resample=False)
-
-    with pytest.raises(
-        RuntimeError, match="None of the LBFGS iterations completed successfully"
-    ):
-        multimodal_model.pathfinder(inits=init1, num_paths=2, psis_resample=False)
+        multimodal_model.pathfinder(
+            inits=init1, num_paths=num_paths, psis_resample=psis_resample
+        )
 
 
 def test_bad_data(bernoulli_model):
