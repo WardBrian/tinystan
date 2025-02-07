@@ -750,6 +750,11 @@ class Model:
         else:
             output_size = num_draws * num_paths
 
+        # TODO TODO TODO THIS IS NOT CORRECT, PREVENTING BUFFER OVERFLOW MESSAGE
+        # DURING DEBUG
+        output_size *= 2
+        # TODO TODO TODO
+
         seed = seed or rand_u32()
 
         with self._get_model(data, seed) as model:

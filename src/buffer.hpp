@@ -29,8 +29,8 @@ namespace io {
  */
 class buffer_writer : public stan::callbacks::writer {
  public:
-  buffer_writer(double *buf, size_t max) : buf(buf), pos(0), size(max){};
-  virtual ~buffer_writer(){};
+  buffer_writer(double *buf, size_t max) : buf(buf), pos(0), size(max) {};
+  virtual ~buffer_writer() {};
 
   /**
    * Primary method used by the Stan algorithms
@@ -39,7 +39,8 @@ class buffer_writer : public stan::callbacks::writer {
     const auto v_size = v.size();
 #ifndef TINYSTAN_NO_BOUNDS_CHECK
     if (pos + v_size > size) {
-      throw std::runtime_error("Buffer overflow. Please report a bug!");
+      throw std::runtime_error(
+          "Buffer overflow writing vector. Please report a bug!");
     }
 #endif
     std::memcpy(buf + pos, v.data(), sizeof(double) * v_size);
@@ -49,16 +50,45 @@ class buffer_writer : public stan::callbacks::writer {
   /**
    * Used by Pathfinder which writes draws all at once
    */
-  void operator()(const Eigen::Ref<Eigen::Matrix<double, -1, -1>> &m) override {
+  void operator()(const Eigen::MatrixXd &m) override {
 #ifndef TINYSTAN_NO_BOUNDS_CHECK
     if (pos + m.size() > size) {
-      throw std::runtime_error("Buffer overflow. Please report a bug!");
+      throw std::runtime_error(
+          "Buffer overflow writing eigen matrix. Please report a bug!");
     }
 #endif
     // copy into buffer
     Eigen::Map<Eigen::MatrixXd>(buf + pos, m.cols(), m.rows()) = m.transpose();
     pos += m.size();
   }
+
+  void operator()(const Eigen::VectorXd &v) override {
+#ifndef TINYSTAN_NO_BOUNDS_CHECK
+    if (pos + v.size() > size) {
+      throw std::runtime_error(
+          "Buffer overflow writing eigen col vec. Please report a bug!");
+    }
+#endif
+    // copy into buffer
+    Eigen::Map<Eigen::RowVectorXd>(buf + pos, v.rows()) = v.transpose();
+    pos += v.size();
+  }
+
+  void operator()(const Eigen::RowVectorXd &v) override {
+    std::cout << "Writing row vec [" << v << "] to (" << buf << ") @ " << pos << std::endl;
+
+#ifndef TINYSTAN_NO_BOUNDS_CHECK
+    if (pos + v.size() > size) {
+      throw std::runtime_error(
+          "Buffer overflow writing eigen row vec. Please report a bug!");
+    }
+#endif
+    // copy into buffer
+    Eigen::Map<Eigen::RowVectorXd>(buf + pos, v.cols()) = v;
+    pos += v.size();
+  }
+
+  bool is_valid() const noexcept { return buf != nullptr; }
 
   using stan::callbacks::writer::operator();
 
@@ -76,8 +106,8 @@ class buffer_writer : public stan::callbacks::writer {
  */
 class filtered_writer : public stan::callbacks::structured_writer {
  public:
-  filtered_writer(std::string key, double *buf) : key(key), buf(buf), pos(0){};
-  virtual ~filtered_writer(){};
+  filtered_writer(std::string key, double *buf) : key(key), buf(buf), pos(0) {};
+  virtual ~filtered_writer() {};
 
   void write(const std::string &key_in, const Eigen::MatrixXd &mat) {
     if (!pos && buf != nullptr && key_in == key) {
@@ -114,8 +144,8 @@ class metric_buffer_reader : public stan::io::empty_var_context {
  public:
   metric_buffer_reader(const double *buf, size_t size,
                        TinyStanMetric metric_choice)
-      : buf(buf), size(size), dense(metric_choice == TinyStanMetric::dense){};
-  virtual ~metric_buffer_reader(){};
+      : buf(buf), size(size), dense(metric_choice == TinyStanMetric::dense) {};
+  virtual ~metric_buffer_reader() {};
 
   bool contains_r(const std::string &name) const override {
     return name == "inv_metric";
