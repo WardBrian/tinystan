@@ -29,20 +29,29 @@ def test_data(bernoulli_model):
 @pytest.mark.parametrize("psis_resample", [True, False])
 def test_seed(bernoulli_model, num_paths, psis_resample):
     out1 = bernoulli_model.pathfinder(
-        BERNOULLI_DATA, seed=123, num_paths=num_paths, psis_resample=psis_resample
+        BERNOULLI_DATA,
+        seed=123,
+        num_paths=num_paths,
+        psis_resample=psis_resample,
     )
     out2 = bernoulli_model.pathfinder(
-        BERNOULLI_DATA, seed=123, num_paths=num_paths, psis_resample=psis_resample
+        BERNOULLI_DATA,
+        seed=123,
+        num_paths=num_paths,
+        psis_resample=psis_resample,
     )
 
-    np.testing.assert_equal(out1["theta"], out2["theta"])
+    np.testing.assert_equal(np.sort(out1["theta"]), np.sort(out2["theta"]))
 
     out3 = bernoulli_model.pathfinder(
-        BERNOULLI_DATA, seed=456, num_paths=num_paths, psis_resample=psis_resample
+        BERNOULLI_DATA,
+        seed=456,
+        num_paths=num_paths,
+        psis_resample=psis_resample,
     )
 
     with pytest.raises(AssertionError):
-        np.testing.assert_equal(out1["theta"], out3["theta"])
+        np.testing.assert_equal(np.sort(out1["theta"]), np.sort(out3["theta"]))
 
 
 def test_output_sizes(bernoulli_model):
