@@ -142,11 +142,15 @@ def test_inits_mode(multimodal_model):
     ):
         multimodal_model.pathfinder(inits=init1)
 
-    # also for single path
     with pytest.raises(
         RuntimeError, match="None of the LBFGS iterations completed successfully"
     ):
         multimodal_model.pathfinder(inits=init1, num_paths=1, psis_resample=False)
+
+    with pytest.raises(
+        RuntimeError, match="None of the LBFGS iterations completed successfully"
+    ):
+        multimodal_model.pathfinder(inits=init1, num_paths=2, psis_resample=False)
 
 
 def test_bad_data(bernoulli_model):
