@@ -75,8 +75,6 @@ class buffer_writer : public stan::callbacks::writer {
   }
 
   void operator()(const Eigen::RowVectorXd &v) override {
-    std::cout << "Writing row vec [" << v << "] to (" << buf << ") @ " << pos << std::endl;
-
 #ifndef TINYSTAN_NO_BOUNDS_CHECK
     if (pos + v.size() > size) {
       throw std::runtime_error(

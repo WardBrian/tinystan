@@ -67,6 +67,7 @@ HMC_SAMPLER_VARIABLES = [
 PATHFINDER_VARIABLES = [
     "lp_approx__",
     "lp__",
+    "pathfinder__",
 ]
 
 OPTIMIZE_VARIABLES = [
@@ -749,11 +750,6 @@ class Model:
             output_size = num_multi_draws
         else:
             output_size = num_draws * num_paths
-
-        # TODO TODO TODO THIS IS NOT CORRECT, PREVENTING BUFFER OVERFLOW MESSAGE
-        # DURING DEBUG
-        output_size *= 2
-        # TODO TODO TODO
 
         seed = seed or rand_u32()
 
