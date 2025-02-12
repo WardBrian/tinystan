@@ -107,6 +107,18 @@ TINYSTAN_PUBLIC const char *tinystan_model_param_names(
 TINYSTAN_PUBLIC size_t
 tinystan_model_num_free_params(const TinyStanModel *model);
 
+
+/**
+ * Get the number of constrained parameters, excluding tparams and
+ * generated quantities. This is e.g. the length that the mode vector
+ * passed to laplace_sample must be.
+ * @param[in] model The model.
+ * @return The number of required constrained parameters.
+ */
+TINYSTAN_PUBLIC
+size_t tinystan_model_required_constrained_params(const TinyStanModel *model);
+
+
 /**
  * Returns the separator character which must be used
  * to provide multiple initialization files or json strings.

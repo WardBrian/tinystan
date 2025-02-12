@@ -234,6 +234,12 @@ class Model:
         self._get_param_names.restype = ctypes.c_char_p
         self._get_param_names.argtypes = [ctypes.c_void_p]
 
+        self._num_req_constrained_params = (
+            self._lib.tinystan_model_required_constrained_params
+        )
+        self._num_req_constrained_params.restype = ctypes.c_size_t
+        self._num_req_constrained_params.argtypes = [ctypes.c_void_p]
+
         self._num_free_params = self._lib.tinystan_model_num_free_params
         self._num_free_params.restype = ctypes.c_size_t
         self._num_free_params.argtypes = [ctypes.c_void_p]
@@ -998,17 +1004,17 @@ class Model:
         mode_array, mode_json = preprocess_laplace_inputs(mode)
 
         with self._get_model(data, seed) as model:
-            param_names = LAPLACE_VARIABLES + self._get_parameter_names(model)
-            num_params = len(param_names)
 
-            if mode_array is not None and len(mode_array) != num_params - len(
-                LAPLACE_VARIABLES
-            ):
+            req_params = self._num_req_constrained_params(model)
+
+            if mode_array is not None and len(mode_array) < req_params:
                 raise ValueError(
-                    f"Mode array has incorrect length. Expected {num_params - len(LAPLACE_VARIABLES)}"
-                    f" but got {len(mode_array)}"
+                    "Mode array has incorrect length. "
+                    f"Expected at least {req_params} but got {len(mode_array)}"
                 )
 
+            param_names = LAPLACE_VARIABLES + self._get_parameter_names(model)
+            num_params = len(param_names)
             out = np.zeros((num_draws, num_params), dtype=np.float64)
 
             model_params = self._num_free_params(model)

@@ -33,11 +33,16 @@ class TinyStanModel {
         seed(seed),
         num_free_params(model->num_params_r()),
         param_names(nullptr),
-        num_params(0) {
+        num_params(0),
+        num_req_constrained_params(0){
     std::vector<std::string> names;
     model->constrained_param_names(names, true, true);
     param_names = tinystan::util::to_csv(names);
     num_params = names.size();
+
+    names.clear();
+    model->constrained_param_names(names, false, false);
+    num_req_constrained_params = names.size();
   }
 
   ~TinyStanModel() {
@@ -55,6 +60,7 @@ class TinyStanModel {
   size_t num_free_params;
   char *param_names;
   size_t num_params;
+  size_t num_req_constrained_params;
 };
 
 namespace tinystan {

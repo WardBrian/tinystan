@@ -118,7 +118,7 @@ def test_bad_mode_array(bernoulli_model):
     with pytest.raises(RuntimeError, match="Bounded variable is 2"):
         bernoulli_model.laplace_sample(mode1, BERNOULLI_DATA)
 
-    mode2 = np.array([0.1, 0.1])
+    mode2 = np.array([])
     with pytest.raises(ValueError, match="incorrect length"):
         bernoulli_model.laplace_sample(mode2, BERNOULLI_DATA)
 
