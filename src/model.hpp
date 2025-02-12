@@ -34,7 +34,7 @@ class TinyStanModel {
         num_free_params(model->num_params_r()),
         param_names(nullptr),
         num_params(0),
-        num_req_constrained_params(0){
+        num_req_constrained_params(0) {
     std::vector<std::string> names;
     model->constrained_param_names(names, true, true);
     param_names = tinystan::util::to_csv(names);
