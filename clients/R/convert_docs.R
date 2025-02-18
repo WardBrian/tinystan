@@ -14,9 +14,11 @@ for (f in files) {
     # read .Rd file and convert to markdown
     rd <- rd2markdown::get_rd(file = file.path(".", "man", f))
     md <- rd2markdown::rd2markdown(rd, fragments = c())
+    # replaces the headers with more appropriate levels for embedding
+    md_indented <- gsub("(#+)", "\\1##", md)
 
     # write it to the docs folder
-    writeLines(md, file.path("..", "..", "docs", "languages", "_r", paste0(name,
-        ".md")))
+    writeLines(md_indented, file.path("..", "..", "docs", "languages", "_r",
+        paste0(name, ".md")))
 
 }

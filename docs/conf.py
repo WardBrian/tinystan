@@ -4,7 +4,6 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 import datetime
-import re
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -132,12 +131,13 @@ import subprocess
 import pathlib
 
 RUNNING_IN_CI = os.environ.get("CI") or os.environ.get("READTHEDOCS")
+BASE_DIR = pathlib.Path(__file__).parent.parent
 
 try:
     print("Building Julia doc")
     subprocess.run(
         ["julia", "--project=.", "./make.jl"],
-        cwd=pathlib.Path(__file__).parent.parent / "clients" / "julia" / "docs",
+        cwd=BASE_DIR / "clients" / "julia" / "docs",
         check=True,
     )
 except Exception as e:
@@ -151,15 +151,9 @@ try:
     print("Building R doc")
     subprocess.run(
         ["Rscript", "convert_docs.R"],
-        cwd=pathlib.Path(__file__).parent.parent / "clients" / "R",
+        cwd=BASE_DIR / "clients" / "R",
         check=True,
     )
-
-    # replaces the headers with more appropriate levels for embedding
-    for f in (pathlib.Path(__file__).parent / "languages" / "_r").iterdir():
-        text = f.read_text()
-        text = re.sub(r"(#+) ", r"##\1 ", text)
-        f.write_text(text)
 
 except Exception as e:
     # fail loudly in Github Actions
@@ -188,7 +182,7 @@ try:
     yarn = os.getenv("YARN", "yarn").split()
     ret = subprocess.run(
         yarn + ["--silent", "doc"],
-        cwd=pathlib.Path(__file__).parent.parent / "clients" / "typescript",
+        cwd=BASE_DIR / "clients" / "typescript",
         check=True,
         capture_output=True,
         text=True,
