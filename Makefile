@@ -119,11 +119,10 @@ ALL_TEST_MODEL_NAMES = $(patsubst $(TINYSTAN_ROOT)/test_models/%/, %, $(sort $(d
 SKIPPED_TEST_MODEL_NAMES = syntax_error external
 TEST_MODEL_NAMES := $(filter-out $(SKIPPED_TEST_MODEL_NAMES), $(ALL_TEST_MODEL_NAMES))
 
-TEST_MODEL_OBJECTS = $(join $(addprefix test_models/, $(TEST_MODEL_NAMES)), $(addsuffix .o, $(addprefix /, $(TEST_MODEL_NAMES))))
 TEST_MODEL_LIBS = $(join $(addprefix test_models/, $(TEST_MODEL_NAMES)), $(addsuffix _model.so, $(addprefix /, $(TEST_MODEL_NAMES))))
 
 .PHONY: test_models
-test_models: $(TEST_MODEL_OBJECTS) $(TEST_MODEL_LIBS)
+test_models: $(TEST_MODEL_LIBS)
 
 
 .PHONY: format

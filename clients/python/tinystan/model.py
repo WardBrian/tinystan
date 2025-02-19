@@ -67,7 +67,7 @@ HMC_SAMPLER_VARIABLES = [
 PATHFINDER_VARIABLES = [
     "lp_approx__",
     "lp__",
-    "pathfinder__",
+    "path__",
 ]
 
 OPTIMIZE_VARIABLES = [
