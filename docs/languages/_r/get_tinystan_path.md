@@ -4,6 +4,8 @@
 get_tinystan_path()
 ```
 
+#### Description
+
 By default this is set to the value of the environment variable `TINYSTAN`.
 
 #### Details
@@ -13,3 +15,6 @@ If there is no path set, this function will download a matching version of TinyS
 #### See Also
 
 set_tinystan_path
+
+
+

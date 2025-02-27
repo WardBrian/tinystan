@@ -4,6 +4,8 @@
 tinystan_model(lib, stanc_args = NULL, make_args = NULL, warn = TRUE)
 ```
 
+#### Description
+
 Load a Stan model, compiling if necessary.
 
 #### Examples
@@ -14,3 +16,6 @@ mod <- tinystan_model(system.file('bernoulli.stan', package = 'tinystan'))
 fit = sampler(model = mod, data = data_file)
 fit
 ```
+
+
+

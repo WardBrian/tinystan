@@ -1,4 +1,4 @@
-data
+ data
 
 ### Enumeration `OptimizationAlgorithm`
 
@@ -10,4 +10,9 @@ An object of class `list` of length 3.
 OptimizationAlgorithm
 ```
 
+#### Description
+
 Choices of optimization algorithm. Can select from `$NEWTON`, `$BFGS`, and `$LBFGS`.
+
+
+

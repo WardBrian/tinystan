@@ -1,6 +1,8 @@
-package
+ package
 
 ### tinystan: A tiny interface to Stan algorithms
+
+#### Description
 
  `tinystan`: A tiny interface to Stan algorithms.
 
@@ -11,3 +13,6 @@ tinystan (`tinystan` package) is an interface to Stan ([mc-stan.org](https://mc-
 #### Author(s)
 
 Maintainer : Brian Ward bward@flatironinstitute.org
+
+
+

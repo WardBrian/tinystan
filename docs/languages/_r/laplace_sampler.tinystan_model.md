@@ -1,7 +1,7 @@
 ### Generic function `laplace_sampler`
 
 ```r
-#### S3 method for class 'tinystan_model'
+## S3 method for class 'tinystan_model'
 laplace_sampler(
   model,
   mode,
@@ -16,4 +16,9 @@ laplace_sampler(
 )
 ```
 
+#### Description
+
 Run Stan's Laplace approximation algorithm
+
+
+

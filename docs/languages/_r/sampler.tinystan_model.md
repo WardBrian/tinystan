@@ -1,7 +1,7 @@
 ### Generic function `sampler`
 
 ```r
-#### S3 method for class 'tinystan_model'
+## S3 method for class 'tinystan_model'
 sampler(
   model,
   data = "",
@@ -32,6 +32,8 @@ sampler(
 )
 ```
 
+#### Description
+
 Run Stan's NUTS sampler
 
 #### Examples
@@ -42,3 +44,6 @@ mod <- tinystan_model(system.file('bernoulli.stan', package = 'tinystan'))
 fit = sampler(model = mod, data = data_file)
 fit
 ```
+
+
+

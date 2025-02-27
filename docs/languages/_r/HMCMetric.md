@@ -1,4 +1,4 @@
-data
+ data
 
 ### Enumeration `HMCMetric`
 
@@ -10,4 +10,9 @@ An object of class `list` of length 3.
 HMCMetric
 ```
 
+#### Description
+
 Choices of metric for HMC. Can select from `$UNIT`, `$DENSE`, and `$DIAGONAL`.
+
+
+

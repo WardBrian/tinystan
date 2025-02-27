@@ -1,7 +1,7 @@
 ### Generic function `optimizer`
 
 ```r
-#### S3 method for class 'tinystan_model'
+## S3 method for class 'tinystan_model'
 optimizer(
   model,
   data = "",
@@ -24,4 +24,9 @@ optimizer(
 )
 ```
 
+#### Description
+
 Run Stan's Optimization algorithms
+
+
+

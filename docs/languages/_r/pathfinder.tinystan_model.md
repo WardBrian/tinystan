@@ -1,7 +1,7 @@
 ### Generic function `pathfinder`
 
 ```r
-#### S3 method for class 'tinystan_model'
+## S3 method for class 'tinystan_model'
 pathfinder(
   model,
   data = "",
@@ -28,4 +28,9 @@ pathfinder(
 )
 ```
 
+#### Description
+
 Run Stan's pathfinder algorithm
+
+
+
