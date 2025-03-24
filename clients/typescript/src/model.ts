@@ -174,7 +174,7 @@ export default class StanModel {
       throw new Error("num_samples must be at least 1");
     }
 
-    const seed_ = seed ?? Math.floor(Math.random() * (2 ^ 32));
+    const seed_ = seed ?? Math.floor(Math.random() * Math.pow(2, 32));
 
     return this.withModel(data, seed_, (model, deferredFree) => {
       // Get the parameter names
@@ -348,7 +348,7 @@ export default class StanModel {
     const output_rows =
       calculate_lp && psis_resample ? num_multi_draws : num_draws * num_paths;
 
-    const seed_ = seed !== null ? seed : Math.floor(Math.random() * (2 ^ 32));
+    const seed_ = seed !== null ? seed : Math.floor(Math.random() * Math.pow(2, 32));
 
     return this.withModel(data, seed_, (model, deferredFree) => {
       const rawParamNames = this.m.UTF8ToString(
