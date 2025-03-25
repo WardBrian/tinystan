@@ -168,9 +168,7 @@ else ifeq ($(OS),Darwin)
  OS_TAG := mac
 else ifeq ($(OS),Linux)
  OS_TAG := linux
- ifeq ($(shell uname -m),mips64)
-  ARCH_TAG := -mips64el
- else ifeq ($(shell uname -m),ppc64le)
+ ifeq ($(shell uname -m),ppc64le)
   ARCH_TAG := -ppc64el
  else ifeq ($(shell uname -m),s390x)
   ARCH_TAG := -s390x
