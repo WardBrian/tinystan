@@ -6,7 +6,6 @@
 #include <vector>
 #include <sstream>
 #include <string>
-#include <memory>
 #include <stdexcept>
 #include <thread>
 
@@ -19,7 +18,7 @@ namespace util {
  * NOTE: Repeated calls to this function may not override the number of threads
  * previously set.
  */
-void init_threading(int num_threads) {
+inline void init_threading(int num_threads) {
 #ifndef STAN_THREADS
   if (num_threads == -1) {
     num_threads = 1;
@@ -49,7 +48,7 @@ void init_threading(int num_threads) {
  * @param names vector of strings to convert
  * @return freshly allocated comma-separated string
  */
-char *to_csv(const std::vector<std::string> &names) {
+inline char *to_csv(const std::vector<std::string> &names) {
   std::stringstream ss;
   for (size_t i = 0; i < names.size(); ++i) {
     if (i > 0)

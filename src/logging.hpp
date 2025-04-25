@@ -3,7 +3,6 @@
 
 #include <stan/callbacks/logger.hpp>
 #include <iostream>
-#include <mutex>
 
 namespace tinystan {
 namespace io {

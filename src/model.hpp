@@ -9,6 +9,7 @@
 #include <memory>
 #include <vector>
 
+#include "file.hpp"
 #include "util.hpp"
 
 /**
@@ -71,10 +72,10 @@ namespace model {
  * @param theta_json JSON string with the constrained parameters
  * @param logger logger instance
  */
-Eigen::VectorXd unconstrain_parameters(const TinyStanModel *tmodel,
-                                       const double *theta,
-                                       const char *theta_json,
-                                       stan::callbacks::logger &logger) {
+inline Eigen::VectorXd unconstrain_parameters(const TinyStanModel *tmodel,
+                                              const double *theta,
+                                              const char *theta_json,
+                                              stan::callbacks::logger &logger) {
   Eigen::VectorXd theta_unc(tmodel->num_free_params);
   auto &model = *tmodel->model;
 

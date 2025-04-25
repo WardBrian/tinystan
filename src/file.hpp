@@ -17,7 +17,7 @@ namespace io {
 
 using var_ctx_ptr = std::unique_ptr<stan::io::var_context>;
 
-var_ctx_ptr load_data(const char *data_char) {
+inline var_ctx_ptr load_data(const char *data_char) {
   if (data_char == nullptr) {
     return var_ctx_ptr(new stan::io::empty_var_context());
   }
@@ -39,7 +39,8 @@ var_ctx_ptr load_data(const char *data_char) {
 
 static constexpr const char SEPARATOR = '\x1C';  ///< ASCII file separator
 
-std::vector<var_ctx_ptr> load_inits(int num_chains, const char *inits_char) {
+inline std::vector<var_ctx_ptr> load_inits(int num_chains,
+                                           const char *inits_char) {
   std::vector<var_ctx_ptr> json_inits;
   json_inits.reserve(num_chains);
 
