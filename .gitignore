@@ -2,6 +2,8 @@
 *.d
 *.so
 test_models/**/*.hpp
+compile_commands.json
+compile_flags.txt
 
 bin/
 _build/
