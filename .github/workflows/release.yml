@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       new_version:
-        description: 'New version, for example: 1.1.0'
+        description: "New version, for example: 1.1.0"
         required: true
       is_rerun:
         type: boolean
@@ -89,13 +89,46 @@ jobs:
           replacesArtifacts: true
           skipIfReleaseExists: true
 
-      # - name: Upload PyPI wheels
-      #   if: ${{ !inputs.dry_run }}
-      #   uses: pypa/gh-action-pypi-publish@v1.8.12
-      #   with:
-      #     password: ${{ secrets.PYPI_TOKEN }}
-      #     packages_dir: clients/python/dist/
-      #     skip_existing: true
+  publish:
+    name: Publish BridgeStan
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    needs: release
+    environment: publishing
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: release-artifacts
+
+      - name: Upload PyPI wheels
+        if: ${{ !inputs.dry_run }}
+        uses: pypa/gh-action-pypi-publish@v1.12.4
+        with:
+          packages-dir: release-artifacts/clients/python/dist/
+          skip-existing: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "yarn"
+          cache-dependency-path: clients/typescript/yarn.lock
+
+      - name: Upload NPM package
+        if: ${{ !inputs.dry_run }}
+        run: |
+          cd clients/typescript/
+          yarn
+          yarn build
+          yarn publish --new-version ${{ inputs.new_version }}
+        env:
+          YARN_NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # - name: Create JuliaRegistration comment
       #   if: ${{ !inputs.dry_run }}
@@ -104,5 +137,3 @@ jobs:
       #     sha: ${{ steps.commit.outputs.sha }}
       #     body: |
       #       @JuliaRegistrator register subdir=clients/julia
-
-      # TODO: add npm release step
