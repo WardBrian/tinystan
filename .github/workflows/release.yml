@@ -80,7 +80,7 @@ jobs:
         if: ${{ !inputs.is_rerun }}
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "tinystan-*.tar.gz,python/dist/*"
+          artifacts: "tinystan-*.tar.gz,clients/python/dist/*"
           tag: "v${{ inputs.new_version }}"
           commit: main
           draft: true
@@ -107,12 +107,14 @@ jobs:
           path: release-artifacts
 
       - name: Upload PyPI wheels
-        if: ${{ !inputs.dry_run }}
         uses: pypa/gh-action-pypi-publish@v1.12.4
         with:
           packages-dir: release-artifacts/clients/python/dist/
           skip-existing: true
 
+      - name: Checkout
+        uses: actions/checkout@v4
+        
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -121,7 +123,6 @@ jobs:
           cache-dependency-path: clients/typescript/yarn.lock
 
       - name: Upload NPM package
-        if: ${{ !inputs.dry_run }}
         run: |
           cd clients/typescript/
           yarn
@@ -131,7 +132,6 @@ jobs:
           YARN_NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # - name: Create JuliaRegistration comment
-      #   if: ${{ !inputs.dry_run }}
       #   uses: peter-evans/commit-comment@v3
       #   with:
       #     sha: ${{ steps.commit.outputs.sha }}
