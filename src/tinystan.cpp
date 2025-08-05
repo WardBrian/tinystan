@@ -27,6 +27,7 @@
 #include "file.hpp"
 #include "buffer.hpp"
 #include "interrupts.hpp"
+#include "moments.hpp"
 #include "util.hpp"
 #include "model.hpp"
 #include "version.hpp"
@@ -87,20 +88,22 @@ int tinystan_sample(const TinyStanModel *tmodel, size_t num_chains,
     auto &model = *tmodel->model;
 
     // all HMC has 7 algorithm params
-    int num_params = tmodel->num_params + 7;
-    int draws_offset = num_params * (num_samples + num_warmup * save_warmup);
-    if (out_size < num_chains * draws_offset) {
-      std::stringstream ss;
-      ss << "Output buffer too small. Expected at least " << num_chains
-         << " chains of " << draws_offset << " doubles, got " << out_size;
-      throw std::runtime_error(ss.str());
-    }
+    // int num_params = tmodel->num_params + 7;
+    // int draws_offset = num_params * (num_samples + num_warmup * save_warmup);
+    // if (out_size < num_chains * draws_offset) {
+    //   std::stringstream ss;
+    //   ss << "Output buffer too small. Expected at least " << num_chains
+    //      << " chains of " << draws_offset << " doubles, got " << out_size;
+    //   throw std::runtime_error(ss.str());
+    // }
 
-    std::vector<io::buffer_writer> sample_writers;
-    sample_writers.reserve(num_chains);
-    for (size_t i = 0; i < num_chains; ++i) {
-      sample_writers.emplace_back(out + draws_offset * i, draws_offset);
-    }
+    // std::vector<io::buffer_writer> sample_writers;
+    // sample_writers.reserve(num_chains);
+    // for (size_t i = 0; i < num_chains; ++i) {
+    //   sample_writers.emplace_back(out + draws_offset * i, draws_offset);
+    // }
+
+    std::vector<io::moment_writer> sample_writers(num_chains);
 
     std::vector<io::filtered_writer> metric_writers;
     metric_writers.reserve(num_chains);
@@ -182,6 +185,20 @@ int tinystan_sample(const TinyStanModel *tmodel, size_t num_chains,
       if (err != nullptr) {
         *err = logger.get_error();
       }
+    }
+
+    int offset = 0;
+    for (auto c = 0; c < num_chains; ++c) {
+      auto mean = sample_writers[c].mean();
+      auto var = sample_writers[c].variance();
+      int n = mean.size();
+      if (out_size < offset + n * 2) {
+        throw std::runtime_error("Output buffer too small to hold results");
+      }
+      std::memcpy(out + offset, mean.data(), sizeof(double) * n);
+      offset += n;
+      std::memcpy(out + offset, var.data(), sizeof(double) * n);
+      offset += n;
     }
 
     return return_code;

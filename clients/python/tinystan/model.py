@@ -562,7 +562,7 @@ class Model:
             param_names = HMC_SAMPLER_VARIABLES + self._get_parameter_names(model)
 
             num_params = len(param_names)
-            num_draws = num_samples + num_warmup * save_warmup
+            num_draws = 2 # num_samples + num_warmup * save_warmup
             out = np.zeros((num_chains, num_draws, num_params), dtype=np.float64)
 
             metric_size = (
