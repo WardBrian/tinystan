@@ -143,6 +143,7 @@ function with_model(f, model::Model, data::String, seed::UInt32)
     model_ptr = @ccall $(dlsym(model.lib, :tinystan_create_model))(
         data::Cstring,
         seed::Cuint,
+        C_NULL::Ptr{Cvoid},
         err::Ref{Ptr{Cvoid}},
     )::Ptr{Cvoid}
 

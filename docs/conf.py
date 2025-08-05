@@ -113,7 +113,7 @@ intersphinx_mapping = {
 
 
 breathe_projects = {"tinystan": "./_build/cppxml/"}
-breathe_projects_source = {"tinystan": ("../src/", ["tinystan.h"])}
+breathe_projects_source = {"tinystan": ("../src/", ["tinystan.h", "tinystan_types.h"])}
 breathe_default_project = "tinystan"
 # doxygen doesn't like  __attribute and __declspec
 # https://www.doxygen.nl/manual/preprocessing.html

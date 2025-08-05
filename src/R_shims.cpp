@@ -12,7 +12,7 @@ TINYSTAN_PUBLIC void tinystan_create_model_R(TinyStanModel** ptr_out,
                                              const char** data,
                                              unsigned int* seed,
                                              TinyStanError** err) {
-  *ptr_out = tinystan_create_model(*data, *seed, err);
+  *ptr_out = tinystan_create_model(*data, *seed, nullptr, err);
 }
 
 /// see \link tinystan_destroy_model() \endlink for details

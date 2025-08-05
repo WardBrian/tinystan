@@ -23,7 +23,6 @@
 #include "tinystan.h"
 
 #include "errors.hpp"
-#include "logging.hpp"
 #include "file.hpp"
 #include "buffer.hpp"
 #include "interrupts.hpp"
@@ -37,16 +36,18 @@ using namespace tinystan;
 
 extern "C" {
 
-TinyStanModel *tinystan_create_model(const char *data, unsigned int seed,
-                                     TinyStanError **err) {
-  return error::catch_exceptions(
-      err, [&]() { return new TinyStanModel(data, seed); });
+TinyStanModel *tinystan_create_model(
+    const char *data, unsigned int seed,
+    TINYSTAN_PRINT_CALLBACK user_print_callback, TinyStanError **err) {
+  return error::catch_exceptions(err, [&]() {
+    return new TinyStanModel(data, seed, user_print_callback);
+  });
 }
 
 void tinystan_destroy_model(TinyStanModel *model) { delete model; }
 
 const char *tinystan_model_param_names(const TinyStanModel *model) {
-  return model->param_names;
+  return model->param_names.c_str();
 }
 
 size_t tinystan_model_num_free_params(const TinyStanModel *model) {
@@ -119,7 +120,7 @@ int tinystan_sample(const TinyStanModel *tmodel, size_t num_chains,
     auto initial_metrics = io::make_metric_inits(
         num_chains, init_inv_metric, num_model_params, metric_choice);
 
-    error::error_logger logger(refresh != 0);
+    error::error_logger logger(*tmodel, refresh != 0);
     interrupt::tinystan_interrupt_handler interrupt;
 
     std::vector<stan::callbacks::writer> null_writers(num_chains);
@@ -221,7 +222,7 @@ int tinystan_pathfinder(const TinyStanModel *tmodel, size_t num_paths,
     auto &model = *tmodel->model;
 
     io::buffer_writer pathfinder_writer(out, out_size);
-    error::error_logger logger(refresh != 0);
+    error::error_logger logger(*tmodel, refresh != 0);
 
     interrupt::tinystan_interrupt_handler interrupt;
     stan::callbacks::structured_writer dummy_json_writer;
@@ -292,7 +293,7 @@ int tinystan_optimize(const TinyStanModel *tmodel, const char *init,
     auto json_init = io::load_data(init);
     auto &model = *tmodel->model;
     io::buffer_writer sample_writer(out, out_size);
-    error::error_logger logger(refresh != 0);
+    error::error_logger logger(*tmodel, refresh != 0);
 
     interrupt::tinystan_interrupt_handler interrupt;
     stan::callbacks::writer null_writer;
@@ -375,11 +376,11 @@ int tinystan_laplace_sample(const TinyStanModel *tmodel,
     auto &model = *tmodel->model;
     io::buffer_writer sample_writer(out, out_size);
     io::filtered_writer hessian_writer("Hessian", hessian_out);
-    error::error_logger logger(refresh != 0);
+    error::error_logger logger(*tmodel, refresh != 0);
     interrupt::tinystan_interrupt_handler interrupt;
 
     Eigen::VectorXd theta_hat = model::unconstrain_parameters(
-        tmodel, theta_hat_constr, theta_hat_json, logger);
+        *tmodel, theta_hat_constr, theta_hat_json);
 
     int return_code;
     if (jacobian) {
@@ -405,7 +406,7 @@ const char *tinystan_get_error_message(const TinyStanError *err) {
   if (err == nullptr) {
     return "Something went wrong: No error found";
   }
-  return err->msg;
+  return err->msg.c_str();
 }
 
 TinyStanErrorType tinystan_get_error_type(const TinyStanError *err) {
@@ -429,10 +430,6 @@ void tinystan_stan_version(int *major, int *minor, int *patch) {
   *major = STAN_MAJOR;
   *minor = STAN_MINOR;
   *patch = STAN_PATCH;
-}
-
-void tinystan_set_print_callback(TINYSTAN_PRINT_CALLBACK print) {
-  io::user_print_callback = print;
 }
 
 }  // extern "C"

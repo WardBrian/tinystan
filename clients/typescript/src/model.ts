@@ -114,7 +114,7 @@ export default class StanModel {
   ): T {
     const data_ptr = this.encodeString(prepareStanJSON(data));
     const err_ptr = this.m._malloc(PTR_SIZE);
-    const model = this.m._tinystan_create_model(data_ptr, seed, err_ptr);
+    const model = this.m._tinystan_create_model(data_ptr, seed, NULL, err_ptr);
     this.m._free(data_ptr);
 
     this.handleError(model === 0, err_ptr);
@@ -348,7 +348,8 @@ export default class StanModel {
     const output_rows =
       calculate_lp && psis_resample ? num_multi_draws : num_draws * num_paths;
 
-    const seed_ = seed !== null ? seed : Math.floor(Math.random() * Math.pow(2, 32));
+    const seed_ =
+      seed !== null ? seed : Math.floor(Math.random() * Math.pow(2, 32));
 
     return this.withModel(data, seed_, (model, deferredFree) => {
       const rawParamNames = this.m.UTF8ToString(

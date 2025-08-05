@@ -198,7 +198,7 @@ type cstr = Brand<number, "null-terminated char pointer">;
 interface WasmModule {
   _malloc(n_bytes: number): ptr;
   _free(pointer: ptr | cstr): void;
-  _tinystan_create_model(data: cstr, seed: number, err_ptr: ptr): model_ptr;
+  _tinystan_create_model(data: cstr, seed: number, printcallback: ptr, err_ptr: ptr): model_ptr;
   _tinystan_destroy_model(model: model_ptr): void;
   _tinystan_model_param_names(model: model_ptr): cstr;
   _tinystan_model_num_free_params(model: model_ptr): number;

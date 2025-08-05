@@ -120,7 +120,7 @@ def rand_u32():
 
 
 def preprocess_laplace_inputs(
-    mode: Union[StanOutput, np.ndarray, Dict[str, Any], str, PathLike]
+    mode: Union[StanOutput, np.ndarray, Dict[str, Any], str, PathLike],
 ) -> Tuple[Optional[np.ndarray], Optional[str]]:
     if isinstance(mode, StanOutput):
         # handle case of passing optimization output directly
@@ -172,10 +172,6 @@ class Model:
             a performance impact. If ``False``, ``print`` statements
             from Stan will be sent to ``cout`` and will not be seen in
             Jupyter or capturable with :func:`contextlib.redirect_stdout`.
-
-            **Note:** If this is set for a model, any other models instantiated
-            from the *same shared library* will also have the callback set, even
-            if they were created *before* this model.
         warn : bool, optional
             If ``False``, the warning about re-loading the same shared object
             is suppressed.
@@ -190,6 +186,7 @@ class Model:
         else:
             self.lib_path = model
 
+        self.capture_stan_prints = capture_stan_prints
         if warn and hasattr(dllist, "dllist") and self.lib_path in dllist.dllist():
             warnings.warn(
                 f"Loading a shared object {self.lib_path} that has already been loaded.\n"
@@ -223,7 +220,12 @@ class Model:
 
         self._create_model = self._lib.tinystan_create_model
         self._create_model.restype = ctypes.c_void_p
-        self._create_model.argtypes = [ctypes.c_char_p, ctypes.c_uint, err_ptr]
+        self._create_model.argtypes = [
+            ctypes.c_char_p,
+            ctypes.c_uint,
+            print_callback_type,
+            err_ptr,
+        ]
 
         self._delete_model = self._lib.tinystan_destroy_model
         self._delete_model.restype = None
@@ -366,12 +368,6 @@ class Model:
         get_separator.argtypes = []
         self.sep = get_separator()
 
-        if capture_stan_prints:
-            set_print_callback = self._lib.tinystan_set_print_callback
-            set_print_callback.restype = None
-            set_print_callback.argtypes = [print_callback_type]
-            set_print_callback(print_callback)
-
     def _raise_for_error(self, rc: int, err):
         if rc != 0:
             if err.contents:
@@ -387,7 +383,12 @@ class Model:
     def _get_model(self, data, seed):
         err = ctypes.pointer(ctypes.c_void_p())
 
-        model = self._create_model(encode_stan_json(data), seed, err)
+        model = self._create_model(
+            encode_stan_json(data),
+            seed,
+            print_callback if self.capture_stan_prints else None,
+            err,
+        )
         self._raise_for_error(not model, err)
         try:
             yield model
