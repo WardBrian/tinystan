@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "tinystan"
 readme = "README.md"
 authors = [{ "name" = "Brian Ward", "email" = "bward@flatironinstitute.org" }]
-dependencies = ["numpy", "stanio~=0.5", "dllist<2"]
+dependencies = ["numpy", "dllist~=2.0.0", "stanio~=0.5.1"]
 requires-python = ">=3.8"
 license = { text = "BSD-3-Clause" }
 classifiers = ["Programming Language :: Python :: 3", "Development Status :: 4 - Beta"]
