@@ -6,8 +6,8 @@ from enum import Enum
 from os import PathLike, fspath
 from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
 
+import dllist
 import numpy as np
-from dllist import dllist
 from numpy.ctypeslib import ndpointer
 from stanio import dump_stan_json
 
@@ -190,7 +190,7 @@ class Model:
         else:
             self.lib_path = model
 
-        if warn and self.lib_path in dllist():
+        if warn and hasattr(dllist, "dllist") and self.lib_path in dllist.dllist():
             warnings.warn(
                 f"Loading a shared object {self.lib_path} that has already been loaded.\n"
                 "If the file has changed since the last time it was loaded, this load may "
