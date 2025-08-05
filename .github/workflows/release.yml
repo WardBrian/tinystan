@@ -34,6 +34,13 @@ jobs:
       - name: Set up Julia
         uses: julia-actions/setup-julia@v2
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "yarn"
+          cache-dependency-path: clients/typescript/yarn.lock
+
       - name: Update version numbers
         if: ${{ !inputs.is_rerun }}
         run: |
@@ -68,19 +75,27 @@ jobs:
           cd clients/python/
           python -m build
 
+      - name: Build NPM package
+        run: |
+          cd clients/typescript/
+          yarn
+          yarn build
+          yarn pack --filename tinystan-js-${{ inputs.new_version }}.tgz
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: release-artifacts
           path: |
             clients/python/dist/*.whl
+            clients/typescript/*.tgz
             tinystan-*.tar.gz
 
       - name: Create release
         if: ${{ !inputs.is_rerun }}
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "tinystan-*.tar.gz,clients/python/dist/*"
+          artifacts: "tinystan-*.tar.gz,clients/python/dist/*,clients/typescript/*.tgz"
           tag: "v${{ inputs.new_version }}"
           commit: main
           draft: true
@@ -99,6 +114,8 @@ jobs:
       id-token: write
       contents: write
     steps:
+      - name: Check out github
+        uses: actions/checkout@v4
 
       - name: Download release artifacts
         uses: actions/download-artifact@v4
@@ -112,24 +129,21 @@ jobs:
           packages-dir: release-artifacts/clients/python/dist/
           skip-existing: true
 
-      - name: Checkout
-        uses: actions/checkout@v4
-        
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "yarn"
-          cache-dependency-path: clients/typescript/yarn.lock
+          registry-url: 'https://registry.npmjs.org'
+          always-auth: true
 
       - name: Upload NPM package
         run: |
-          cd clients/typescript/
-          yarn
-          yarn build
-          yarn publish --new-version ${{ inputs.new_version }}
+          mv release-artifacts/clients/typescript/tinystan-js-${{ inputs.new_version }}.tgz clients/typescript
+          cd clients/typescript
+          yarn publish tinystan-js-${{ inputs.new_version }}.tgz --new-version ${{ inputs.new_version }}
         env:
-          YARN_NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
 
       # - name: Create JuliaRegistration comment
       #   uses: peter-evans/commit-comment@v3
