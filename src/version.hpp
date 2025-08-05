@@ -2,7 +2,7 @@
 #define TINYSTAN_VERSION_HPP
 
 #define TINYSTAN_MAJOR 0
-#define TINYSTAN_MINOR 1
+#define TINYSTAN_MINOR 2
 #define TINYSTAN_PATCH 0
 
 #endif

@@ -1,6 +1,6 @@
 Package: tinystan
 Title: tinystan: lightweight, in-memory Stan bindings
-Version: 0.1.0
+Version: 0.2.0
 Authors@R:
     person(given="Brian", family="Ward", , "bward@flatironinstitute.org", role = c("aut", "cre"))
 License: BSD_3_clause
