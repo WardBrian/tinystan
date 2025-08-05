@@ -8,31 +8,17 @@
 #include <cstdlib>
 #include <mutex>
 #include <stdexcept>
-#include <type_traits>
 
-#include "logging.hpp"
+#include "tinystan_types.h"
+#include "model.hpp"
 
-class TinyStanError {
+struct TinyStanError {
  public:
   TinyStanError(const char *msg,
                 TinyStanErrorType type = TinyStanErrorType::generic)
-      : msg(strdup(msg)), type(type) {}
+      : msg(msg), type(type) {}
 
-  ~TinyStanError() { free(this->msg); }
-
-  TinyStanError(const TinyStanError &other)
-      : msg(strdup(other.msg)), type(other.type) {}
-
-  TinyStanError &operator=(const TinyStanError &other) {
-    if (this != &other) {
-      free(this->msg);
-      this->msg = strdup(other.msg);
-      this->type = other.type;
-    }
-    return *this;
-  }
-
-  char *msg;
+  std::string msg;
   TinyStanErrorType type;
 };
 
@@ -43,7 +29,7 @@ namespace error {
  * Exception thrown when the user interrupts the program.
  * See tinystan::interrupt::tinystan_interrupt_handler for more details.
  */
-class interrupt_exception : public std::exception {};
+class interrupt_exception {};
 
 /**
  * Catches exceptions and stores them in a TinyStanError.
@@ -56,7 +42,7 @@ template <typename F>
 inline auto catch_exceptions(TinyStanError **err, F f) {
   try {
     return f();
-  } catch (const tinystan::error::interrupt_exception &e) {
+  } catch (const interrupt_exception &e) {
     if (err != nullptr) {
       *err = new TinyStanError("", TinyStanErrorType::interrupt);
     }
@@ -86,35 +72,36 @@ inline auto catch_exceptions(TinyStanError **err, F f) {
 
 /**
  * Logger which captures errors for later retrieval.
- * Optionally prints-non errors using tinystan::io::info and
- * tinystan::io::warn.
+ * Optionally prints-non errors using tinystanmodel.info and
+ * tinystanmodel.warn.
  */
 class error_logger : public stan::callbacks::logger {
  public:
-  error_logger(bool print_non_errors) : print(print_non_errors){};
-  virtual ~error_logger(){};
+  error_logger(const TinyStanModel &model, bool print_non_errors)
+      : model(model), print(print_non_errors) {};
+  virtual ~error_logger() {};
 
   void info(const std::string &s) override {
     if (print && !s.empty()) {
-      io::info(s);
+      model.info(s);
     }
   }
 
   void info(const std::stringstream &s) override {
     if (print && !s.str().empty()) {
-      io::info(s.str());
+      model.info(s.str());
     }
   }
 
   void warn(const std::string &s) override {
     if (print && !s.empty()) {
-      io::warn(s);
+      model.warn(s);
     }
   }
 
   void warn(const std::stringstream &s) override {
     if (print && !s.str().empty()) {
-      io::warn(s.str());
+      model.warn(s.str());
     }
   }
 
@@ -158,11 +145,12 @@ class error_logger : public stan::callbacks::logger {
  private:
   std::stringstream last_error;
   std::mutex error_mutex;
+  const TinyStanModel &model;
   bool print;
 };
 
 template <typename T>
-void check_positive(const char *name, T val) {
+inline void check_positive(const char *name, T val) {
   if (val <= 0) {
     std::stringstream msg;
     msg << name << " must be positive, was " << val;
@@ -171,7 +159,7 @@ void check_positive(const char *name, T val) {
 }
 
 template <typename T>
-void check_nonnegative(const char *name, T val) {
+inline void check_nonnegative(const char *name, T val) {
   if (val < 0) {
     std::stringstream msg;
     msg << name << " must be non-negative, was " << val;
@@ -179,7 +167,7 @@ void check_nonnegative(const char *name, T val) {
   }
 }
 
-void check_between(const char *name, double val, double lb, double ub) {
+inline void check_between(const char *name, double val, double lb, double ub) {
   if (val < lb || val > ub) {
     std::stringstream msg;
     msg << name << " must be between " << lb << " and " << ub << ", was "

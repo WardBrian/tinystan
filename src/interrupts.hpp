@@ -15,7 +15,7 @@
 namespace tinystan {
 namespace interrupt {
 
-volatile std::sig_atomic_t interrupted = false;
+static volatile std::sig_atomic_t interrupted = false;
 
 /**
  * @brief Interrupt handler for Stan

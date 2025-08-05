@@ -16,6 +16,8 @@
 #include <stdexcept>
 #include <string>
 
+#include "tinystan_types.h"
+
 namespace tinystan {
 namespace io {
 
@@ -29,8 +31,8 @@ namespace io {
  */
 class buffer_writer : public stan::callbacks::writer {
  public:
-  buffer_writer(double *buf, size_t max) : buf(buf), pos(0), size(max){};
-  virtual ~buffer_writer(){};
+  buffer_writer(double *buf, size_t max) : buf(buf), pos(0), size(max) {};
+  virtual ~buffer_writer() {};
 
   /**
    * Primary method used by the Stan algorithms
@@ -76,8 +78,8 @@ class buffer_writer : public stan::callbacks::writer {
  */
 class filtered_writer : public stan::callbacks::structured_writer {
  public:
-  filtered_writer(std::string key, double *buf) : key(key), buf(buf), pos(0){};
-  virtual ~filtered_writer(){};
+  filtered_writer(std::string key, double *buf) : key(key), buf(buf), pos(0) {};
+  virtual ~filtered_writer() {};
 
   void write(const std::string &key_in, const Eigen::MatrixXd &mat) {
     if (!pos && buf != nullptr && key_in == key) {
@@ -114,8 +116,8 @@ class metric_buffer_reader : public stan::io::empty_var_context {
  public:
   metric_buffer_reader(const double *buf, size_t size,
                        TinyStanMetric metric_choice)
-      : buf(buf), size(size), dense(metric_choice == TinyStanMetric::dense){};
-  virtual ~metric_buffer_reader(){};
+      : buf(buf), size(size), dense(metric_choice == TinyStanMetric::dense) {};
+  virtual ~metric_buffer_reader() {};
 
   bool contains_r(const std::string &name) const override {
     return name == "inv_metric";
@@ -155,7 +157,8 @@ class metric_buffer_reader : public stan::io::empty_var_context {
 
 using var_ctx_ptr = std::unique_ptr<stan::io::var_context>;
 
-var_ctx_ptr default_metric(size_t num_params, TinyStanMetric metric_choice) {
+inline var_ctx_ptr default_metric(size_t num_params,
+                                  TinyStanMetric metric_choice) {
   switch (metric_choice) {
     case (TinyStanMetric::dense):
       return var_ctx_ptr(new stan::io::array_var_context(
@@ -170,23 +173,22 @@ var_ctx_ptr default_metric(size_t num_params, TinyStanMetric metric_choice) {
   }
 }
 
-std::vector<var_ctx_ptr> make_metric_inits(size_t num_chains, const double *buf,
-                                           size_t num_params,
-                                           TinyStanMetric metric_choice) {
+inline std::vector<var_ctx_ptr> make_metric_inits(
+    size_t num_chains, const double *buf, size_t num_params,
+    TinyStanMetric metric_choice) {
   std::vector<var_ctx_ptr> metrics;
   metrics.reserve(num_chains);
   if (buf == nullptr) {
     for (size_t i = 0; i < num_chains; ++i) {
-      metrics.emplace_back(
-          std::move(default_metric(num_params, metric_choice)));
+      metrics.emplace_back(default_metric(num_params, metric_choice));
     }
   } else {
     int metric_size = metric_choice == TinyStanMetric::dense
                           ? num_params * num_params
                           : num_params;
     for (size_t i = 0; i < num_chains; ++i) {
-      metrics.emplace_back(std::move(var_ctx_ptr(new metric_buffer_reader(
-          buf + (i * metric_size), metric_size, metric_choice))));
+      metrics.emplace_back(var_ctx_ptr(new metric_buffer_reader(
+          buf + (i * metric_size), metric_size, metric_choice)));
     }
   }
   return metrics;

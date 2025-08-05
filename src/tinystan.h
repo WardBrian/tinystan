@@ -3,30 +3,10 @@
 
 /// \file tinystan.h
 
+#include "tinystan_types.h"
+
 #ifdef __cplusplus
-#include <cstddef>
-struct TinyStanError;
-struct TinyStanModel;
 extern "C" {
-#else
-#include <stddef.h>
-#include <stdbool.h>
-/**
- * Opaque type for errors.
- *
- * Functions in TinyStan that can fail will accept a nullable `TinyStanError**`
- * argument as their last parameter.
- *
- * In addition to returning an integer status code (most functions), or NULL
- * (allocation functions), they can also set this argument to a new error object
- * if it itself was not NULL. This must be freed with tinystan_destroy_error()
- * when no longer needed. The error object contains a message describing the
- * error which can be retrieved with tinystan_get_error_message(), and and a
- * type field that can be used to distinguish between different kinds of errors
- * which can be retrieved with tinystan_get_error_type()
- */
-typedef struct TinyStanError TinyStanError;
-typedef struct TinyStanModel TinyStanModel;  ///< Opaque type for models
 #endif
 
 #if defined _WIN32 || defined __MINGW32__
@@ -72,13 +52,15 @@ TINYSTAN_PUBLIC void tinystan_stan_version(int *major, int *minor, int *patch);
  * @param[in] data A path to a JSON file or a string containing JSON-encoded
  * data. Can be `NULL` or an empty string if the model does not require data.
  * @param[in] seed Random seed.
+ * @param[in] user_print_callback Callback function for printing messages. Can
+ * be `NULL`, in which case cout/cerr are used instead.
  * @param[out] err Error information. Can be `NULL`.
  * @return A pointer to the model. Must later be freed with
  * tinystan_destroy_model(). Returns `NULL` on error.
  */
-TINYSTAN_PUBLIC TinyStanModel *tinystan_create_model(const char *data,
-                                                     unsigned int seed,
-                                                     TinyStanError **err);
+TINYSTAN_PUBLIC TinyStanModel *tinystan_create_model(
+    const char *data, unsigned int seed,
+    TINYSTAN_PRINT_CALLBACK user_print_callback, TinyStanError **err);
 
 /**
  * Deallocate a model.
@@ -114,11 +96,6 @@ tinystan_model_num_free_params(const TinyStanModel *model);
  * Currently, this is ASCII `0x1C`, the file separator character.
  */
 TINYSTAN_PUBLIC char tinystan_separator_char();
-
-/**
- * Choice of metric for HMC.
- */
-typedef enum { unit = 0, dense = 1, diagonal = 2 } TinyStanMetric;
 
 /**
  * @brief Run Stan's No-U-Turn Sampler (NUTS) to sample from the posterior.
@@ -248,11 +225,6 @@ TINYSTAN_PUBLIC int tinystan_pathfinder(
     double *out, size_t out_size, TinyStanError **err);
 
 /**
- * Choice of optimization algorithm.
- */
-typedef enum { newton = 0, bfgs = 1, lbfgs = 2 } TinyStanOptimizationAlgorithm;
-
-/**
  * @brief Optimize the model parameters using the specified algorithm.
  *
  * A wrapper around the functions in the `stan::services::optimize` namespace.
@@ -356,15 +328,6 @@ TINYSTAN_PUBLIC const char *tinystan_get_error_message(
     const TinyStanError *err);
 
 /**
- * An enum representing different kinds of errors TinyStan can generate.
- */
-typedef enum {
-  generic = 0,   ///< A generic runtime error from Stan.
-  config = 1,    ///< An invalid configuration for the algorithm.
-  interrupt = 2  ///< The user interrupted the algorithm with `Ctrl+C`.
-} TinyStanErrorType;
-
-/**
  * Get the type of error.
  *
  * @param[in] err The error object.
@@ -385,23 +348,6 @@ tinystan_get_error_type(const TinyStanError *err);
  * @param[in] err The error object.
  */
 TINYSTAN_PUBLIC void tinystan_destroy_error(TinyStanError *err);
-
-/**
- * Callback used for printing.
- *
- * @param[in] msg The message to print.
- * @param[in] len The length of the message.
- * @param[in] bad Whether the message is an error message or not
- */
-typedef void (*TINYSTAN_PRINT_CALLBACK)(const char *msg, size_t len, bool bad);
-
-/**
- * Set the callback function for printing messages.
- * If this is not set, messages will be printed to stdout.
- *
- * @param[in] print The callback function.
- */
-TINYSTAN_PUBLIC void tinystan_set_print_callback(TINYSTAN_PRINT_CALLBACK print);
 
 #ifdef __cplusplus
 }
