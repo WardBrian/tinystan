@@ -9,7 +9,7 @@ if __name__ == "__main__":
     # print(pf["theta"].mean())
     # print(pf["theta"].shape)
 
-    fit = model.sample(data, num_samples=10_000_000, num_chains=10, refresh=100_000)#, inits=pf)
+    fit = model.sample(data, num_samples=10_000_000, num_chains=10, refresh=500_000)#, inits=pf)
     print(fit.parameters)
     print(fit["theta"])
     print(fit["theta"].shape)

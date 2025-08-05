@@ -15,7 +15,6 @@
 #include <stan/services/sample/hmc_nuts_unit_e_adapt.hpp>
 #include <stan/version.hpp>
 
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>

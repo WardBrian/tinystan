@@ -17,19 +17,19 @@ class moment_writer : public stan::callbacks::writer {
   virtual ~moment_writer() {};
 
   /**
-   * Primary method used by the Stan algorithms
-   */
-  void operator()(const std::vector<double> &v) override {
-    cached_sample = Eigen::Map<const Eigen::VectorXd>(v.data(), v.size());
-    est.add_sample(cached_sample);
-  }
-
-  /**
-   * Used by Pathfinder which writes draws all at once
+   * Names primarily provide the size of the draws vectors
    */
   void operator()(const std::vector<std::string>& names) override {
     est = stan::math::welford_var_estimator{static_cast<int>(names.size())};
     cached_sample.resize(names.size());
+  }
+
+  /**
+   * Primary method used by the Stan algorithms
+   */
+  void operator()(const std::vector<double>& v) override {
+    cached_sample = Eigen::Map<const Eigen::VectorXd>(v.data(), v.size());
+    est.add_sample(cached_sample);
   }
 
   Eigen::VectorXd mean() {
