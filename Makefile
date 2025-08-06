@@ -33,7 +33,7 @@ include $(MATH)make/dependencies
 # Set -fPIC globally since we're always building a shared library
 override CXXFLAGS += -fPIC -fvisibility=hidden -fvisibility-inlines-hidden
 override CXXFLAGS_SUNDIALS += -fPIC
-override CPPFLAGS += -DTINYSTAN_EXPORT
+override CPPFLAGS += -DTINYSTAN_EXPORT -DSTAN_OVERRIDE_EIGEN_ASSERT
 
 ifeq ($(OS),Windows_NT)
 	override CXXFLAGS += -Wa,-mbig-obj

@@ -35,9 +35,7 @@ struct TinyStanModel {
       : model(&new_model(*tinystan::io::load_data(data), seed, &std::cout)),
         user_print_callback(user_print_callback),
         seed(seed),
-        num_free_params(model->num_params_r()),
-        param_names(),
-        num_params(0) {
+        num_free_params(model->num_params_r()) {
     std::vector<std::string> names;
     model->constrained_param_names(names, true, true);
     param_names = tinystan::util::to_csv(names);

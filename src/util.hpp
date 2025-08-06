@@ -48,16 +48,14 @@ inline void init_threading(int num_threads) {
  * @param names vector of strings to convert
  * @return freshly allocated comma-separated string
  */
-inline char *to_csv(const std::vector<std::string> &names) {
+inline std::string to_csv(const std::vector<std::string> &names) {
   std::stringstream ss;
   for (size_t i = 0; i < names.size(); ++i) {
     if (i > 0)
       ss << ',';
     ss << names[i];
   }
-  std::string s = ss.str();
-  const char *s_c = s.c_str();
-  return strdup(s_c);
+  return ss.str();
 }
 }  // namespace util
 }  // namespace tinystan
