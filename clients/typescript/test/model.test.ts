@@ -208,7 +208,7 @@ describe("test tinystan code with a mocked WASM module", () => {
         1,
         ...Array(3).fill(expect.any(Number)),
         seed,
-        ...Array(24).fill(expect.any(Number)),
+        ...Array(25).fill(expect.any(Number)),
       );
     });
 
