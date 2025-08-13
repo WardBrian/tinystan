@@ -133,7 +133,11 @@
             chain_two_divergences = sum(output.draws[2, :, output.names.=="divergent__"])
             @test chain_two_divergences < 12
             @test chain_two_divergences < chain_one_divergences
-            @test diag_metric != output.inv_metric
+            if adapt
+                @test diag_metric != output.inv_metric
+            else
+                @test output.inv_metric == nothing
+            end
 
             dense_metric = zeros(3, 3, 2)
             for i = 1:2
@@ -167,8 +171,11 @@
             chain_two_divergences = sum(output.draws[2, :, output.names.=="divergent__"])
             @test chain_two_divergences < 12
             @test chain_two_divergences < chain_one_divergences
-            @test dense_metric != output.inv_metric
-
+            if adapt
+                @test dense_metric != output.inv_metric
+            else
+                @test output.inv_metric == nothing
+            end
         end
     end
 

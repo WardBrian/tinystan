@@ -47,9 +47,13 @@ TINYSTAN_PUBLIC void tinystan_sample_R(
     unsigned int* init_buffer, unsigned int* term_buffer, unsigned int* window,
     int* save_warmup, double* stepsize, double* stepsize_jitter, int* max_depth,
     int* refresh, int* num_threads, double* out, int* out_size,
-    double* stepsize_out, int* save_inv_metric, double* inv_metric_out,
-    TinyStanError** err) {
-  //  difficult to directly pass a null pointer from R
+    int* save_stepsizes, double* stepsize_out, int* save_inv_metric,
+    double* inv_metric_out, TinyStanError** err) {
+  // difficult to directly pass a null pointer from R
+  double* stepsize_out_ptr = nullptr;
+  if (*save_stepsizes)
+    stepsize_out_ptr = stepsize_out;
+
   double* inv_metric_out_ptr = nullptr;
   if (*save_inv_metric)
     inv_metric_out_ptr = inv_metric_out;
@@ -64,7 +68,8 @@ TINYSTAN_PUBLIC void tinystan_sample_R(
       init_inv_metric_ptr, (*adapt != 0), *delta, *gamma, *kappa, *t0,
       *init_buffer, *term_buffer, *window, (*save_warmup != 0), *stepsize,
       *stepsize_jitter, *max_depth, *refresh, *num_threads, out,
-      static_cast<size_t>(*out_size), stepsize_out, inv_metric_out_ptr, err);
+      static_cast<size_t>(*out_size), stepsize_out_ptr, inv_metric_out_ptr,
+      err);
 }
 
 /// see \link tinystan_pathfinder() \endlink for details

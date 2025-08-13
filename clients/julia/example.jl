@@ -4,10 +4,10 @@ using TinyStan
 model = Model("./test_models/bernoulli/bernoulli.stan")
 data = "./test_models/bernoulli/bernoulli.data.json"
 
-param_names, draws = sample(model, data)
-println(param_names)
-println(size(draws))
-println(mean(draws[:, :, param_names.=="theta"]))
+output = sample(model, data)
+println(output.names)
+println(size(output.draws))
+println(mean(output.draws[:, :, output.names.=="theta"]))
 
 param_names, draws = pathfinder(model, data)
 println(param_names)

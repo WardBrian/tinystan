@@ -203,8 +203,8 @@ Run Stan's No-U-Turn Sampler (NUTS) to sample from the posterior.
 An in-depth explanation of the parameters can be found in the [Stan
 documentation](https://mc-stan.org/docs/reference-manual/mcmc.html).
 
-Returns a tuple of the parameter names, the draws, and the inverse metric if
-`save_inv_metric` is true.
+Returns StanOutput object with the draws, parameter names, and adapted stepsizes. If
+`save_inv_metric` is true, the inverse metric is also returned.
 """
 function sample(
     model::Model,
@@ -282,13 +282,14 @@ function sample(
                 )
             end
         end
-
-        if save_inv_metric
-            inv_metric_out = zeros(Float64, metric_size..., num_chains)
-        else
-            inv_metric_out = C_NULL
+        stepsize_out = C_NULL
+        inv_metric_out = C_NULL
+        if adapt
+            stepsize_out = zeros(Float64, num_chains)
+            if save_inv_metric
+                inv_metric_out = zeros(Float64, metric_size..., num_chains)
+            end
         end
-        stepsize_out = zeros(Float64, num_chains)
 
         err = Ref{Ptr{Cvoid}}()
         return_code = @ccall $(dlsym(model.lib, :tinystan_sample))(
@@ -318,21 +319,27 @@ function sample(
             num_threads::Cint,
             out::Ref{Cdouble},
             length(out)::Csize_t,
-            stepsize_out::Ref{Cdouble},
+            stepsize_out::Ptr{Cdouble},
             inv_metric_out::Ptr{Cdouble},
             err::Ref{Ptr{Cvoid}},
         )::Cint
 
         raise_for_error(model.lib, return_code, err)
         out = permutedims(out, (3, 2, 1))
-        if save_inv_metric
-            inv_metric_out = permutedims(
-                inv_metric_out,
-                range(length(size(inv_metric_out)), 1, step = -1),
-            )
-            return StanOutput(param_names, out, stepsize_out, inv_metric_out)
+
+        stepsizes = nothing
+        inv_metric = nothing
+        if adapt
+            stepsizes = stepsize_out
+            if save_inv_metric
+                inv_metric = permutedims(
+                    inv_metric_out,
+                    range(length(size(inv_metric_out)), 1, step = -1),
+                )
+            end
         end
-        return StanOutput(param_names, out, stepsize_out, nothing)
+
+        return StanOutput(param_names, out, stepsizes, inv_metric)
     end
 end
 

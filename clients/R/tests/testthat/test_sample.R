@@ -1,10 +1,10 @@
 test_that("data arguments work", {
 
     out1 <- sampler(bernoulli_model, BERNOULLI_DATA, num_warmup = 100, num_samples = 100)
-    expect_true(mean(out1$theta) > 0.2 && mean(out1$theta) < 0.3)
+    expect_true(mean(out1$draws$theta) > 0.2 && mean(out1$draws$theta) < 0.3)
     data_file <- file.path(stan_folder, "bernoulli", "bernoulli.data.json")
     out2 <- sampler(bernoulli_model, data = data_file, num_warmup = 100, num_samples = 100)
-    expect_true(mean(out2$theta) > 0.2 && mean(out2$theta) < 0.3)
+    expect_true(mean(out2$draws$theta) > 0.2 && mean(out2$draws$theta) < 0.3)
 
 })
 
@@ -12,11 +12,11 @@ test_that("save_warmup works", {
 
     out <- sampler(bernoulli_model, BERNOULLI_DATA, num_warmup = 12, num_samples = 34,
         save_warmup = FALSE)
-    expect_equal(posterior::niterations(out), 34)
+    expect_equal(posterior::niterations(out$draws), 34)
 
     out <- sampler(bernoulli_model, BERNOULLI_DATA, num_warmup = 12, num_samples = 34,
         save_warmup = TRUE)
-    expect_equal(posterior::niterations(out), 12 + 34)
+    expect_equal(posterior::niterations(out$draws), 12 + 34)
 
 })
 
@@ -27,12 +27,12 @@ test_that("seed works", {
     out2 <- sampler(bernoulli_model, BERNOULLI_DATA, seed = 123, num_warmup = 100,
         num_samples = 100)
 
-    expect_equal(out1, out2)
+    expect_equal(out1$draws, out2$draws)
 
     out3 <- sampler(bernoulli_model, BERNOULLI_DATA, seed = 456, num_warmup = 100,
         num_samples = 100)
 
-    expect_error(expect_equal(out1, out3))
+    expect_error(expect_equal(out1$draws, out3$draws))
 
 })
 
@@ -79,8 +79,11 @@ test_that("init_inv_metric is used", {
         chain_two_divergences <- sum(posterior::subset_draws(divergent, chain = 2))
         expect_true(chain_two_divergences < 12)
         expect_true(chain_two_divergences < chain_one_divergences)
-        expect_false(all(diag_metric == t(out_diag$inv_metric)))
-
+        if (adapt) {
+            expect_false(all(diag_metric == t(out_diag$inv_metric)))
+        } else {
+            expect_false(exists("inv_metric", out_diag))
+        }
         dense_metric <- array(0, c(3, 3, 2))
         dense_metric[, , 1] <- diag(3) * 1e+20
         dense_metric[, , 2] <- diag(3)
@@ -94,7 +97,12 @@ test_that("init_inv_metric is used", {
         chain_two_divergences <- sum(posterior::subset_draws(divergent, chain = 2))
         expect_true(chain_two_divergences < 12)
         expect_true(chain_two_divergences < chain_one_divergences)
-        expect_false(all(dense_metric == aperm(out_dense$inv_metric, c(3, 2, 1))))
+        if (adapt) {
+            expect_false(all(dense_metric == aperm(out_dense$inv_metric, c(3, 2,
+                1))))
+        } else {
+            expect_false(exists("inv_metric", out_dense))
+        }
     }
 })
 
@@ -103,21 +111,21 @@ test_that("multiple inits work", {
     init1 <- "{\"mu\": -100}"
     out1 <- sampler(multimodal_model, num_chains = 2, num_warmup = 100, num_samples = 100,
         inits = init1)
-    expect_true(all(out1$mu < 0))
+    expect_true(all(out1$draws$mu < 0))
 
     init2 <- "{\"mu\": 100}"
     out2 <- sampler(multimodal_model, num_chains = 2, num_warmup = 100, num_samples = 100,
         inits = list(init1, init2))
 
-    expect_true(all(posterior::subset_draws(out2$mu, chain = 1) < 0))
-    expect_true(all(posterior::subset_draws(out2$mu, chain = 2) > 0))
+    expect_true(all(posterior::subset_draws(out2$draws$mu, chain = 1) < 0))
+    expect_true(all(posterior::subset_draws(out2$draws$mu, chain = 2) > 0))
 
     temp_file <- tempfile(fileext = ".json")
     write(init1, temp_file)
     out3 <- sampler(multimodal_model, num_chains = 2, num_warmup = 100, num_samples = 100,
         inits = c(temp_file, init2))
-    expect_true(all(posterior::subset_draws(out3$mu, chain = 1) < 0))
-    expect_true(all(posterior::subset_draws(out3$mu, chain = 2) > 0))
+    expect_true(all(posterior::subset_draws(out3$draws$mu, chain = 1) < 0))
+    expect_true(all(posterior::subset_draws(out3$draws$mu, chain = 2) > 0))
 
 })
 

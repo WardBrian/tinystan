@@ -17,6 +17,10 @@ class StanOutput:
     such as ``hessian`` or ``inv_metric``.
     """
 
+    stepsize: Optional[np.ndarray]
+    inv_metric: Optional[np.ndarray]
+    hessian: Optional[np.ndarray]
+
     def __init__(self, parameters: List[str], data: np.ndarray):
         self.raw_parameters = parameters
         self._params = stanio.parse_header(",".join(parameters))

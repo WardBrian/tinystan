@@ -56,6 +56,18 @@ def test_seed(bernoulli_model):
         np.testing.assert_equal(out1["theta"], out3["theta"])
 
 
+def test_stepsize(bernoulli_model):
+    out = bernoulli_model.sample(BERNOULLI_DATA, num_chains=3)
+    assert out.stepsize is not None
+    assert len(out.stepsize) == 3  # 3 chains
+    np.testing.assert_allclose(out.stepsize, 1.0, atol=0.5)
+
+    out = bernoulli_model.sample(
+        BERNOULLI_DATA, num_chains=3, adapt=False, stepsize=1.123
+    )
+    assert out.stepsize is None
+
+
 def test_save_inv_metric(gaussian_model):
     data = {"N": 5}
     out_unit = gaussian_model.sample(
@@ -142,9 +154,11 @@ def test_init_inv_metric_used(gaussian_model, adapt):
     assert chain_two_divergences < 12
     assert chain_two_divergences < chain_one_divergences
 
-    # note: when adapt=false, returned metric is all 0
-    with pytest.raises(AssertionError):
-        np.testing.assert_allclose(out_diag.inv_metric, diag_metric)
+    if adapt:
+        with pytest.raises(AssertionError):
+            np.testing.assert_allclose(out_diag.inv_metric, diag_metric)
+    else:
+        assert out_diag.inv_metric is None
 
     dense_metric = np.repeat(np.eye(3)[np.newaxis], 2, axis=0)
     dense_metric[0, np.eye(3, dtype=bool)] = 1e20
@@ -165,8 +179,11 @@ def test_init_inv_metric_used(gaussian_model, adapt):
     assert chain_two_divergences < 12
     assert chain_two_divergences < chain_one_divergences
 
-    with pytest.raises(AssertionError):
-        np.testing.assert_allclose(out_dense.inv_metric, dense_metric)
+    if adapt:
+        with pytest.raises(AssertionError):
+            np.testing.assert_allclose(out_dense.inv_metric, dense_metric)
+    else:
+        assert out_diag.inv_metric is None
 
 
 def test_multiple_inits(multimodal_model, temp_json):

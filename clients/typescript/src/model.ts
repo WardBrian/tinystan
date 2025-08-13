@@ -191,19 +191,27 @@ export default class StanModel {
       const init_inv_metric_ptr = NULL;
 
       let inv_metric_out = NULL;
-      if (save_inv_metric) {
-        if (metric === HMCMetric.DENSE)
-          inv_metric_out = this.m._malloc(
-            num_chains *
-              free_params *
-              free_params *
-              Float64Array.BYTES_PER_ELEMENT,
-          );
-        else
-          inv_metric_out = this.m._malloc(
-            num_chains * free_params * Float64Array.BYTES_PER_ELEMENT,
-          );
+      let stepsize_out = NULL;
+
+      if (adapt) {
+        stepsize_out = this.m._malloc(
+          num_chains * Float64Array.BYTES_PER_ELEMENT,
+        );
+        if (save_inv_metric) {
+          if (metric === HMCMetric.DENSE)
+            inv_metric_out = this.m._malloc(
+              num_chains *
+                free_params *
+                free_params *
+                Float64Array.BYTES_PER_ELEMENT,
+            );
+          else
+            inv_metric_out = this.m._malloc(
+              num_chains * free_params * Float64Array.BYTES_PER_ELEMENT,
+            );
+        }
       }
+      deferredFree(stepsize_out);
       deferredFree(inv_metric_out);
 
       const inits_ptr = this.encodeInits(inits);
@@ -216,10 +224,6 @@ export default class StanModel {
       // Allocate memory for the output
       const out_ptr = this.m._malloc(n_out * Float64Array.BYTES_PER_ELEMENT);
       deferredFree(out_ptr);
-
-      const stepsize_out = this.m._malloc(
-        num_chains * Float64Array.BYTES_PER_ELEMENT,
-      );
 
       const err_ptr = this.m._malloc(PTR_SIZE);
 
@@ -268,48 +272,49 @@ export default class StanModel {
         Array.from({ length: n_draws }, (_, j) => out_buffer[i + n_params * j]),
       );
 
-      const stepsize_buffer = this.m.HEAPF64.subarray(
-        stepsize_out / Float64Array.BYTES_PER_ELEMENT,
-        stepsize_out / Float64Array.BYTES_PER_ELEMENT + num_chains,
-      );
-      const stepsizes = Array.from(
-        { length: num_chains },
-        (_, i) => stepsize_buffer[i],
-      );
-
+      let stepsizes: number[] | undefined;
       let inv_metric_array: number[][] | number[][][] | undefined;
+      if (adapt) {
+        const stepsize_buffer = this.m.HEAPF64.subarray(
+          stepsize_out / Float64Array.BYTES_PER_ELEMENT,
+          stepsize_out / Float64Array.BYTES_PER_ELEMENT + num_chains,
+        );
+        stepsizes = Array.from(
+          { length: num_chains },
+          (_, i) => stepsize_buffer[i],
+        );
+        if (save_inv_metric) {
+          if (metric === HMCMetric.DENSE) {
+            const inv_metric_buffer = this.m.HEAPF64.subarray(
+              inv_metric_out / Float64Array.BYTES_PER_ELEMENT,
+              inv_metric_out / Float64Array.BYTES_PER_ELEMENT +
+                num_chains * free_params * free_params,
+            );
 
-      if (save_inv_metric) {
-        if (metric === HMCMetric.DENSE) {
-          const inv_metric_buffer = this.m.HEAPF64.subarray(
-            inv_metric_out / Float64Array.BYTES_PER_ELEMENT,
-            inv_metric_out / Float64Array.BYTES_PER_ELEMENT +
-              num_chains * free_params * free_params,
-          );
-
-          inv_metric_array = Array.from({ length: num_chains }, (_, i) =>
-            Array.from({ length: free_params }, (_, j) =>
+            inv_metric_array = Array.from({ length: num_chains }, (_, i) =>
+              Array.from({ length: free_params }, (_, j) =>
+                Array.from(
+                  { length: free_params },
+                  (_, k) =>
+                    inv_metric_buffer[
+                      i * free_params * free_params + j * free_params + k
+                    ],
+                ),
+              ),
+            );
+          } else {
+            const inv_metric_buffer = this.m.HEAPF64.subarray(
+              inv_metric_out / Float64Array.BYTES_PER_ELEMENT,
+              inv_metric_out / Float64Array.BYTES_PER_ELEMENT +
+                num_chains * free_params,
+            );
+            inv_metric_array = Array.from({ length: num_chains }, (_, i) =>
               Array.from(
                 { length: free_params },
-                (_, k) =>
-                  inv_metric_buffer[
-                    i * free_params * free_params + j * free_params + k
-                  ],
+                (_, j) => inv_metric_buffer[i * free_params + j],
               ),
-            ),
-          );
-        } else {
-          const inv_metric_buffer = this.m.HEAPF64.subarray(
-            inv_metric_out / Float64Array.BYTES_PER_ELEMENT,
-            inv_metric_out / Float64Array.BYTES_PER_ELEMENT +
-              num_chains * free_params,
-          );
-          inv_metric_array = Array.from({ length: num_chains }, (_, i) =>
-            Array.from(
-              { length: free_params },
-              (_, j) => inv_metric_buffer[i * free_params + j],
-            ),
-          );
+            );
+          }
         }
       }
 

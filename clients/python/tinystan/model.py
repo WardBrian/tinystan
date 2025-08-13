@@ -104,7 +104,7 @@ _exception_types = [RuntimeError, ValueError, KeyboardInterrupt]
 
 
 # TODO also allow inits from a StanOutput?
-def encode_stan_json(data: Union[str, PathLike, Dict[str, Any]]) -> bytes:
+def encode_stan_json(data: Union[str, PathLike, Mapping[str, Any]]) -> bytes:
     """Turn the provided data into something we can send to C++."""
     if isinstance(data, PathLike):
         validate_readable(data)
@@ -120,8 +120,8 @@ def rand_u32():
 
 
 def preprocess_laplace_inputs(
-    mode: Union[StanOutput, np.ndarray, Dict[str, Any], str, PathLike],
-) -> Tuple[Optional[np.ndarray], Optional[str]]:
+    mode: Union[StanOutput, np.ndarray, StanData],
+) -> Tuple[Optional[np.ndarray], Optional[bytes]]:
     if isinstance(mode, StanOutput):
         # handle case of passing optimization output directly
         if len(mode.data.shape) == 1:
@@ -180,8 +180,8 @@ class Model:
 
         model = fspath(model)
         if model.endswith(".stan"):
-            self.lib_path = compile_model(
-                model, stanc_args=stanc_args, make_args=make_args
+            self.lib_path = fspath(
+                compile_model(model, stanc_args=stanc_args, make_args=make_args)
             )
         else:
             self.lib_path = model
@@ -586,11 +586,15 @@ class Model:
                         f"or {(num_chains, *metric_size)} matrix."
                     )
 
-            if save_inv_metric:
-                inv_metric_out = np.zeros((num_chains, *metric_size), dtype=np.float64)
-            else:
-                inv_metric_out = None
-            stepsize_out = np.zeros(num_chains, dtype=np.float64)
+            stepsize_out = None
+            inv_metric_out = None
+
+            if adapt:
+                stepsize_out = np.zeros(num_chains, dtype=np.float64)
+                if save_inv_metric:
+                    inv_metric_out = np.zeros(
+                        (num_chains, *metric_size), dtype=np.float64
+                    )
 
             err = ctypes.pointer(ctypes.c_void_p())
             rc = self._ffi_sample(
@@ -627,9 +631,9 @@ class Model:
             self._raise_for_error(rc, err)
 
         output = StanOutput(param_names, out)
-        if save_inv_metric:
-            output.inv_metric = inv_metric_out
         output.stepsize = stepsize_out
+        output.inv_metric = inv_metric_out
+
         return output
 
     def pathfinder(
