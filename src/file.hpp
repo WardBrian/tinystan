@@ -19,21 +19,21 @@ using var_ctx_ptr = std::unique_ptr<stan::io::var_context>;
 
 inline var_ctx_ptr load_data(const char *data_char) {
   if (data_char == nullptr) {
-    return var_ctx_ptr(new stan::io::empty_var_context());
+    return std::make_unique<stan::io::empty_var_context>();
   }
   std::string data(data_char);
   if (data.empty()) {
-    return var_ctx_ptr(new stan::io::empty_var_context());
+    return std::make_unique<stan::io::empty_var_context>();
   }
   if (stan::io::ends_with(".json", data)) {
     std::ifstream data_stream(data);
     if (!data_stream.good()) {
       throw std::invalid_argument("Could not open data file " + data);
     }
-    return var_ctx_ptr(new stan::json::json_data(data_stream));
+    return std::make_unique<stan::json::json_data>(data_stream);
   } else {
     std::istringstream json(data);
-    return var_ctx_ptr(new stan::json::json_data(json));
+    return std::make_unique<stan::json::json_data>(json);
   }
 }
 

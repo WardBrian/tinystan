@@ -111,11 +111,11 @@ int tinystan_sample(const TinyStanModel *tmodel, size_t num_chains,
                             : num_model_params;
     for (size_t i = 0; i < num_chains; ++i) {
       if (inv_metric_out != nullptr) {
-        inv_metric_writers[i].add_buffer("inv_metric",
-                                         inv_metric_out + metric_offset * i);
+        inv_metric_writers[i].add_key("inv_metric",
+                                      inv_metric_out + metric_offset * i);
       }
       if (stepsize_out != nullptr) {
-        inv_metric_writers[i].add_buffer("stepsize", stepsize_out + i);
+        inv_metric_writers[i].add_key("stepsize", stepsize_out + i);
       }
     }
 
@@ -378,7 +378,7 @@ int tinystan_laplace_sample(const TinyStanModel *tmodel,
     auto &model = *tmodel->model;
     io::buffer_writer sample_writer(out, out_size);
     io::filtered_writer hessian_writer;
-    hessian_writer.add_buffer("Hessian", hessian_out);
+    hessian_writer.add_key("Hessian", hessian_out);
     error::error_logger logger(*tmodel, refresh != 0);
     interrupt::tinystan_interrupt_handler interrupt;
 

@@ -78,8 +78,8 @@ inline auto catch_exceptions(TinyStanError **err, F f) {
 class error_logger : public stan::callbacks::logger {
  public:
   error_logger(const TinyStanModel &model, bool print_non_errors)
-      : model(model), print(print_non_errors){};
-  virtual ~error_logger(){};
+      : model(model), print(print_non_errors) {};
+  virtual ~error_logger() {};
 
   void info(const std::string &s) override {
     if (print && !s.empty()) {
