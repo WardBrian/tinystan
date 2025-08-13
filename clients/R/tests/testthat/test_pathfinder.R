@@ -1,11 +1,11 @@
 test_that("data arguments work", {
 
     out1 <- pathfinder(bernoulli_model, BERNOULLI_DATA)
-    expect_true(mean(out1$theta) > 0.2 && mean(out1$theta) < 0.3)
+    expect_true(mean(out1$draws$theta) > 0.2 && mean(out1$draws$theta) < 0.3)
 
     data_file <- file.path(stan_folder, "bernoulli", "bernoulli.data.json")
     out2 <- pathfinder(bernoulli_model, data = data_file)
-    expect_true(mean(out2$theta) > 0.2 && mean(out2$theta) < 0.3)
+    expect_true(mean(out2$draws$theta) > 0.2 && mean(out2$draws$theta) < 0.3)
 
 })
 
@@ -14,35 +14,35 @@ test_that("output sizes are correct", {
 
     out1 <- pathfinder(bernoulli_model, BERNOULLI_DATA, num_paths = 4, num_draws = 101,
         num_multi_draws = 99)
-    expect_equal(posterior::ndraws(out1), 99)
+    expect_equal(posterior::ndraws(out1$draws), 99)
 
     out2 <- pathfinder(bernoulli_model, BERNOULLI_DATA, num_paths = 1, num_draws = 101,
         num_multi_draws = 103)
-    expect_equal(posterior::ndraws(out2), 103)
+    expect_equal(posterior::ndraws(out2$draws), 103)
 
     out3 <- pathfinder(bernoulli_model, BERNOULLI_DATA, num_paths = 2, num_draws = 105,
         num_multi_draws = 1, calculate_lp = FALSE)
-    expect_equal(posterior::ndraws(out3), 2 * 105)
+    expect_equal(posterior::ndraws(out3$draws), 2 * 105)
 
     out4 <- pathfinder(bernoulli_model, BERNOULLI_DATA, num_paths = 3, num_draws = 107,
         num_multi_draws = 1, psis_resample = FALSE)
-    expect_equal(posterior::ndraws(out4), 3 * 107)
+    expect_equal(posterior::ndraws(out4$draws), 3 * 107)
 
     out5 <- pathfinder(bernoulli_model, BERNOULLI_DATA, num_paths = 1, num_draws = 109,
         num_multi_draws = 1, psis_resample = FALSE)
-    expect_equal(posterior::ndraws(out5), 109)
+    expect_equal(posterior::ndraws(out5$draws), 109)
 })
 
 test_that("calculate_lp works", {
     out <- pathfinder(bernoulli_model, BERNOULLI_DATA, num_paths = 2, calculate_lp = FALSE)
 
-    expect_gt(sum(is.nan(out$lp__)), 0)
-    expect_lt(sum(is.nan(out$lp__)), 2000)
+    expect_gt(sum(is.nan(out$draws$lp__)), 0)
+    expect_lt(sum(is.nan(out$draws$lp__)), 2000)
 
     out_single <- pathfinder(bernoulli_model, BERNOULLI_DATA, num_paths = 1, calculate_lp = FALSE)
 
-    expect_gt(sum(is.nan(out_single$lp__)), 0)
-    expect_lt(sum(is.nan(out_single$lp__)), 1000)
+    expect_gt(sum(is.nan(out_single$draws$lp__)), 0)
+    expect_lt(sum(is.nan(out_single$draws$lp__)), 1000)
 })
 
 test_that("seed works", {
@@ -50,27 +50,27 @@ test_that("seed works", {
     out1 <- pathfinder(bernoulli_model, BERNOULLI_DATA, seed = 123)
     out2 <- pathfinder(bernoulli_model, BERNOULLI_DATA, seed = 123)
 
-    expect_equal(out1$theta, out2$theta)
+    expect_equal(out1$draws$theta, out2$draws$theta)
 
     out3 <- pathfinder(bernoulli_model, BERNOULLI_DATA, seed = 456)
-    expect_error(expect_equal(out1$theta, out3$theta))
+    expect_error(expect_equal(out1$draws$theta, out3$draws$theta))
 
 })
 test_that("inits work", {
 
     init1 <- "{\"mu\": -1000}"
     out1 <- pathfinder(multimodal_model, inits = init1)
-    expect_true(all(out1$mu < 0))
+    expect_true(all(out1$draws$mu < 0))
 
     init2 <- "{\"mu\": 1000}"
     out2 <- pathfinder(multimodal_model, inits = init2)
-    expect_true(all(out2$mu > 0))
+    expect_true(all(out2$draws$mu > 0))
 
     temp_file <- tempfile(fileext = ".json")
     write(init1, temp_file)
     out3 <- pathfinder(multimodal_model, num_paths = 2, inits = c(temp_file, init1))
 
-    expect_true(all(out3$mu < 0))
+    expect_true(all(out3$draws$mu < 0))
 })
 
 

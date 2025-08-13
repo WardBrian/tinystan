@@ -12,7 +12,8 @@ export Model,
     compile_model,
     get_tinystan_path,
     set_tinystan_path!,
-    StanOutput
+    StanOutput,
+    get_draws
 
 include("model.jl")
 include("download.jl")

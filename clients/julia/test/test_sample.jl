@@ -4,13 +4,13 @@
 
     @testset "Data" begin
         output = sample(bernoulli_model, BERNOULLI_DATA)
-        @test 0.2 < mean(output.draws[:, :, output.names.=="theta"]) < 0.3
+        @test 0.2 < mean(get_draws(output, "theta")) < 0.3
 
         output = sample(
             bernoulli_model,
             joinpath(STAN_FOLDER, "bernoulli", "bernoulli.data.json"),
         )
-        @test 0.2 < mean(output.draws[:, :, output.names.=="theta"]) < 0.3
+        @test 0.2 < mean(get_draws(output, "theta")) < 0.3
     end
 
     @testset "Save warmup" begin
@@ -122,7 +122,7 @@
                 seed = UInt32(1234),
             )
 
-            chain_one_divergences = sum(output.draws[1, :, output.names.=="divergent__"])
+            chain_one_divergences = sum(get_draws(output, "divergent__")[1, :])
             @test chain_one_divergences > (
                 if adapt
                     12
@@ -130,7 +130,7 @@
                     500
                 end
             )
-            chain_two_divergences = sum(output.draws[2, :, output.names.=="divergent__"])
+            chain_two_divergences = sum(get_draws(output, "divergent__")[2, :])
             @test chain_two_divergences < 12
             @test chain_two_divergences < chain_one_divergences
             if adapt
@@ -160,7 +160,7 @@
                 save_inv_metric = true,
                 seed = UInt32(1234),
             )
-            chain_one_divergences = sum(output.draws[1, :, output.names.=="divergent__"])
+            chain_one_divergences = sum(get_draws(output, "divergent__")[1, :])
             @test chain_one_divergences > (
                 if adapt
                     12
@@ -168,7 +168,7 @@
                     500
                 end
             )
-            chain_two_divergences = sum(output.draws[2, :, output.names.=="divergent__"])
+            chain_two_divergences = sum(get_draws(output, "divergent__")[2, :])
             @test chain_two_divergences < 12
             @test chain_two_divergences < chain_one_divergences
             if adapt
@@ -183,7 +183,7 @@
         init1 = "{\"mu\": -100}"
         output1 =
             sample(multimodal_model; num_warmup = 100, num_samples = 100, inits = init1)
-        @test all(output1.draws[:, :, output1.names.=="mu"] .< 0)
+        @test all(get_draws(output1, "mu") .< 0)
 
         init2 = "{\"mu\": 100}"
         output2 = sample(

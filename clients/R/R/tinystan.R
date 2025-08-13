@@ -292,7 +292,7 @@ pathfinder.tinystan_model = function(model, data = "", num_paths = 4, inits = NU
             out = double(output_size), as.integer(output_size), err = raw(8), PACKAGE = model$lib_name)
         handle_error(vars$return_code, model$lib_name, vars$err)
 
-        output_as_rvars(params, num_output, 1, vars$out)
+        list(draws = output_as_rvars(params, num_output, 1, vars$out))
     })
 }
 
@@ -327,7 +327,7 @@ optimizer.tinystan_model = function(model, data = "", init = NULL, seed = NULL, 
             as.integer(output_size), err = raw(8), PACKAGE = model$lib_name)
         handle_error(vars$return_code, model$lib_name, vars$err)
 
-        output_as_rvars(params, 1, 1, vars$out)
+        list(draws = output_as_rvars(params, 1, 1, vars$out))
     })
 }
 
@@ -387,7 +387,7 @@ laplace_sampler.tinystan_model = function(model, mode, data = "", num_draws = 10
             hessian <- array(vars$hessian, dim = c(free_params, free_params))
             return(list(draws = out, hessian = hessian))
         }
-        out
+        list(draws = out)
     })
 
 }

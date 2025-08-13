@@ -4,11 +4,11 @@ ALGORITHMS <- c(tinystan::OptimizationAlgorithm$NEWTON, tinystan::OptimizationAl
 test_that("data args work", {
 
     out1 <- optimizer(bernoulli_model, BERNOULLI_DATA)
-    expect_true(mean(out1$theta) > 0.19 && mean(out1$theta) < 0.21)
+    expect_true(mean(out1$draws$theta) > 0.19 && mean(out1$draws$theta) < 0.21)
 
     data_file <- file.path(stan_folder, "bernoulli", "bernoulli.data.json")
     out2 <- optimizer(bernoulli_model, data = data_file)
-    expect_true(mean(out2$theta) > 0.19 && mean(out2$theta) < 0.21)
+    expect_true(mean(out2$draws$theta) > 0.19 && mean(out2$draws$theta) < 0.21)
 
 })
 
@@ -20,7 +20,7 @@ test_that("algorithm and jacobian args work", {
             out <- optimizer(simple_jacobian_model, algorithm = algorithm, jacobian = jacobian,
                 seed = 1234)
 
-            sigma <- posterior::extract_variable(out, "sigma")
+            sigma <- posterior::extract_variable(out$draws, "sigma")
 
             if (jacobian) {
                 expect_equal(sigma, 3.3, tolerance = 0.01, ignore_attr = TRUE)
@@ -38,10 +38,10 @@ test_that("seed works", {
     out1 <- optimizer(bernoulli_model, BERNOULLI_DATA, seed = 123)
     out2 <- optimizer(bernoulli_model, BERNOULLI_DATA, seed = 123)
 
-    expect_equal(out1, out2)
+    expect_equal(out1$draws, out2$draws)
 
     out3 <- optimizer(bernoulli_model, BERNOULLI_DATA, seed = 456)
-    expect_error(expect_equal(out1, out3))
+    expect_error(expect_equal(out1$draws, out3$draws))
 
 })
 
@@ -50,14 +50,14 @@ test_that("inits work", {
 
     init <- "{\"mu\": -100}"
     out1 <- optimizer(multimodal_model, init = init)
-    expect_true(all(out1$mu < 0))
+    expect_true(all(out1$draws$mu < 0))
 
     init <- "{\"mu\": 100}"
     temp_file <- tempfile(fileext = ".json")
     write(init, temp_file)
 
     out2 <- optimizer(multimodal_model, init = temp_file)
-    expect_true(all(out2$mu > 0))
+    expect_true(all(out2$draws$mu > 0))
 
 })
 

@@ -339,7 +339,7 @@ function sample(
             end
         end
 
-        return StanOutput(param_names, out, stepsizes, inv_metric)
+        return StanOutput{3}(param_names, out, stepsizes, inv_metric, nothing)
     end
 end
 
@@ -436,8 +436,7 @@ function pathfinder(
             err::Ref{Ptr{Cvoid}},
         )::Cint
         raise_for_error(model.lib, return_code, err)
-        return (param_names, transpose(out))
-
+        return StanOutput{2}(param_names, transpose(out), nothing, nothing, nothing)
     end
 end
 
@@ -511,7 +510,7 @@ function optimize(
             err::Ref{Ptr{Cvoid}},
         )::Cint
         raise_for_error(model.lib, return_code, err)
-        return (param_names, out)
+        return StanOutput{1}(param_names, out, nothing, nothing, nothing)
     end
 end
 
@@ -589,9 +588,10 @@ function laplace_sample(
         )::Cint
         raise_for_error(model.lib, return_code, err)
 
+        hessian = nothing
         if save_hessian
-            return (param_names, transpose(out), hessian_out)
+            hessian = hessian_out
         end
-        return (param_names, transpose(out))
+        return StanOutput{2}(param_names, transpose(out), nothing, nothing, hessian)
     end
 end

@@ -3,36 +3,36 @@
 @testset "Pathfinder" verbose = true begin
 
     @testset "Data" begin
-        (names, draws) = pathfinder(bernoulli_model, BERNOULLI_DATA)
-        @test 0.2 < mean(draws[:, names.=="theta"]) < 0.3
+        out = pathfinder(bernoulli_model, BERNOULLI_DATA)
+        @test 0.2 < mean(get_draws(out, "theta")) < 0.3
 
-        (names, draws) = pathfinder(
+        out = pathfinder(
             bernoulli_model,
             joinpath(STAN_FOLDER, "bernoulli", "bernoulli.data.json"),
         )
-        @test 0.2 < mean(draws[:, names.=="theta"]) < 0.3
+        @test 0.2 < mean(get_draws(out, "theta")) < 0.3
     end
 
     @testset "Output sizes" begin
-        (_, draws1) = pathfinder(
+        out1 = pathfinder(
             bernoulli_model,
             BERNOULLI_DATA,
             num_paths = 4,
             num_draws = 101,
             num_multi_draws = 99,
         )
-        @test size(draws1, 1) == 99
+        @test size(out1.draws, 1) == 99
 
-        (_, draws2) = pathfinder(
+        out2 = pathfinder(
             bernoulli_model,
             BERNOULLI_DATA,
             num_paths = 1,
             num_draws = 101,
             num_multi_draws = 103,
         )
-        @test size(draws2, 1) == 103
+        @test size(out2.draws, 1) == 103
 
-        (_, draws3) = pathfinder(
+        out3 = pathfinder(
             bernoulli_model,
             BERNOULLI_DATA,
             num_paths = 2,
@@ -40,10 +40,10 @@
             num_multi_draws = 1,
             calculate_lp = false,
         )
-        @test size(draws3, 1) == 2 * 105
+        @test size(out3.draws, 1) == 2 * 105
 
 
-        (_, draws4) = pathfinder(
+        out4 = pathfinder(
             bernoulli_model,
             BERNOULLI_DATA,
             num_paths = 3,
@@ -51,9 +51,9 @@
             num_multi_draws = 1,
             psis_resample = false,
         )
-        @test size(draws4, 1) == 3 * 107
+        @test size(out4.draws, 1) == 3 * 107
 
-        (_, draws5) = pathfinder(
+        out5 = pathfinder(
             bernoulli_model,
             BERNOULLI_DATA,
             num_paths = 1,
@@ -61,45 +61,45 @@
             num_multi_draws = 1,
             psis_resample = false,
         )
-        @test size(draws5, 1) == 109
+        @test size(out5.draws, 1) == 109
     end
 
     @testset "Calculate LP" begin
-        (names, draws) =
+        out =
             pathfinder(bernoulli_model, BERNOULLI_DATA, num_paths = 2, calculate_lp = false)
-        @test sum(isnan.(draws[:, names.=="lp__"])) > 0
-        @test sum(isnan.(draws[:, names.=="lp__"])) < 2000
+        @test sum(isnan.(get_draws(out, "lp__"))) > 0
+        @test sum(isnan.(get_draws(out, "lp__"))) < 2000
 
-        (names, draws_single) =
+        out_single =
             pathfinder(bernoulli_model, BERNOULLI_DATA, num_paths = 1, calculate_lp = false)
-        @test sum(isnan.(draws_single[:, names.=="lp__"])) > 0
-        @test sum(isnan.(draws_single[:, names.=="lp__"])) < 1000
+        @test sum(isnan.(get_draws(out_single, "lp__"))) > 0
+        @test sum(isnan.(get_draws(out_single, "lp__"))) < 1000
     end
 
     @testset "Seed" begin
-        (_, draws1) = pathfinder(bernoulli_model, BERNOULLI_DATA; seed = UInt32(123))
-        (_, draws2) = pathfinder(bernoulli_model, BERNOULLI_DATA; seed = UInt32(123))
-        @test draws1 == draws2
+        out1 = pathfinder(bernoulli_model, BERNOULLI_DATA; seed = UInt32(123))
+        out2 = pathfinder(bernoulli_model, BERNOULLI_DATA; seed = UInt32(123))
+        @test out1.draws == out2.draws
 
-        (_, draws3) = pathfinder(bernoulli_model, BERNOULLI_DATA; seed = UInt32(456))
-        @test draws1 != draws3
+        out3 = pathfinder(bernoulli_model, BERNOULLI_DATA; seed = UInt32(456))
+        @test out1.draws != out3.draws
     end
 
     @testset "Inits" begin
         init1 = "{\"mu\": -1000}"
-        (names, draws1) = pathfinder(multimodal_model; inits = init1)
-        @test all(draws1[:, names.=="mu"] .< 0)
+        out1 = pathfinder(multimodal_model; inits = init1)
+        @test all(get_draws(out1, "mu") .< 0)
 
         init2 = "{\"mu\": 1000}"
-        (names, draws2) = pathfinder(multimodal_model; inits = init2)
-        @test all(draws2[:, names.=="mu"] .> 0)
+        out2 = pathfinder(multimodal_model; inits = init2)
+        @test all(get_draws(out2, "mu") .> 0)
 
         init3 = tempname() * ".json"
         open(init3, "w") do io
             write(io, init1)
         end
-        (names, draws3) = pathfinder(multimodal_model; inits = init3)
-        @test all(draws3[:, names.=="mu"] .< 0)
+        out3 = pathfinder(multimodal_model; inits = init3)
+        @test all(get_draws(out3, "mu") .< 0)
 
     end
 

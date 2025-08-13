@@ -7,7 +7,7 @@ data = "./test_models/bernoulli/bernoulli.data.json"
 output = sample(model, data)
 println(output.names)
 println(size(output.draws))
-println(mean(output.draws[:, :, output.names.=="theta"]))
+println(mean(get_draws(output, "theta")))
 
 param_names, draws = pathfinder(model, data)
 println(param_names)
