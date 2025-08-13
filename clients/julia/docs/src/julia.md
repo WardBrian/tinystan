@@ -67,6 +67,8 @@ An example program is provided alongside the Julia interface code in `example.jl
 
 ```@docs
 Model
+StanOutput
+get_draws
 sample
 HMCMetric
 pathfinder

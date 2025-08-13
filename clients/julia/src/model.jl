@@ -350,7 +350,7 @@ Run the Pathfinder algorithm to approximate the posterior.
 See [Stan's documentation](https://mc-stan.org/docs/reference-manual/pathfinder.html)
 for more information on the algorithm.
 
-Returns a tuple of the parameter names and the draws.
+Returns StanOutput object with the draws, parameter names
 """
 function pathfinder(
     model::Model,
@@ -450,7 +450,7 @@ or the maximum likelihood estimate (MLE) of the model parameters,
 depending on the value of the `jacobian` parameter.
 Additional parameters can be found in the [Stan documentation](https://mc-stan.org/docs/reference-manual/optimization.html).
 
-Returns a tuple of the parameter names and the optimized values.
+Returns StanOutput object with the draws, parameter names
 """
 function optimize(
     model::Model,
@@ -522,7 +522,8 @@ centered at the provided mode. The mode can be either a JSON string
 or an array of floats, often obtained from the [`optimize`](@ref)
 function.
 
-Returns a tuple of the parameter names and the draws.
+Returns StanOutput object with the draws, parameter names.
+If `save_hessian` is true, the Hessian matrix is also returned.
 """
 function laplace_sample(
     model::Model,

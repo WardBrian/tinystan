@@ -111,6 +111,34 @@ If model is a path to a file ending in `.stan`, this will first compile the mode
 
 <a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L43-L54' class='documenter-source'>source</a><br>
 
+<a id='TinyStan.StanOutput' href='#TinyStan.StanOutput'>#</a>
+**`TinyStan.StanOutput`** &mdash; *Type*.
+
+
+
+```julia
+StanOutput
+```
+
+A structure to hold the output from a Stan model run. Always contains the names of the parameters and a "draws" array with algorithm's output. Depending on the algorithm, it may also contain `stepsize`, `inv_metric`, and `hessian` fields.
+
+
+<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/output.jl#L2-L9' class='documenter-source'>source</a><br>
+
+<a id='TinyStan.get_draws' href='#TinyStan.get_draws'>#</a>
+**`TinyStan.get_draws`** &mdash; *Function*.
+
+
+
+```julia
+get_draws(output::StanOutput, name::String)
+```
+
+Returns the draws for a specific parameter from the `StanOutput` object.
+
+
+<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/output.jl#L18-L22' class='documenter-source'>source</a><br>
+
 <a id='TinyStan.sample' href='#TinyStan.sample'>#</a>
 **`TinyStan.sample`** &mdash; *Function*.
 
@@ -122,7 +150,7 @@ sample(model::Model, data::String=""; num_chains::Int=4, inits::Union{nothing,Ab
 
 Run Stan's No-U-Turn Sampler (NUTS) to sample from the posterior. An in-depth explanation of the parameters can be found in the [Stan documentation](https://mc-stan.org/docs/reference-manual/mcmc.html).
 
-Returns a tuple of the parameter names, the draws, and the inverse metric if `save_inv_metric` is true.
+Returns StanOutput object with the draws, parameter names, and adapted stepsizes. If `save_inv_metric` is true, the inverse metric is also returned.
 
 
 <a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L198-L208' class='documenter-source'>source</a><br>
@@ -150,10 +178,10 @@ pathfinder(model::Model, data::String=""; num_paths::Int=4, inits::Union{nothing
 
 Run the Pathfinder algorithm to approximate the posterior. See [Stan's documentation](https://mc-stan.org/docs/reference-manual/pathfinder.html) for more information on the algorithm.
 
-Returns a tuple of the parameter names and the draws.
+Returns StanOutput object with the draws, parameter names
 
 
-<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L335-L343' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L346-L354' class='documenter-source'>source</a><br>
 
 <a id='TinyStan.optimize' href='#TinyStan.optimize'>#</a>
 **`TinyStan.optimize`** &mdash; *Function*.
@@ -168,10 +196,10 @@ Optimize the model parameters using the specified algorithm.
 
 This will find either the maximum a posteriori (MAP) estimate or the maximum likelihood estimate (MLE) of the model parameters, depending on the value of the `jacobian` parameter. Additional parameters can be found in the [Stan documentation](https://mc-stan.org/docs/reference-manual/optimization.html).
 
-Returns a tuple of the parameter names and the optimized values.
+Returns StanOutput object with the draws, parameter names
 
 
-<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L433-L444' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L443-L454' class='documenter-source'>source</a><br>
 
 <a id='TinyStan.OptimizationAlgorithm' href='#TinyStan.OptimizationAlgorithm'>#</a>
 **`TinyStan.OptimizationAlgorithm`** &mdash; *Type*.
@@ -196,10 +224,10 @@ laplace_sample(model::Model, mode::Union{AbstractString,Array{Float64}}, data::A
 
 Sample from the Laplace approximation of the posterior centered at the provided mode. The mode can be either a JSON string or an array of floats, often obtained from the [`optimize`](julia.md#TinyStan.optimize) function.
 
-Returns a tuple of the parameter names and the draws.
+Returns StanOutput object with the draws, parameter names. If `save_hessian` is true, the Hessian matrix is also returned.
 
 
-<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L507-L516' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L517-L527' class='documenter-source'>source</a><br>
 
 
 <a id='Compilation-utilities'></a>
