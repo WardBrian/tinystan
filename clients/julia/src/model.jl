@@ -196,15 +196,15 @@ function stan_version(model::Model)
 end
 
 """
-    sample(model::Model, data::String=""; num_chains::Int=4, inits::Union{nothing,AbstractString,AbstractArray{AbstractString}}=nothing, seed::Union{Nothing,UInt32}=nothing, id::Int=1, init_radius=2.0, num_warmup::Int=1000, num_samples::Int=1000, metric::HMCMetric=DIAGONAL, init_inv_metric::Union{Nothing,Array{Float64}}=nothing, save_metric::Bool=false, adapt::Bool=true, delta::Float64=0.8, gamma::Float64=0.05, kappa::Float64=0.75, t0::Int=10, init_buffer::Int=75, term_buffer::Int=50, window::Int=25, save_warmup::Bool=false, stepsize::Float64=1.0, stepsize_jitter::Float64=0.0, max_depth::Int=10, refresh::Int=0, num_threads::Int=-1)
+    sample(model::Model, data::String=""; num_chains::Int=4, inits::Union{nothing,AbstractString,AbstractArray{AbstractString}}=nothing, seed::Union{Nothing,UInt32}=nothing, id::Int=1, init_radius=2.0, num_warmup::Int=1000, num_samples::Int=1000, metric::HMCMetric=DIAGONAL, init_inv_metric::Union{Nothing,Array{Float64}}=nothing, save_inv_metric::Bool=false, adapt::Bool=true, delta::Float64=0.8, gamma::Float64=0.05, kappa::Float64=0.75, t0::Int=10, init_buffer::Int=75, term_buffer::Int=50, window::Int=25, save_warmup::Bool=false, stepsize::Float64=1.0, stepsize_jitter::Float64=0.0, max_depth::Int=10, refresh::Int=0, num_threads::Int=-1)
 
 
 Run Stan's No-U-Turn Sampler (NUTS) to sample from the posterior.
 An in-depth explanation of the parameters can be found in the [Stan
 documentation](https://mc-stan.org/docs/reference-manual/mcmc.html).
 
-Returns a tuple of the parameter names, the draws, and the metric if
-`save_metric` is true.
+Returns StanOutput object with the draws, parameter names, and adapted stepsizes. If
+`save_inv_metric` is true, the inverse metric is also returned.
 """
 function sample(
     model::Model,
@@ -219,7 +219,7 @@ function sample(
     num_samples::Int = 1000,
     metric::HMCMetric = DIAGONAL,
     init_inv_metric::Union{Nothing,Array{Float64},Array{Float64,2},Array{Float64,3}} = nothing,
-    save_metric::Bool = false,
+    save_inv_metric::Bool = false,
     adapt::Bool = true,
     delta::Float64 = 0.8,
     gamma::Float64 = 0.05,
@@ -282,11 +282,13 @@ function sample(
                 )
             end
         end
-
-        if save_metric
-            metric_out = zeros(Float64, metric_size..., num_chains)
-        else
-            metric_out = C_NULL
+        stepsize_out = C_NULL
+        inv_metric_out = C_NULL
+        if adapt
+            stepsize_out = zeros(Float64, num_chains)
+            if save_inv_metric
+                inv_metric_out = zeros(Float64, metric_size..., num_chains)
+            end
         end
 
         err = Ref{Ptr{Cvoid}}()
@@ -317,18 +319,27 @@ function sample(
             num_threads::Cint,
             out::Ref{Cdouble},
             length(out)::Csize_t,
-            metric_out::Ptr{Cdouble},
+            stepsize_out::Ptr{Cdouble},
+            inv_metric_out::Ptr{Cdouble},
             err::Ref{Ptr{Cvoid}},
         )::Cint
 
         raise_for_error(model.lib, return_code, err)
         out = permutedims(out, (3, 2, 1))
-        if save_metric
-            metric_out =
-                permutedims(metric_out, range(length(size(metric_out)), 1, step = -1))
-            return (param_names, out, metric_out)
+
+        stepsizes = nothing
+        inv_metric = nothing
+        if adapt
+            stepsizes = stepsize_out
+            if save_inv_metric
+                inv_metric = permutedims(
+                    inv_metric_out,
+                    range(length(size(inv_metric_out)), 1, step = -1),
+                )
+            end
         end
-        return (param_names, out)
+
+        return StanOutput{3}(param_names, out, stepsizes, inv_metric, nothing)
     end
 end
 
@@ -339,7 +350,7 @@ Run the Pathfinder algorithm to approximate the posterior.
 See [Stan's documentation](https://mc-stan.org/docs/reference-manual/pathfinder.html)
 for more information on the algorithm.
 
-Returns a tuple of the parameter names and the draws.
+Returns StanOutput object with the draws, parameter names
 """
 function pathfinder(
     model::Model,
@@ -425,8 +436,7 @@ function pathfinder(
             err::Ref{Ptr{Cvoid}},
         )::Cint
         raise_for_error(model.lib, return_code, err)
-        return (param_names, transpose(out))
-
+        return StanOutput{2}(param_names, transpose(out), nothing, nothing, nothing)
     end
 end
 
@@ -440,7 +450,7 @@ or the maximum likelihood estimate (MLE) of the model parameters,
 depending on the value of the `jacobian` parameter.
 Additional parameters can be found in the [Stan documentation](https://mc-stan.org/docs/reference-manual/optimization.html).
 
-Returns a tuple of the parameter names and the optimized values.
+Returns StanOutput object with the draws, parameter names
 """
 function optimize(
     model::Model,
@@ -500,7 +510,7 @@ function optimize(
             err::Ref{Ptr{Cvoid}},
         )::Cint
         raise_for_error(model.lib, return_code, err)
-        return (param_names, out)
+        return StanOutput{1}(param_names, out, nothing, nothing, nothing)
     end
 end
 
@@ -512,7 +522,8 @@ centered at the provided mode. The mode can be either a JSON string
 or an array of floats, often obtained from the [`optimize`](@ref)
 function.
 
-Returns a tuple of the parameter names and the draws.
+Returns StanOutput object with the draws, parameter names.
+If `save_hessian` is true, the Hessian matrix is also returned.
 """
 function laplace_sample(
     model::Model,
@@ -578,9 +589,10 @@ function laplace_sample(
         )::Cint
         raise_for_error(model.lib, return_code, err)
 
+        hessian = nothing
         if save_hessian
-            return (param_names, transpose(out), hessian_out)
+            hessian = hessian_out
         end
-        return (param_names, transpose(out))
+        return StanOutput{2}(param_names, transpose(out), nothing, nothing, hessian)
     end
 end

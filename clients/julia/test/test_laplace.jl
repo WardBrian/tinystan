@@ -3,50 +3,50 @@
     BERNOULLI_MODE = "{\"theta\": 0.25}"
 
     @testset "Data" begin
-        (names, draws) = laplace_sample(bernoulli_model, BERNOULLI_MODE, BERNOULLI_DATA)
-        @test 0.22 < mean(draws[:, names.=="theta"]) < 0.28
+        out = laplace_sample(bernoulli_model, BERNOULLI_MODE, BERNOULLI_DATA)
+        @test 0.22 < mean(get_draws(out, "theta")) < 0.28
 
-        (names, draws) = laplace_sample(
+        out = laplace_sample(
             bernoulli_model,
             BERNOULLI_MODE,
             joinpath(STAN_FOLDER, "bernoulli", "bernoulli.data.json"),
         )
-        @test 0.22 < mean(draws[:, names.=="theta"]) < 0.28
+        @test 0.22 < mean(get_draws(out, "theta")) < 0.28
     end
 
 
     @testset "Number of draws" begin
-        (names, draws) =
+        out =
             laplace_sample(bernoulli_model, BERNOULLI_MODE, BERNOULLI_DATA; num_draws = 234)
-        @test size(draws, 1) == 234
+        @test size(out.draws, 1) == 234
     end
 
     @testset "Calculate LP" begin
-        (names, draws) = laplace_sample(
+        out = laplace_sample(
             bernoulli_model,
             BERNOULLI_MODE,
             BERNOULLI_DATA;
             num_draws = 500,
             calculate_lp = true,
         )
-        @test sum(isnan.(draws[:, names.=="log_p__"])) == 0
+        @test sum(isnan.(get_draws(out, "log_p__"))) == 0
 
-        (names, draws) = laplace_sample(
+        out = laplace_sample(
             bernoulli_model,
             BERNOULLI_MODE,
             BERNOULLI_DATA;
             num_draws = 500,
             calculate_lp = false,
         )
-        @test sum(isnan.(draws[:, names.=="log_p__"])) == 500
+        @test sum(isnan.(get_draws(out, "log_p__"))) == 500
     end
 
     @testset "Jacobian" begin
         @testset for jacobian in [true, false]
-            (names, mode) =
+            out_opt =
                 optimize(simple_jacobian_model; jacobian = jacobian, seed = UInt32(12345))
-            mode_array = mode[2:end]
-            (names, draws) = laplace_sample(
+            mode_array = out_opt.draws[2:end]
+            out = laplace_sample(
                 simple_jacobian_model,
                 mode_array;
                 jacobian = jacobian,
@@ -58,7 +58,7 @@
             else
                 3.0
             end
-            @test optimum ≈ mean(draws[:, names.=="sigma"]) atol = 0.2
+            @test optimum ≈ mean(get_draws(out, "sigma")) atol = 0.2
         end
     end
 
@@ -66,33 +66,33 @@
         data = "{\"N\": 3}"
         mode = "{\"alpha\": [0.1,0.2,0.3]}"
 
-        (_, _, hessian) = laplace_sample(gaussian_model, mode, data; save_hessian = true)
-        @test size(hessian) == (3, 3)
-        @test hessian ≈ [-1.0 0.0 0.0; 0.0 -1.0 0.0; 0.0 0.0 -1.0] atol = 0.1
+        out = laplace_sample(gaussian_model, mode, data; save_hessian = true)
+        @test size(out.hessian) == (3, 3)
+        @test out.hessian ≈ [-1.0 0.0 0.0; 0.0 -1.0 0.0; 0.0 0.0 -1.0] atol = 0.1
     end
 
     @testset "Seed" begin
-        (_, draws1) = laplace_sample(
+        out1 = laplace_sample(
             bernoulli_model,
             BERNOULLI_MODE,
             BERNOULLI_DATA;
             seed = UInt32(123),
         )
-        (_, draws2) = laplace_sample(
+        out2 = laplace_sample(
             bernoulli_model,
             BERNOULLI_MODE,
             BERNOULLI_DATA;
             seed = UInt32(123),
         )
-        @test draws1 == draws2
+        @test out1.draws == out2.draws
 
-        (_, draws3) = laplace_sample(
+        out3 = laplace_sample(
             bernoulli_model,
             BERNOULLI_MODE,
             BERNOULLI_DATA;
             seed = UInt32(456),
         )
-        @test draws1 != draws3
+        @test out1.draws != out3.draws
     end
 
     @testset "Bad data" begin

@@ -1,10 +1,10 @@
 test_that("data arguments work", {
 
     out1 <- sampler(bernoulli_model, BERNOULLI_DATA, num_warmup = 100, num_samples = 100)
-    expect_true(mean(out1$theta) > 0.2 && mean(out1$theta) < 0.3)
+    expect_true(mean(out1$draws$theta) > 0.2 && mean(out1$draws$theta) < 0.3)
     data_file <- file.path(stan_folder, "bernoulli", "bernoulli.data.json")
     out2 <- sampler(bernoulli_model, data = data_file, num_warmup = 100, num_samples = 100)
-    expect_true(mean(out2$theta) > 0.2 && mean(out2$theta) < 0.3)
+    expect_true(mean(out2$draws$theta) > 0.2 && mean(out2$draws$theta) < 0.3)
 
 })
 
@@ -12,11 +12,11 @@ test_that("save_warmup works", {
 
     out <- sampler(bernoulli_model, BERNOULLI_DATA, num_warmup = 12, num_samples = 34,
         save_warmup = FALSE)
-    expect_equal(posterior::niterations(out), 34)
+    expect_equal(posterior::niterations(out$draws), 34)
 
     out <- sampler(bernoulli_model, BERNOULLI_DATA, num_warmup = 12, num_samples = 34,
         save_warmup = TRUE)
-    expect_equal(posterior::niterations(out), 12 + 34)
+    expect_equal(posterior::niterations(out$draws), 12 + 34)
 
 })
 
@@ -27,37 +27,48 @@ test_that("seed works", {
     out2 <- sampler(bernoulli_model, BERNOULLI_DATA, seed = 123, num_warmup = 100,
         num_samples = 100)
 
-    expect_equal(out1, out2)
+    expect_equal(out1$draws, out2$draws)
 
     out3 <- sampler(bernoulli_model, BERNOULLI_DATA, seed = 456, num_warmup = 100,
         num_samples = 100)
 
-    expect_error(expect_equal(out1, out3))
+    expect_error(expect_equal(out1$draws, out3$draws))
 
 })
 
-test_that("save_metric works", {
+test_that("stepsize is saved", {
+    out <- sampler(bernoulli_model, BERNOULLI_DATA, num_warmup = 100, num_samples = 100,
+        num_chains = 3, save_warmup = TRUE)
+    expect_true(exists("stepsize", out))
+    expect_equal(length(out$stepsize), 3)
+
+    out <- sampler(bernoulli_model, BERNOULLI_DATA, num_warmup = 100, num_samples = 100,
+        save_warmup = TRUE, adapt = FALSE)
+    expect_false(exists("stepsize", out))
+})
+
+test_that("save_inv_metric works", {
 
     data <- "{\"N\": 5}"
 
     out_unit <- sampler(gaussian_model, data, num_warmup = 100, num_samples = 10,
-        save_metric = TRUE, metric = tinystan::HMCMetric$UNIT)
-    expect_equal(dim(out_unit$metric), c(4, 5))
-    expect_equal(out_unit$metric, matrix(1, ncol = 5, nrow = 4))
+        save_inv_metric = TRUE, metric = tinystan::HMCMetric$UNIT)
+    expect_equal(dim(out_unit$inv_metric), c(4, 5))
+    expect_equal(out_unit$inv_metric, matrix(1, ncol = 5, nrow = 4))
 
     out_diag <- sampler(gaussian_model, data, num_warmup = 100, num_samples = 10,
-        save_metric = TRUE, metric = tinystan::HMCMetric$DIAGONAL)
-    expect_equal(dim(out_diag$metric), c(4, 5))
-    expect_equal(out_diag$metric, matrix(1, ncol = 5, nrow = 4))
+        save_inv_metric = TRUE, metric = tinystan::HMCMetric$DIAGONAL)
+    expect_equal(dim(out_diag$inv_metric), c(4, 5))
+    expect_equal(out_diag$inv_metric, matrix(1, ncol = 5, nrow = 4))
 
     out_dense <- sampler(gaussian_model, data, num_warmup = 100, num_samples = 10,
-        save_metric = TRUE, metric = tinystan::HMCMetric$DENSE)
-    expect_equal(dim(out_dense$metric), c(4, 5, 5))
+        save_inv_metric = TRUE, metric = tinystan::HMCMetric$DENSE)
+    expect_equal(dim(out_dense$inv_metric), c(4, 5, 5))
     four_identities <- aperm(array(rep(diag(5), 4), c(5, 5, 4)), c(3, 2, 1))
-    expect_equal(out_dense$metric, four_identities)
+    expect_equal(out_dense$inv_metric, four_identities)
 
     out_nometric <- sampler(gaussian_model, data, num_warmup = 10, num_samples = 10,
-        save_metric = FALSE)
+        save_inv_metric = FALSE)
     expect_false(exists("metric", out_nometric))
 
 })
@@ -71,7 +82,7 @@ test_that("init_inv_metric is used", {
         diag_metric[, 1] <- diag_metric[, 1] * 1e+20
         out_diag <- sampler(gaussian_model, data, num_chains = 2, save_warmup = TRUE,
             adapt = adapt, metric = HMCMetric$DIAGONAL, init_inv_metric = diag_metric,
-            save_metric = TRUE, seed = 1234)
+            save_inv_metric = TRUE, seed = 1234)
 
         divergent <- out_diag$draws$divergent__
         chain_one_divergences <- sum(posterior::subset_draws(divergent, chain = 1))
@@ -79,14 +90,17 @@ test_that("init_inv_metric is used", {
         chain_two_divergences <- sum(posterior::subset_draws(divergent, chain = 2))
         expect_true(chain_two_divergences < 12)
         expect_true(chain_two_divergences < chain_one_divergences)
-        expect_false(all(diag_metric == t(out_diag$metric)))
-
+        if (adapt) {
+            expect_false(all(diag_metric == t(out_diag$inv_metric)))
+        } else {
+            expect_false(exists("inv_metric", out_diag))
+        }
         dense_metric <- array(0, c(3, 3, 2))
         dense_metric[, , 1] <- diag(3) * 1e+20
         dense_metric[, , 2] <- diag(3)
         out_dense <- sampler(gaussian_model, data, num_chains = 2, save_warmup = TRUE,
             adapt = adapt, metric = HMCMetric$DENSE, init_inv_metric = dense_metric,
-            save_metric = TRUE, seed = 1234)
+            save_inv_metric = TRUE, seed = 1234)
 
         divergent <- out_dense$draws$divergent__
         chain_one_divergences <- sum(posterior::subset_draws(divergent, chain = 1))
@@ -94,7 +108,12 @@ test_that("init_inv_metric is used", {
         chain_two_divergences <- sum(posterior::subset_draws(divergent, chain = 2))
         expect_true(chain_two_divergences < 12)
         expect_true(chain_two_divergences < chain_one_divergences)
-        expect_false(all(dense_metric == aperm(out_dense$metric, c(3, 2, 1))))
+        if (adapt) {
+            expect_false(all(dense_metric == aperm(out_dense$inv_metric, c(3, 2,
+                1))))
+        } else {
+            expect_false(exists("inv_metric", out_dense))
+        }
     }
 })
 
@@ -103,21 +122,21 @@ test_that("multiple inits work", {
     init1 <- "{\"mu\": -100}"
     out1 <- sampler(multimodal_model, num_chains = 2, num_warmup = 100, num_samples = 100,
         inits = init1)
-    expect_true(all(out1$mu < 0))
+    expect_true(all(out1$draws$mu < 0))
 
     init2 <- "{\"mu\": 100}"
     out2 <- sampler(multimodal_model, num_chains = 2, num_warmup = 100, num_samples = 100,
         inits = list(init1, init2))
 
-    expect_true(all(posterior::subset_draws(out2$mu, chain = 1) < 0))
-    expect_true(all(posterior::subset_draws(out2$mu, chain = 2) > 0))
+    expect_true(all(posterior::subset_draws(out2$draws$mu, chain = 1) < 0))
+    expect_true(all(posterior::subset_draws(out2$draws$mu, chain = 2) > 0))
 
     temp_file <- tempfile(fileext = ".json")
     write(init1, temp_file)
     out3 <- sampler(multimodal_model, num_chains = 2, num_warmup = 100, num_samples = 100,
         inits = c(temp_file, init2))
-    expect_true(all(posterior::subset_draws(out3$mu, chain = 1) < 0))
-    expect_true(all(posterior::subset_draws(out3$mu, chain = 2) > 0))
+    expect_true(all(posterior::subset_draws(out3$draws$mu, chain = 1) < 0))
+    expect_true(all(posterior::subset_draws(out3$draws$mu, chain = 2) > 0))
 
 })
 

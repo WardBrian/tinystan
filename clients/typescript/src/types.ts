@@ -35,13 +35,14 @@ export enum HMCMetric {
  * @property {number[][]} draws A 2D array of draws from the posterior.
  * The first dimension is the number of samples, and the second dimension
  * is the number of parameters.
- * @property {number[][] | number[][][] | undefined} metric The metric used for the
+ * @property {number[][] | number[][][] | undefined} inv_metric The inverse metric used for the
  * HMC sampler. If the metric is not saved, this field is not present.
  */
 export type StanDraws = {
   paramNames: string[];
   draws: number[][];
-  metric?: number[][] | number[][][];
+  inv_metric?: number[][] | number[][][];
+  stepsize?: number[];
 };
 
 /**
@@ -60,7 +61,7 @@ export type StanDraws = {
  * @property {number} [num_warmup=1000] The number of warmup iterations to run
  * @property {number} [num_samples=1000] The number of samples to draw after warmup
  * @property {HMCMetric} [metric=HMCMetric.DENSE] The type of mass matrix to use in the sampler
- * @property {boolean} [save_metric=false] Whether to report the final mass matrix
+ * @property {boolean} [save_inv_metric=false] Whether to report the final inverse mass matrix
  * @property {number[] | number[][] | number[][][] | null} [init_inv_metric]
  * The initial inverse metric to use. Currently, this argument is unused.
  * @property {boolean} [adapt=true] Whether the sampler should adapt the step size and metric
@@ -95,7 +96,7 @@ export interface SamplerParams {
   num_warmup: number;
   num_samples: number;
   metric: HMCMetric;
-  save_metric: boolean;
+  save_inv_metric: boolean;
   init_inv_metric: number[] | number[][] | number[][][] | null;
   adapt: boolean;
   delta: number;
@@ -198,7 +199,12 @@ type cstr = Brand<number, "null-terminated char pointer">;
 interface WasmModule {
   _malloc(n_bytes: number): ptr;
   _free(pointer: ptr | cstr): void;
-  _tinystan_create_model(data: cstr, seed: number, printcallback: ptr, err_ptr: ptr): model_ptr;
+  _tinystan_create_model(
+    data: cstr,
+    seed: number,
+    printcallback: ptr,
+    err_ptr: ptr,
+  ): model_ptr;
   _tinystan_destroy_model(model: model_ptr): void;
   _tinystan_model_param_names(model: model_ptr): cstr;
   _tinystan_model_num_free_params(model: model_ptr): number;
@@ -208,8 +214,8 @@ interface WasmModule {
     init_radius: number, num_warmup: number, num_samples: number, metric: number, init_inv_metric: ptr,
     adapt: number, delta: number, gamma: number, kappa: number, t0: number, init_buffer: number,
     term_buffer: number, window: number, save_warmup: number, stepsize: number, stepsize_jitter: number,
-    max_depth: number, refresh: number, num_threads: number, out: ptr, out_size: number, metric_out: ptr,
-    err_ptr: ptr): number;
+    max_depth: number, refresh: number, num_threads: number, out: ptr, out_size: number, stepsize_out: ptr,
+    inv_metric_out: ptr, err_ptr: ptr): number;
   // prettier-ignore
   _tinystan_pathfinder(model: model_ptr, num_paths: number, inits: cstr, seed: number, id: number,
     init_radius: number, num_draws: number, max_history_size: number, init_alpha: number, tol_obj: number,

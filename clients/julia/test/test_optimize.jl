@@ -6,21 +6,21 @@
     ALL_ALGORITHMS = [TinyStan.NEWTON, TinyStan.LBFGS, TinyStan.BFGS]
 
     @testset "Data" begin
-        (names, draws) = optimize(bernoulli_model, BERNOULLI_DATA)
-        @test 0.19 < draws[names.=="theta"][1] < 0.21
+        out = optimize(bernoulli_model, BERNOULLI_DATA)
+        @test 0.19 < get_draws(out, "theta")[1] < 0.21
 
-        (names, draws) = optimize(
+        out = optimize(
             bernoulli_model,
             joinpath(STAN_FOLDER, "bernoulli", "bernoulli.data.json"),
         )
-        @test 0.19 < draws[names.=="theta"][1] < 0.21
+        @test 0.19 < get_draws(out, "theta")[1] < 0.21
     end
 
     @testset "Jacobian" begin
         @testset for algorithm in ALL_ALGORITHMS
             @testset for jacobian in [true, false]
 
-                (names, out) = optimize(
+                out = optimize(
                     simple_jacobian_model,
                     algorithm = algorithm,
                     jacobian = jacobian,
@@ -31,36 +31,36 @@
                 else
                     3.0
                 end
-                @test optimum ≈ out[names.=="sigma"][1] atol = 0.01
+                @test optimum ≈ get_draws(out, "sigma")[1] atol = 0.01
             end
         end
     end
 
 
     @testset "Seed" begin
-        (_, draws1) = optimize(bernoulli_model, BERNOULLI_DATA; seed = UInt32(123))
-        (_, draws2) = optimize(bernoulli_model, BERNOULLI_DATA; seed = UInt32(123))
-        @test draws1 == draws2
+        out1 = optimize(bernoulli_model, BERNOULLI_DATA; seed = UInt32(123))
+        out2 = optimize(bernoulli_model, BERNOULLI_DATA; seed = UInt32(123))
+        @test out1.draws == out2.draws
 
-        (_, draws3) = optimize(bernoulli_model, BERNOULLI_DATA; seed = UInt32(456))
-        @test draws1 != draws3
+        out3 = optimize(bernoulli_model, BERNOULLI_DATA; seed = UInt32(456))
+        @test out1.draws != out3.draws
     end
 
     @testset "Inits" begin
         init1 = "{\"mu\": -1000}"
-        (names, draws1) = optimize(multimodal_model; init = init1)
-        @test all(draws1[names.=="mu"] .< 0)
+        out1 = optimize(multimodal_model; init = init1)
+        @test all(get_draws(out1, "mu") .< 0)
 
         init2 = "{\"mu\": 1000}"
-        (names, draws2) = optimize(multimodal_model; init = init2)
-        @test all(draws2[names.=="mu"] .> 0)
+        out2 = optimize(multimodal_model; init = init2)
+        @test all(get_draws(out2, "mu") .> 0)
 
         init3 = tempname() * ".json"
         open(init3, "w") do io
             write(io, init1)
         end
-        (names, draws3) = optimize(multimodal_model; init = init3)
-        @test all(draws3[names.=="mu"] .< 0)
+        out3 = optimize(multimodal_model; init = init3)
+        @test all(get_draws(out3, "mu") .< 0)
 
     end
 
@@ -95,8 +95,8 @@
     end
 
     @testset "Model without parameters" begin
-        (names, draws) = optimize(empty_model)
-        @test length(names) == 1 # lp
+        out = optimize(empty_model)
+        @test length(out.names) == 1 # lp
     end
 
 

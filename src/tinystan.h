@@ -141,10 +141,12 @@ TINYSTAN_PUBLIC char tinystan_separator_char();
  * num_params` doubles.
  * @param[in] out_size Size of the buffer in doubles. Used for bounds checking
  * unless TINYSTAN_NO_BOUNDS_CHECK is defined, in which case it is ignored.
- * @param[out] metric_out Buffer to store the metric. Can be `NULL`. If
- * non-NULL, the buffer should be large enough to store
- * tinystan_model_num_free_params() doubles if using a diagonal matrix, and the
- * free parameters squared if using a dense one.
+ * @param[out] inv_metric_out Buffer to store the adapted stepsizes. Can be
+ * `NULL`. If non-NULL, the buffer should be of length `num_chains`
+ * @param[out] inv_metric_out Buffer to store the inverse metric. Can be `NULL`.
+ * If non-NULL, the buffer should be large enough to store `num_chains` *
+ * `tinystan_model_num_free_params()` doubles if using a diagonal matrix, and
+ * `num_chains` * the free parameters squared if using a dense one.
  * @param[out] err Error information. Can be `NULL`.
  *
  * @return Zero on success, non-zero on error. If an error occurs, `err`
@@ -159,7 +161,8 @@ TINYSTAN_PUBLIC int tinystan_sample(
     double kappa, double t0, unsigned int init_buffer, unsigned int term_buffer,
     unsigned int window, bool save_warmup, double stepsize,
     double stepsize_jitter, int max_depth, int refresh, int num_threads,
-    double *out, size_t out_size, double *metric_out, TinyStanError **err);
+    double *out, size_t out_size, double *stepsize_out, double *inv_metric_out,
+    TinyStanError **err);
 
 /**
  * @brief Run the Pathfinder algorithm to approximate the posterior.

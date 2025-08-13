@@ -104,7 +104,7 @@ _exception_types = [RuntimeError, ValueError, KeyboardInterrupt]
 
 
 # TODO also allow inits from a StanOutput?
-def encode_stan_json(data: Union[str, PathLike, Dict[str, Any]]) -> bytes:
+def encode_stan_json(data: Union[str, PathLike, Mapping[str, Any]]) -> bytes:
     """Turn the provided data into something we can send to C++."""
     if isinstance(data, PathLike):
         validate_readable(data)
@@ -120,8 +120,8 @@ def rand_u32():
 
 
 def preprocess_laplace_inputs(
-    mode: Union[StanOutput, np.ndarray, Dict[str, Any], str, PathLike],
-) -> Tuple[Optional[np.ndarray], Optional[str]]:
+    mode: Union[StanOutput, np.ndarray, StanData],
+) -> Tuple[Optional[np.ndarray], Optional[bytes]]:
     if isinstance(mode, StanOutput):
         # handle case of passing optimization output directly
         if len(mode.data.shape) == 1:
@@ -180,8 +180,8 @@ class Model:
 
         model = fspath(model)
         if model.endswith(".stan"):
-            self.lib_path = compile_model(
-                model, stanc_args=stanc_args, make_args=make_args
+            self.lib_path = fspath(
+                compile_model(model, stanc_args=stanc_args, make_args=make_args)
             )
         else:
             self.lib_path = model
@@ -277,6 +277,7 @@ class Model:
             ctypes.c_int,  # num_threads
             double_array,
             ctypes.c_size_t,  # buffer size
+            nullable_double_array,  # stepsize out
             nullable_double_array,  # metric out
             err_ptr,
         ]
@@ -440,7 +441,7 @@ class Model:
         num_samples: int = 1000,
         metric: HMCMetric = HMCMetric.DIAGONAL,
         init_inv_metric: Optional[np.ndarray] = None,
-        save_metric: bool = False,
+        save_inv_metric: bool = False,
         adapt: bool = True,
         delta: float = 0.8,
         gamma: float = 0.05,
@@ -497,8 +498,8 @@ class Model:
             Valid shapes depend on the value of ``metric``. Can have
             a leading dimension of ``num_chains`` to specify different
             initial metrics for each chain.
-        save_metric : bool, optional
-            Whether to report the final mass matrix, by default False
+        save_inv_metric : bool, optional
+            Whether to report the final inverse mass matrix, by default False
         adapt : bool, optional
             Whether the sampler should adapt the step size and metric,
             by default True
@@ -585,10 +586,15 @@ class Model:
                         f"or {(num_chains, *metric_size)} matrix."
                     )
 
-            if save_metric:
-                metric_out = np.zeros((num_chains, *metric_size), dtype=np.float64)
-            else:
-                metric_out = None
+            stepsize_out = None
+            inv_metric_out = None
+
+            if adapt:
+                stepsize_out = np.zeros(num_chains, dtype=np.float64)
+                if save_inv_metric:
+                    inv_metric_out = np.zeros(
+                        (num_chains, *metric_size), dtype=np.float64
+                    )
 
             err = ctypes.pointer(ctypes.c_void_p())
             rc = self._ffi_sample(
@@ -618,14 +624,16 @@ class Model:
                 num_threads,
                 out,
                 out.size,
-                metric_out,
+                stepsize_out,
+                inv_metric_out,
                 err,
             )
             self._raise_for_error(rc, err)
 
         output = StanOutput(param_names, out)
-        if save_metric:
-            output.metric = metric_out
+        output.stepsize = stepsize_out
+        output.inv_metric = inv_metric_out
+
         return output
 
     def pathfinder(

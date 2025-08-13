@@ -3,26 +3,26 @@ BERNOULLI_MODE <- "{\"theta\": 0.25}"
 test_that("data arguments work", {
 
     out1 <- laplace_sampler(bernoulli_model, BERNOULLI_MODE, BERNOULLI_DATA)
-    expect_true(mean(out1$theta) > 0.22 && mean(out1$theta) < 0.28)
+    expect_true(mean(out1$draws$theta) > 0.22 && mean(out1$draws$theta) < 0.28)
 
     data_file <- file.path(stan_folder, "bernoulli", "bernoulli.data.json")
     out2 <- laplace_sampler(bernoulli_model, BERNOULLI_MODE, data = data_file)
-    expect_true(mean(out2$theta) > 0.22 && mean(out2$theta) < 0.28)
+    expect_true(mean(out2$draws$theta) > 0.22 && mean(out2$draws$theta) < 0.28)
 })
 
 test_that("output sizes are correct", {
     out1 <- laplace_sampler(bernoulli_model, BERNOULLI_MODE, BERNOULLI_DATA, num_draws = 324)
-    expect_equal(posterior::ndraws(out1), 324)
+    expect_equal(posterior::ndraws(out1$draws), 324)
 })
 
 test_that("calculate_lp works", {
     out <- laplace_sampler(bernoulli_model, BERNOULLI_MODE, BERNOULLI_DATA, num_draws = 500,
         calculate_lp = TRUE)
-    expect_equal(sum(is.nan(posterior::draws_of(out$log_p__))), 0)
+    expect_equal(sum(is.nan(posterior::draws_of(out$draws$log_p__))), 0)
 
     out2 <- laplace_sampler(bernoulli_model, BERNOULLI_MODE, BERNOULLI_DATA, num_draws = 500,
         calculate_lp = FALSE)
-    expect_equal(sum(is.nan(posterior::draws_of(out2$log_p__))), 500)
+    expect_equal(sum(is.nan(posterior::draws_of(out2$draws$log_p__))), 500)
 })
 
 
@@ -30,11 +30,11 @@ test_that("jacobian arg works", {
     for (jacobian in c(TRUE, FALSE)) {
 
         out <- optimizer(simple_jacobian_model, jacobian = jacobian, seed = 12345)
-        sigma <- posterior::extract_variable(out, "sigma")
+        sigma <- posterior::extract_variable(out$draws, "sigma")
 
         draws <- laplace_sampler(simple_jacobian_model, c(sigma), jacobian = jacobian,
             seed = 12345)
-        sigma <- mean(posterior::extract_variable(draws, "sigma"))
+        sigma <- mean(posterior::extract_variable(draws$draws, "sigma"))
         if (jacobian) {
             expect_equal(sigma, 3.3, tolerance = 0.2, ignore_attr = TRUE)
         } else {
@@ -59,10 +59,10 @@ test_that("seed works", {
     out1 <- laplace_sampler(bernoulli_model, BERNOULLI_MODE, BERNOULLI_DATA, seed = 123)
     out2 <- laplace_sampler(bernoulli_model, BERNOULLI_MODE, BERNOULLI_DATA, seed = 123)
 
-    expect_equal(out1$theta, out2$theta)
+    expect_equal(out1$draws$theta, out2$draws$theta)
 
     out3 <- laplace_sampler(bernoulli_model, BERNOULLI_MODE, BERNOULLI_DATA, seed = 456)
-    expect_error(expect_equal(out1$theta, out3$theta))
+    expect_error(expect_equal(out1$draws$theta, out3$draws$theta))
 
 })
 

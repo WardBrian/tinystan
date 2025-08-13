@@ -14,7 +14,7 @@ sampler(
   num_samples = 1000,
   metric = HMCMetric$DIAGONAL,
   init_inv_metric = NULL,
-  save_metric = FALSE,
+  save_inv_metric = FALSE,
   adapt = TRUE,
   delta = 0.8,
   gamma = 0.05,
