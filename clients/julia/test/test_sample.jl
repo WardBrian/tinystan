@@ -3,104 +3,104 @@
 @testset "Sampling" verbose = true begin
 
     @testset "Data" begin
-        (names, draws) = sample(bernoulli_model, BERNOULLI_DATA)
-        @test 0.2 < mean(draws[:, :, names.=="theta"]) < 0.3
+        output = sample(bernoulli_model, BERNOULLI_DATA)
+        @test 0.2 < mean(output.draws[:, :, output.names.=="theta"]) < 0.3
 
-        (names, draws) = sample(
+        output = sample(
             bernoulli_model,
             joinpath(STAN_FOLDER, "bernoulli", "bernoulli.data.json"),
         )
-        @test 0.2 < mean(draws[:, :, names.=="theta"]) < 0.3
+        @test 0.2 < mean(output.draws[:, :, output.names.=="theta"]) < 0.3
     end
 
     @testset "Save warmup" begin
-        (_, draws) = sample(
+        output = sample(
             bernoulli_model,
             BERNOULLI_DATA;
             num_warmup = 12,
             num_samples = 34,
             save_warmup = false,
         )
-        @test size(draws, 2) == 34
+        @test size(output.draws, 2) == 34
 
-        (_, draws) = sample(
+        output = sample(
             bernoulli_model,
             BERNOULLI_DATA;
             num_warmup = 12,
             num_samples = 34,
             save_warmup = true,
         )
-        @test size(draws, 2) == 12 + 34
+        @test size(output.draws, 2) == 12 + 34
     end
 
     @testset "Seed" begin
-        (_, draws1) = sample(
+        output1 = sample(
             bernoulli_model,
             BERNOULLI_DATA;
             num_warmup = 100,
             num_samples = 100,
             seed = UInt32(123),
         )
-        (_, draws2) = sample(
+        output2 = sample(
             bernoulli_model,
             BERNOULLI_DATA;
             num_warmup = 100,
             num_samples = 100,
             seed = UInt32(123),
         )
-        @test draws1 == draws2
+        @test output1.draws == output2.draws
 
-        (_, draws3) = sample(
+        output3 = sample(
             bernoulli_model,
             BERNOULLI_DATA;
             num_warmup = 100,
             num_samples = 100,
             seed = UInt32(456),
         )
-        @test draws1 != draws3
+        @test output1.draws != output3.draws
     end
 
 
     @testset "Save metric" begin
         data = "{\"N\": 5}"
 
-        (_, _, metric) = sample(
+        output = sample(
             gaussian_model,
             data;
             num_warmup = 100,
             num_samples = 10,
-            save_metric = true,
+            save_inv_metric = true,
             metric = TinyStan.UNIT,
         )
-        @test size(metric) == (4, 5)
-        @test isapprox(metric, ones(Float64, 4, 5))
+        @test size(output.inv_metric) == (4, 5)
+        @test isapprox(output.inv_metric, ones(Float64, 4, 5))
 
-        (_, _, metric) = sample(
+        output = sample(
             gaussian_model,
             data;
             num_warmup = 100,
             num_samples = 10,
-            save_metric = true,
+            save_inv_metric = true,
             metric = TinyStan.DIAGONAL,
         )
-        @test size(metric) == (4, 5)
+        @test size(output.inv_metric) == (4, 5)
 
-        @test isapprox(metric, ones(Float64, 4, 5); rtol = 1e-6)
+        @test isapprox(output.inv_metric, ones(Float64, 4, 5); rtol = 1e-6)
 
-        (_, _, metric) = sample(
+        output = sample(
             gaussian_model,
             data;
             num_warmup = 100,
             num_samples = 10,
-            save_metric = true,
+            save_inv_metric = true,
             metric = TinyStan.DENSE,
         )
-        @test size(metric) == (4, 5, 5)
+        @test size(output.inv_metric) == (4, 5, 5)
         mat = zeros(Float64, 4, 5, 5)
         for i = 1:5
             mat[:, i, i] .= 1.0
         end
-        @test isapprox(metric, mat; rtol = 1e-6)
+        @test isapprox(output.inv_metric, mat; rtol = 1e-6)
 
 
     end
@@ -110,7 +110,7 @@
             data = "{\"N\": 3}"
             diag_metric = ones(3, 2)
             diag_metric[:, 1] .= 1e20
-            (names, draws, metric) = sample(
+            output = sample(
                 gaussian_model,
                 data;
                 num_chains = 2,
@@ -118,11 +118,11 @@
                 adapt = adapt,
                 metric = TinyStan.DIAGONAL,
                 init_inv_metric = diag_metric,
-                save_metric = true,
+                save_inv_metric = true,
                 seed = UInt32(1234),
             )
 
-            chain_one_divergences = sum(draws[1, :, names.=="divergent__"])
+            chain_one_divergences = sum(output.draws[1, :, output.names.=="divergent__"])
             @test chain_one_divergences > (
                 if adapt
                     12
@@ -130,10 +130,10 @@
                     500
                 end
             )
-            chain_two_divergences = sum(draws[2, :, names.=="divergent__"])
+            chain_two_divergences = sum(output.draws[2, :, output.names.=="divergent__"])
             @test chain_two_divergences < 12
             @test chain_two_divergences < chain_one_divergences
-            @test diag_metric != metric
+            @test diag_metric != output.inv_metric
 
             dense_metric = zeros(3, 3, 2)
             for i = 1:2
@@ -145,7 +145,7 @@
                     end
                 end
             end
-            (names, draws, metric) = sample(
+            output = sample(
                 gaussian_model,
                 data;
                 num_chains = 2,
@@ -153,10 +153,10 @@
                 adapt = adapt,
                 metric = TinyStan.DENSE,
                 init_inv_metric = dense_metric,
-                save_metric = true,
+                save_inv_metric = true,
                 seed = UInt32(1234),
             )
-            chain_one_divergences = sum(draws[1, :, names.=="divergent__"])
+            chain_one_divergences = sum(output.draws[1, :, output.names.=="divergent__"])
             @test chain_one_divergences > (
                 if adapt
                     12
@@ -164,44 +164,44 @@
                     500
                 end
             )
-            chain_two_divergences = sum(draws[2, :, names.=="divergent__"])
+            chain_two_divergences = sum(output.draws[2, :, output.names.=="divergent__"])
             @test chain_two_divergences < 12
             @test chain_two_divergences < chain_one_divergences
-            @test diag_metric != metric
+            @test dense_metric != output.inv_metric
 
         end
     end
 
     @testset "Multiple inits" begin
         init1 = "{\"mu\": -100}"
-        (names, draws1) =
+        output1 =
             sample(multimodal_model; num_warmup = 100, num_samples = 100, inits = init1)
-        @test all(draws1[:, :, names.=="mu"] .< 0)
+        @test all(output1.draws[:, :, output1.names.=="mu"] .< 0)
 
         init2 = "{\"mu\": 100}"
-        (names, draws2) = sample(
+        output2 = sample(
             multimodal_model;
             num_warmup = 100,
             num_samples = 100,
             num_chains = 2,
             inits = [init1, init2],
         )
-        @test all(draws2[1, :, names.=="mu", 1] .< 0)
-        @test all(draws2[2, :, names.=="mu", 1] .> 0)
+        @test all(output2.draws[1, :, output2.names.=="mu", 1] .< 0)
+        @test all(output2.draws[2, :, output2.names.=="mu", 1] .> 0)
 
         init3 = tempname() * ".json"
         open(init3, "w") do io
             write(io, init1)
         end
-        (names, draws3) = sample(
+        output3 = sample(
             multimodal_model;
             num_warmup = 100,
             num_samples = 100,
             num_chains = 2,
             inits = [init3, init2],
         )
-        @test all(draws3[1, :, names.=="mu", 1] .< 0)
-        @test all(draws3[2, :, names.=="mu", 1] .> 0)
+        @test all(output3.draws[1, :, output3.names.=="mu", 1] .< 0)
+        @test all(output3.draws[2, :, output3.names.=="mu", 1] .> 0)
     end
 
 
@@ -333,9 +333,9 @@
     end
 
     @testset "Model without parameters" begin
-        (names, draws, metric) = sample(empty_model; save_metric=true)
-        @test length(names) == 7 # HMC parameters only
-        @test prod(size(metric)) == 0
+        output = sample(empty_model; save_inv_metric = true)
+        @test length(output.names) == 7 # HMC parameters only
+        @test prod(size(output.inv_metric)) == 0
     end
 
     @testset "Bad num_warmup" begin

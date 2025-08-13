@@ -36,28 +36,28 @@ test_that("seed works", {
 
 })
 
-test_that("save_metric works", {
+test_that("save_inv_metric works", {
 
     data <- "{\"N\": 5}"
 
     out_unit <- sampler(gaussian_model, data, num_warmup = 100, num_samples = 10,
-        save_metric = TRUE, metric = tinystan::HMCMetric$UNIT)
-    expect_equal(dim(out_unit$metric), c(4, 5))
-    expect_equal(out_unit$metric, matrix(1, ncol = 5, nrow = 4))
+        save_inv_metric = TRUE, metric = tinystan::HMCMetric$UNIT)
+    expect_equal(dim(out_unit$inv_metric), c(4, 5))
+    expect_equal(out_unit$inv_metric, matrix(1, ncol = 5, nrow = 4))
 
     out_diag <- sampler(gaussian_model, data, num_warmup = 100, num_samples = 10,
-        save_metric = TRUE, metric = tinystan::HMCMetric$DIAGONAL)
-    expect_equal(dim(out_diag$metric), c(4, 5))
-    expect_equal(out_diag$metric, matrix(1, ncol = 5, nrow = 4))
+        save_inv_metric = TRUE, metric = tinystan::HMCMetric$DIAGONAL)
+    expect_equal(dim(out_diag$inv_metric), c(4, 5))
+    expect_equal(out_diag$inv_metric, matrix(1, ncol = 5, nrow = 4))
 
     out_dense <- sampler(gaussian_model, data, num_warmup = 100, num_samples = 10,
-        save_metric = TRUE, metric = tinystan::HMCMetric$DENSE)
-    expect_equal(dim(out_dense$metric), c(4, 5, 5))
+        save_inv_metric = TRUE, metric = tinystan::HMCMetric$DENSE)
+    expect_equal(dim(out_dense$inv_metric), c(4, 5, 5))
     four_identities <- aperm(array(rep(diag(5), 4), c(5, 5, 4)), c(3, 2, 1))
-    expect_equal(out_dense$metric, four_identities)
+    expect_equal(out_dense$inv_metric, four_identities)
 
     out_nometric <- sampler(gaussian_model, data, num_warmup = 10, num_samples = 10,
-        save_metric = FALSE)
+        save_inv_metric = FALSE)
     expect_false(exists("metric", out_nometric))
 
 })
@@ -71,7 +71,7 @@ test_that("init_inv_metric is used", {
         diag_metric[, 1] <- diag_metric[, 1] * 1e+20
         out_diag <- sampler(gaussian_model, data, num_chains = 2, save_warmup = TRUE,
             adapt = adapt, metric = HMCMetric$DIAGONAL, init_inv_metric = diag_metric,
-            save_metric = TRUE, seed = 1234)
+            save_inv_metric = TRUE, seed = 1234)
 
         divergent <- out_diag$draws$divergent__
         chain_one_divergences <- sum(posterior::subset_draws(divergent, chain = 1))
@@ -79,14 +79,14 @@ test_that("init_inv_metric is used", {
         chain_two_divergences <- sum(posterior::subset_draws(divergent, chain = 2))
         expect_true(chain_two_divergences < 12)
         expect_true(chain_two_divergences < chain_one_divergences)
-        expect_false(all(diag_metric == t(out_diag$metric)))
+        expect_false(all(diag_metric == t(out_diag$inv_metric)))
 
         dense_metric <- array(0, c(3, 3, 2))
         dense_metric[, , 1] <- diag(3) * 1e+20
         dense_metric[, , 2] <- diag(3)
         out_dense <- sampler(gaussian_model, data, num_chains = 2, save_warmup = TRUE,
             adapt = adapt, metric = HMCMetric$DENSE, init_inv_metric = dense_metric,
-            save_metric = TRUE, seed = 1234)
+            save_inv_metric = TRUE, seed = 1234)
 
         divergent <- out_dense$draws$divergent__
         chain_one_divergences <- sum(posterior::subset_draws(divergent, chain = 1))
@@ -94,7 +94,7 @@ test_that("init_inv_metric is used", {
         chain_two_divergences <- sum(posterior::subset_draws(divergent, chain = 2))
         expect_true(chain_two_divergences < 12)
         expect_true(chain_two_divergences < chain_one_divergences)
-        expect_false(all(dense_metric == aperm(out_dense$metric, c(3, 2, 1))))
+        expect_false(all(dense_metric == aperm(out_dense$inv_metric, c(3, 2, 1))))
     }
 })
 

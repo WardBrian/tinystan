@@ -147,7 +147,7 @@ export default class StanModel {
       num_warmup,
       num_samples,
       metric,
-      save_metric,
+      save_inv_metric,
       adapt,
       delta,
       gamma,
@@ -190,21 +190,21 @@ export default class StanModel {
       // TODO: allow init_inv_metric to be specified
       const init_inv_metric_ptr = NULL;
 
-      let metric_out = NULL;
-      if (save_metric) {
+      let inv_metric_out = NULL;
+      if (save_inv_metric) {
         if (metric === HMCMetric.DENSE)
-          metric_out = this.m._malloc(
+          inv_metric_out = this.m._malloc(
             num_chains *
               free_params *
               free_params *
               Float64Array.BYTES_PER_ELEMENT,
           );
         else
-          metric_out = this.m._malloc(
+          inv_metric_out = this.m._malloc(
             num_chains * free_params * Float64Array.BYTES_PER_ELEMENT,
           );
       }
-      deferredFree(metric_out);
+      deferredFree(inv_metric_out);
 
       const inits_ptr = this.encodeInits(inits);
       deferredFree(inits_ptr);
@@ -216,6 +216,10 @@ export default class StanModel {
       // Allocate memory for the output
       const out_ptr = this.m._malloc(n_out * Float64Array.BYTES_PER_ELEMENT);
       deferredFree(out_ptr);
+
+      const stepsize_out = this.m._malloc(
+        num_chains * Float64Array.BYTES_PER_ELEMENT,
+      );
 
       const err_ptr = this.m._malloc(PTR_SIZE);
 
@@ -247,7 +251,8 @@ export default class StanModel {
         num_threads,
         out_ptr,
         n_out,
-        metric_out,
+        stepsize_out,
+        inv_metric_out,
         err_ptr,
       );
 
@@ -263,43 +268,57 @@ export default class StanModel {
         Array.from({ length: n_draws }, (_, j) => out_buffer[i + n_params * j]),
       );
 
-      let metric_array: number[][] | number[][][] | undefined;
+      const stepsize_buffer = this.m.HEAPF64.subarray(
+        stepsize_out / Float64Array.BYTES_PER_ELEMENT,
+        stepsize_out / Float64Array.BYTES_PER_ELEMENT + num_chains,
+      );
+      const stepsizes = Array.from(
+        { length: num_chains },
+        (_, i) => stepsize_buffer[i],
+      );
 
-      if (save_metric) {
+      let inv_metric_array: number[][] | number[][][] | undefined;
+
+      if (save_inv_metric) {
         if (metric === HMCMetric.DENSE) {
-          const metric_buffer = this.m.HEAPF64.subarray(
-            metric_out / Float64Array.BYTES_PER_ELEMENT,
-            metric_out / Float64Array.BYTES_PER_ELEMENT +
+          const inv_metric_buffer = this.m.HEAPF64.subarray(
+            inv_metric_out / Float64Array.BYTES_PER_ELEMENT,
+            inv_metric_out / Float64Array.BYTES_PER_ELEMENT +
               num_chains * free_params * free_params,
           );
 
-          metric_array = Array.from({ length: num_chains }, (_, i) =>
+          inv_metric_array = Array.from({ length: num_chains }, (_, i) =>
             Array.from({ length: free_params }, (_, j) =>
               Array.from(
                 { length: free_params },
                 (_, k) =>
-                  metric_buffer[
+                  inv_metric_buffer[
                     i * free_params * free_params + j * free_params + k
                   ],
               ),
             ),
           );
         } else {
-          const metric_buffer = this.m.HEAPF64.subarray(
-            metric_out / Float64Array.BYTES_PER_ELEMENT,
-            metric_out / Float64Array.BYTES_PER_ELEMENT +
+          const inv_metric_buffer = this.m.HEAPF64.subarray(
+            inv_metric_out / Float64Array.BYTES_PER_ELEMENT,
+            inv_metric_out / Float64Array.BYTES_PER_ELEMENT +
               num_chains * free_params,
           );
-          metric_array = Array.from({ length: num_chains }, (_, i) =>
+          inv_metric_array = Array.from({ length: num_chains }, (_, i) =>
             Array.from(
               { length: free_params },
-              (_, j) => metric_buffer[i * free_params + j],
+              (_, j) => inv_metric_buffer[i * free_params + j],
             ),
           );
         }
       }
 
-      return { paramNames, draws, metric: metric_array };
+      return {
+        paramNames,
+        draws,
+        inv_metric: inv_metric_array,
+        stepsize: stepsizes,
+      };
     });
   }
 

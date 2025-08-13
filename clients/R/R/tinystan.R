@@ -146,10 +146,10 @@ sampler <- function(...) {
 #' fit
 sampler.tinystan_model = function(model, data = "", num_chains = 4, inits = NULL,
     seed = NULL, id = 1, init_radius = 2, num_warmup = 1000, num_samples = 1000,
-    metric = HMCMetric$DIAGONAL, init_inv_metric = NULL, save_metric = FALSE, adapt = TRUE,
-    delta = 0.8, gamma = 0.05, kappa = 0.75, t0 = 10, init_buffer = 75, term_buffer = 50,
-    window = 25, save_warmup = FALSE, stepsize = 1, stepsize_jitter = 0, max_depth = 10,
-    refresh = 0, num_threads = -1) {
+    metric = HMCMetric$DIAGONAL, init_inv_metric = NULL, save_inv_metric = FALSE,
+    adapt = TRUE, delta = 0.8, gamma = 0.05, kappa = 0.75, t0 = 10, init_buffer = 75,
+    term_buffer = 50, window = 25, save_warmup = FALSE, stepsize = 1, stepsize_jitter = 0,
+    max_depth = 10, refresh = 0, num_threads = -1) {
 
     if (num_chains < 1) {
         stop("num_chains must be at least 1")
@@ -199,7 +199,7 @@ sampler.tinystan_model = function(model, data = "", num_chains = 4, inits = NULL
             }
         }
 
-        if (save_metric) {
+        if (save_inv_metric) {
             metric_size <- num_chains * prod(metric_shape)
         } else {
             metric_size <- 1
@@ -213,24 +213,25 @@ sampler.tinystan_model = function(model, data = "", num_chains = 4, inits = NULL
             as.double(t0), as.integer(init_buffer), as.integer(term_buffer), as.integer(window),
             as.logical(save_warmup), as.double(stepsize), as.double(stepsize_jitter),
             as.integer(max_depth), as.integer(refresh), as.integer(num_threads),
-            out = double(output_size), as.integer(output_size), save_metric = as.logical(save_metric),
-            metric = double(metric_size), err = raw(8), PACKAGE = model$lib_name)
+            out = double(output_size), as.integer(output_size), stepsize_out = double(num_chains),
+            save_inv_metric = as.logical(save_inv_metric), inv_metric = double(metric_size),
+            err = raw(8), PACKAGE = model$lib_name)
         handle_error(vars$return_code, model$lib_name, vars$err)
         # reshape the output matrix
         out <- output_as_rvars(params, num_draws, num_chains, vars$out)
 
-        if (save_metric) {
+        if (save_inv_metric) {
             if (metric == HMCMetric$DENSE) {
-                metric <- aperm(array(vars$metric, dim = c(free_params, free_params,
+                inv_metric <- aperm(array(vars$inv_metric, dim = c(free_params, free_params,
                   num_chains)), c(3, 2, 1))
             } else {
-                metric <- aperm(array(vars$metric, dim = c(free_params, num_chains)),
+                inv_metric <- aperm(array(vars$inv_metric, dim = c(free_params, num_chains)),
                   c(2, 1))
             }
-            return(list(draws = out, metric = metric))
+            return(list(draws = out, stepsize = vars$stepsize_out, inv_metric = inv_metric))
         }
 
-        out
+        list(draws = out, stepsize = vars$stepsize_out)
     })
 }
 

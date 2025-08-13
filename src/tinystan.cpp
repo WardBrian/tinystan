@@ -64,7 +64,8 @@ int tinystan_sample(const TinyStanModel *tmodel, size_t num_chains,
                     unsigned int window, bool save_warmup, double stepsize,
                     double stepsize_jitter, int max_depth, int refresh,
                     int num_threads, double *out, size_t out_size,
-                    double *metric_out, TinyStanError **err) {
+                    double *stepsize_out, double *inv_metric_out,
+                    TinyStanError **err) {
   return error::catch_exceptions(err, [&]() {
     error::check_positive("num_chains", num_chains);
     error::check_positive("id", id);
@@ -103,18 +104,19 @@ int tinystan_sample(const TinyStanModel *tmodel, size_t num_chains,
       sample_writers.emplace_back(out + draws_offset * i, draws_offset);
     }
 
-    std::vector<io::filtered_writer> metric_writers;
-    metric_writers.reserve(num_chains);
+    std::vector<io::filtered_writer> inv_metric_writers(num_chains);
     int num_model_params = tmodel->num_free_params;
     int metric_offset = metric_choice == dense
                             ? num_model_params * num_model_params
                             : num_model_params;
     for (size_t i = 0; i < num_chains; ++i) {
-      if (metric_out != nullptr)
-        metric_writers.emplace_back("inv_metric",
-                                    metric_out + metric_offset * i);
-      else
-        metric_writers.emplace_back("inv_metric", nullptr);
+      if (inv_metric_out != nullptr) {
+        inv_metric_writers[i].add_buffer("inv_metric",
+                                         inv_metric_out + metric_offset * i);
+      }
+      if (stepsize_out != nullptr) {
+        inv_metric_writers[i].add_buffer("stepsize", stepsize_out + i);
+      }
     }
 
     auto initial_metrics = io::make_metric_inits(
@@ -137,7 +139,7 @@ int tinystan_sample(const TinyStanModel *tmodel, size_t num_chains,
               num_samples, thin, save_warmup, refresh, stepsize,
               stepsize_jitter, max_depth, delta, gamma, kappa, t0, interrupt,
               logger, null_writers, sample_writers, null_writers,
-              metric_writers);
+              inv_metric_writers);
         } else {
           return_code = stan::services::sample::hmc_nuts_unit_e(
               model, num_chains, json_inits, seed, id, init_radius, num_warmup,
@@ -153,7 +155,7 @@ int tinystan_sample(const TinyStanModel *tmodel, size_t num_chains,
               init_radius, num_warmup, num_samples, thin, save_warmup, refresh,
               stepsize, stepsize_jitter, max_depth, delta, gamma, kappa, t0,
               init_buffer, term_buffer, window, interrupt, logger, null_writers,
-              sample_writers, null_writers, metric_writers);
+              sample_writers, null_writers, inv_metric_writers);
         } else {
           return_code = stan::services::sample::hmc_nuts_dense_e(
               model, num_chains, json_inits, initial_metrics, seed, id,
@@ -169,7 +171,7 @@ int tinystan_sample(const TinyStanModel *tmodel, size_t num_chains,
               init_radius, num_warmup, num_samples, thin, save_warmup, refresh,
               stepsize, stepsize_jitter, max_depth, delta, gamma, kappa, t0,
               init_buffer, term_buffer, window, interrupt, logger, null_writers,
-              sample_writers, null_writers, metric_writers);
+              sample_writers, null_writers, inv_metric_writers);
         } else {
           return_code = stan::services::sample::hmc_nuts_diag_e(
               model, num_chains, json_inits, initial_metrics, seed, id,
@@ -375,7 +377,8 @@ int tinystan_laplace_sample(const TinyStanModel *tmodel,
 
     auto &model = *tmodel->model;
     io::buffer_writer sample_writer(out, out_size);
-    io::filtered_writer hessian_writer("Hessian", hessian_out);
+    io::filtered_writer hessian_writer;
+    hessian_writer.add_buffer("Hessian", hessian_out);
     error::error_logger logger(*tmodel, refresh != 0);
     interrupt::tinystan_interrupt_handler interrupt;
 

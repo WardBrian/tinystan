@@ -117,12 +117,12 @@ If model is a path to a file ending in `.stan`, this will first compile the mode
 
 
 ```julia
-sample(model::Model, data::String=""; num_chains::Int=4, inits::Union{nothing,AbstractString,AbstractArray{AbstractString}}=nothing, seed::Union{Nothing,UInt32}=nothing, id::Int=1, init_radius=2.0, num_warmup::Int=1000, num_samples::Int=1000, metric::HMCMetric=DIAGONAL, init_inv_metric::Union{Nothing,Array{Float64}}=nothing, save_metric::Bool=false, adapt::Bool=true, delta::Float64=0.8, gamma::Float64=0.05, kappa::Float64=0.75, t0::Int=10, init_buffer::Int=75, term_buffer::Int=50, window::Int=25, save_warmup::Bool=false, stepsize::Float64=1.0, stepsize_jitter::Float64=0.0, max_depth::Int=10, refresh::Int=0, num_threads::Int=-1)
+sample(model::Model, data::String=""; num_chains::Int=4, inits::Union{nothing,AbstractString,AbstractArray{AbstractString}}=nothing, seed::Union{Nothing,UInt32}=nothing, id::Int=1, init_radius=2.0, num_warmup::Int=1000, num_samples::Int=1000, metric::HMCMetric=DIAGONAL, init_inv_metric::Union{Nothing,Array{Float64}}=nothing, save_inv_metric::Bool=false, adapt::Bool=true, delta::Float64=0.8, gamma::Float64=0.05, kappa::Float64=0.75, t0::Int=10, init_buffer::Int=75, term_buffer::Int=50, window::Int=25, save_warmup::Bool=false, stepsize::Float64=1.0, stepsize_jitter::Float64=0.0, max_depth::Int=10, refresh::Int=0, num_threads::Int=-1)
 ```
 
 Run Stan's No-U-Turn Sampler (NUTS) to sample from the posterior. An in-depth explanation of the parameters can be found in the [Stan documentation](https://mc-stan.org/docs/reference-manual/mcmc.html).
 
-Returns a tuple of the parameter names, the draws, and the metric if `save_metric` is true.
+Returns a tuple of the parameter names, the draws, and the inverse metric if `save_inv_metric` is true.
 
 
 <a target='_blank' href='https://github.com/WardBrian/TinyStan/blob/main/clients/julia/src/model.jl#L198-L208' class='documenter-source'>source</a><br>

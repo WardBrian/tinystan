@@ -33,9 +33,9 @@ describe("test tinystan code with a mocked WASM module", () => {
       const { mockedModule, model } = await getMockedModel({
         numFreeParams: 0,
       });
-      const {metric} = model.sample({save_metric:true});
+      const { inv_metric } = model.sample({ save_inv_metric: true });
 
-      expect(metric?.[0]?.length).toEqual(0);
+      expect(inv_metric?.[0]?.length).toEqual(0);
 
       expect(mockedModule._tinystan_sample).toHaveBeenCalledTimes(1);
     });
@@ -148,50 +148,52 @@ describe("test tinystan code with a mocked WASM module", () => {
       }
     });
 
-    test("save_metric output is correct shape and layout", async () => {
+    test("save_inv_metric output is correct shape and layout", async () => {
       const numFreeParams = 5;
       const { model } = await getMockedModel({ numFreeParams });
 
       const num_chains = 3;
 
       for (const metric_choice of [HMCMetric.DIAGONAL, HMCMetric.UNIT]) {
-        let { metric } = model.sample({
-          save_metric: true,
+        let { inv_metric } = model.sample({
+          save_inv_metric: true,
           metric: metric_choice,
           num_chains,
         });
-        expect(metric).toBeDefined();
-        expect(metric?.length).toEqual(num_chains);
-        expect(metric?.[0].length).toEqual(numFreeParams);
-        expect(Array.isArray(metric?.[0][0])).toEqual(false);
-        metric = metric as number[][];
+        expect(inv_metric).toBeDefined();
+        expect(inv_metric?.length).toEqual(num_chains);
+        expect(inv_metric?.[0].length).toEqual(numFreeParams);
+        expect(Array.isArray(inv_metric?.[0][0])).toEqual(false);
+        inv_metric = inv_metric as number[][];
 
         // ensure we are reading out of the heap in the expected order
         // see comment on expectColumnMajor for overview
-        expect(metric[0][1]).toEqual(metric[0][0] + 1);
-        expect(metric[1][0]).toEqual(metric[0][0] + numFreeParams);
+        expect(inv_metric[0][1]).toEqual(inv_metric[0][0] + 1);
+        expect(inv_metric[1][0]).toEqual(inv_metric[0][0] + numFreeParams);
       }
 
       {
         // dense metric
-        let { metric } = model.sample({
-          save_metric: true,
+        let { inv_metric } = model.sample({
+          save_inv_metric: true,
           metric: HMCMetric.DENSE,
           num_chains,
         });
-        expect(metric).toBeDefined();
-        expect(metric?.length).toEqual(num_chains);
-        expect(metric?.[0].length).toEqual(numFreeParams);
-        expect(Array.isArray(metric?.[0][0])).toEqual(true);
-        metric = metric as number[][][];
-        expect(metric?.[0][0].length).toEqual(numFreeParams);
+        expect(inv_metric).toBeDefined();
+        expect(inv_metric?.length).toEqual(num_chains);
+        expect(inv_metric?.[0].length).toEqual(numFreeParams);
+        expect(Array.isArray(inv_metric?.[0][0])).toEqual(true);
+        inv_metric = inv_metric as number[][][];
+        expect(inv_metric?.[0][0].length).toEqual(numFreeParams);
 
         // ensure we are reading out of the heap in the expected order
         // see comment on expectColumnMajor for overview
-        expect(metric[0][0][1]).toEqual(metric[0][0][0] + 1);
-        expect(metric[0][1][0]).toEqual(metric[0][0][0] + numFreeParams);
-        expect(metric[1][0][0]).toEqual(
-          metric[0][0][0] + numFreeParams * numFreeParams,
+        expect(inv_metric[0][0][1]).toEqual(inv_metric[0][0][0] + 1);
+        expect(inv_metric[0][1][0]).toEqual(
+          inv_metric[0][0][0] + numFreeParams,
+        );
+        expect(inv_metric[1][0][0]).toEqual(
+          inv_metric[0][0][0] + numFreeParams * numFreeParams,
         );
       }
     });

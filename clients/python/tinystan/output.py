@@ -14,7 +14,7 @@ class StanOutput:
     :meth:`~StanOutput.get` method, or by using the object as a dictionary.
 
     Additional attributes may be available depending on the algorithm used,
-    such as ``hessian`` or ``metric``.
+    such as ``hessian`` or ``inv_metric``.
     """
 
     def __init__(self, parameters: List[str], data: np.ndarray):
@@ -23,7 +23,8 @@ class StanOutput:
         self._data = data
         # algorithm-specific attributes
         self.hessian = None
-        self.metric = None
+        self.inv_metric = None
+        self.stepsize = None
 
     @property
     def data(self) -> np.ndarray:

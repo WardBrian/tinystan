@@ -31,8 +31,8 @@ namespace io {
  */
 class buffer_writer : public stan::callbacks::writer {
  public:
-  buffer_writer(double *buf, size_t max) : buf(buf), pos(0), size(max) {};
-  virtual ~buffer_writer() {};
+  buffer_writer(double *buf, size_t max) : buf(buf), pos(0), size(max){};
+  virtual ~buffer_writer(){};
 
   /**
    * Primary method used by the Stan algorithms
@@ -74,26 +74,45 @@ class buffer_writer : public stan::callbacks::writer {
  * @brief Writer for structured data (e.g. inv_metric) of a specific key
  *
  * Adaptor for stan::callbacks::structured_writer that writes to a C-style
- * buffer. It only writes vectors or matrices with the specified key.
+ * buffer. It only writes the first key that matches to the buffer.
  */
 class filtered_writer : public stan::callbacks::structured_writer {
  public:
-  filtered_writer(std::string key, double *buf) : key(key), buf(buf), pos(0) {};
-  virtual ~filtered_writer() {};
+  filtered_writer() : keys_buffers{} {};
+  virtual ~filtered_writer(){};
 
-  void write(const std::string &key_in, const Eigen::MatrixXd &mat) {
-    if (!pos && buf != nullptr && key_in == key) {
-      for (int j = 0; j < mat.cols(); ++j) {
-        for (int i = 0; i < mat.rows(); ++i) {
-          buf[pos++] = mat(i, j);
+  void add_buffer(const std::string &key_in, double *buf) {
+    if (buf != nullptr) {
+      keys_buffers.emplace_back(key_in, buf, 0);
+    }
+  }
+
+  void write(const std::string &key_in, const Eigen::MatrixXd &mat) override {
+    for (auto &[key, buf, pos] : keys_buffers) {
+      if (!pos && key_in == key) {
+        for (int j = 0; j < mat.cols(); ++j) {
+          for (int i = 0; i < mat.rows(); ++i) {
+            buf[pos++] = mat(i, j);
+          }
         }
       }
     }
   }
-  void write(const std::string &key_in, const Eigen::VectorXd &vec) {
-    if (!pos && buf != nullptr && key_in == key) {
-      for (int i = 0; i < vec.rows(); ++i) {
-        buf[pos++] = vec(i);
+
+  void write(const std::string &key_in, const Eigen::VectorXd &vec) override {
+    for (auto &[key, buf, pos] : keys_buffers) {
+      if (!pos && key_in == key) {
+        for (int i = 0; i < vec.rows(); ++i) {
+          buf[pos++] = vec(i);
+        }
+      }
+    }
+  }
+
+  void write(const std::string &key_in, double value) override {
+    for (auto &[key, buf, pos] : keys_buffers) {
+      if (!pos && key_in == key) {
+        buf[pos++] = value;
       }
     }
   }
@@ -101,9 +120,7 @@ class filtered_writer : public stan::callbacks::structured_writer {
   using stan::callbacks::structured_writer::write;
 
  private:
-  std::string key;
-  double *buf;
-  size_t pos;
+  std::vector<std::tuple<std::string, double *, size_t>> keys_buffers;
 };
 
 /**
@@ -112,12 +129,12 @@ class filtered_writer : public stan::callbacks::structured_writer {
  * Adaptor for stan::io::var_context that reads from a C-style buffer.
  * This only supports reading the "inv_metric" key.
  */
-class metric_buffer_reader : public stan::io::empty_var_context {
+class inv_metric_buffer_reader : public stan::io::empty_var_context {
  public:
-  metric_buffer_reader(const double *buf, size_t size,
-                       TinyStanMetric metric_choice)
-      : buf(buf), size(size), dense(metric_choice == TinyStanMetric::dense) {};
-  virtual ~metric_buffer_reader() {};
+  inv_metric_buffer_reader(const double *buf, size_t size,
+                           TinyStanMetric metric_choice)
+      : buf(buf), size(size), dense(metric_choice == TinyStanMetric::dense){};
+  virtual ~inv_metric_buffer_reader(){};
 
   bool contains_r(const std::string &name) const override {
     return name == "inv_metric";
@@ -187,7 +204,7 @@ inline std::vector<var_ctx_ptr> make_metric_inits(
                           ? num_params * num_params
                           : num_params;
     for (size_t i = 0; i < num_chains; ++i) {
-      metrics.emplace_back(var_ctx_ptr(new metric_buffer_reader(
+      metrics.emplace_back(var_ctx_ptr(new inv_metric_buffer_reader(
           buf + (i * metric_size), metric_size, metric_choice)));
     }
   }

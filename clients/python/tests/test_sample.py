@@ -56,48 +56,48 @@ def test_seed(bernoulli_model):
         np.testing.assert_equal(out1["theta"], out3["theta"])
 
 
-def test_save_metric(gaussian_model):
+def test_save_inv_metric(gaussian_model):
     data = {"N": 5}
     out_unit = gaussian_model.sample(
         data,
         num_warmup=100,
         num_samples=10,
-        save_metric=True,
+        save_inv_metric=True,
         metric=tinystan.HMCMetric.UNIT,
     )
-    assert len(out_unit.metric.shape) == 2
-    assert out_unit.metric.shape[1] == 5
-    np.testing.assert_equal(out_unit.metric, 1)
+    assert len(out_unit.inv_metric.shape) == 2
+    assert out_unit.inv_metric.shape[1] == 5
+    np.testing.assert_equal(out_unit.inv_metric, 1)
 
     out_diag = gaussian_model.sample(
         data,
         num_warmup=100,
         num_samples=10,
-        save_metric=True,
+        save_inv_metric=True,
         metric=tinystan.HMCMetric.DIAGONAL,
     )
-    assert len(out_diag.metric.shape) == 2
-    assert out_diag.metric.shape[1] == 5
-    np.testing.assert_allclose(out_diag.metric, 1)
+    assert len(out_diag.inv_metric.shape) == 2
+    assert out_diag.inv_metric.shape[1] == 5
+    np.testing.assert_allclose(out_diag.inv_metric, 1)
 
     out_dense = gaussian_model.sample(
         data,
         num_warmup=100,
         num_samples=10,
-        save_metric=True,
+        save_inv_metric=True,
         metric=tinystan.HMCMetric.DENSE,
     )
-    assert len(out_dense.metric.shape) == 3
-    assert out_dense.metric.shape[1] == 5
-    assert out_dense.metric.shape[2] == 5
+    assert len(out_dense.inv_metric.shape) == 3
+    assert out_dense.inv_metric.shape[1] == 5
+    assert out_dense.inv_metric.shape[2] == 5
     np.testing.assert_allclose(
-        out_dense.metric, np.repeat(np.eye(5)[np.newaxis], 4, axis=0)
+        out_dense.inv_metric, np.repeat(np.eye(5)[np.newaxis], 4, axis=0)
     )
 
     out_nometric = gaussian_model.sample(
-        data, num_warmup=10, num_samples=10, save_metric=False
+        data, num_warmup=10, num_samples=10, save_inv_metric=False
     )
-    assert out_nometric.metric is None
+    assert out_nometric.inv_metric is None
 
 
 def test_sundials_ode():
@@ -130,7 +130,7 @@ def test_init_inv_metric_used(gaussian_model, adapt):
         adapt=adapt,
         metric=tinystan.HMCMetric.DIAGONAL,
         init_inv_metric=diag_metric,
-        save_metric=True,
+        save_inv_metric=True,
         seed=1234,
     )
 
@@ -144,7 +144,7 @@ def test_init_inv_metric_used(gaussian_model, adapt):
 
     # note: when adapt=false, returned metric is all 0
     with pytest.raises(AssertionError):
-        np.testing.assert_allclose(out_diag.metric, diag_metric)
+        np.testing.assert_allclose(out_diag.inv_metric, diag_metric)
 
     dense_metric = np.repeat(np.eye(3)[np.newaxis], 2, axis=0)
     dense_metric[0, np.eye(3, dtype=bool)] = 1e20
@@ -155,7 +155,7 @@ def test_init_inv_metric_used(gaussian_model, adapt):
         adapt=adapt,
         metric=tinystan.HMCMetric.DENSE,
         init_inv_metric=dense_metric,
-        save_metric=True,
+        save_inv_metric=True,
         seed=1234,
     )
 
@@ -166,7 +166,7 @@ def test_init_inv_metric_used(gaussian_model, adapt):
     assert chain_two_divergences < chain_one_divergences
 
     with pytest.raises(AssertionError):
-        np.testing.assert_allclose(out_dense.metric, dense_metric)
+        np.testing.assert_allclose(out_dense.inv_metric, dense_metric)
 
 
 def test_multiple_inits(multimodal_model, temp_json):
@@ -310,9 +310,10 @@ def test_bad_num_warmup(bernoulli_model):
 
 
 def test_model_no_params(empty_model):
-    fit = empty_model.sample(save_metric=True)
-    assert len(fit.parameters) == 7 # just HMC parameters
-    assert fit.metric.size == 0
+    fit = empty_model.sample(save_inv_metric=True)
+    assert len(fit.parameters) == 7  # just HMC parameters
+    assert fit.inv_metric.size == 0
+
 
 @pytest.mark.parametrize(
     "arg, value, match",

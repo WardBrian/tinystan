@@ -25,7 +25,7 @@ const defaultSamplerParams: SamplerParams = {
   num_warmup: 1000,
   num_samples: 1000,
   metric: HMCMetric.DIAGONAL,
-  save_metric: false,
+  save_inv_metric: false,
   init_inv_metric: null, // currently unused
   adapt: true,
   delta: 0.8,
