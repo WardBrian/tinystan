@@ -60,6 +60,33 @@
         @test output1.draws != output3.draws
     end
 
+    @testset "Stepsize output" begin
+        output = sample(
+            bernoulli_model,
+            BERNOULLI_DATA;
+            num_chains = 3,
+            num_warmup = 100,
+            num_samples = 100,
+            adapt = true,
+            seed = UInt32(1234),
+        )
+        @test output.stepsize !== nothing
+        @test length(output.stepsize) == 3
+        @test all(s -> s > 0, output.stepsize)
+
+        output = sample(
+            bernoulli_model,
+            BERNOULLI_DATA;
+            num_chains = 3,
+            num_warmup = 100,
+            num_samples = 100,
+            adapt = false,
+            stepsize = 1.123,
+            seed = UInt32(1234),
+        )
+        @test output.stepsize === nothing
+    end
+
 
     @testset "Save metric" begin
         data = "{\"N\": 5}"

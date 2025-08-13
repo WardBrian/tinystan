@@ -148,6 +148,23 @@ describe("test tinystan code with a mocked WASM module", () => {
       }
     });
 
+    test("stepsizes are saved correctly", async () => {
+      const { model } = await getMockedModel({});
+
+      const num_chains = 3;
+      let { stepsize } = model.sample({
+        num_chains,
+      });
+      expect(stepsize).toBeDefined();
+      expect(stepsize?.length).toEqual(num_chains);
+
+      let { stepsize: stepsize2 } = model.sample({
+        num_chains,
+        adapt: false,
+      });
+      expect(stepsize2).toBeUndefined();
+    });
+
     test("save_inv_metric output is correct shape and layout", async () => {
       const numFreeParams = 5;
       const { model } = await getMockedModel({ numFreeParams });

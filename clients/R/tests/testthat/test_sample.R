@@ -36,6 +36,17 @@ test_that("seed works", {
 
 })
 
+test_that("stepsize is saved", {
+    out <- sampler(bernoulli_model, BERNOULLI_DATA, num_warmup = 100, num_samples = 100,
+        num_chains = 3, save_warmup = TRUE)
+    expect_true(exists("stepsize", out))
+    expect_equal(length(out$stepsize), 3)
+
+    out <- sampler(bernoulli_model, BERNOULLI_DATA, num_warmup = 100, num_samples = 100,
+        save_warmup = TRUE, adapt = FALSE)
+    expect_false(exists("stepsize", out))
+})
+
 test_that("save_inv_metric works", {
 
     data <- "{\"N\": 5}"
