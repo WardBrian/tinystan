@@ -1,6 +1,6 @@
 {
   "name": "tinystan",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Typescript wrappers around Stan models built with emscripten",
   "type": "module",
   "exports": {
