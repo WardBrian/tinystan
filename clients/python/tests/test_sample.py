@@ -186,6 +186,26 @@ def test_init_inv_metric_used(gaussian_model, adapt):
         assert out_diag.inv_metric is None
 
 
+def test_init_inv_metric_roundtrip(gaussian_model):
+    data = {"N": 3}
+    diag_metric = np.ones((2, 3))
+    diag_metric[0, :] = [1.1, 1.2, 1.3]
+    diag_metric[1, :] = [2.2, 2.3, 2.4]
+
+    out = gaussian_model.sample(
+        data,
+        num_chains=2,
+        adapt=True,
+        metric=tinystan.HMCMetric.DIAGONAL,
+        init_inv_metric=diag_metric,
+        save_inv_metric=True,
+        num_warmup=1,  # low enough to not adapt the metric
+        num_samples=1,
+    )
+
+    np.testing.assert_allclose(out.inv_metric, diag_metric)
+
+
 def test_multiple_inits(multimodal_model, temp_json):
     # well-separated mixture of gaussians
     # same init for each chain
