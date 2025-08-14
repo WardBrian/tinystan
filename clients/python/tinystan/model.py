@@ -85,7 +85,7 @@ FIXED_SAMPLER_VARIABLES = [
 
 
 class HMCMetric(Enum):
-    """Choices for the structure of the mass matrix used in the HMC sampler."""
+    """Choices for the structure of the inverse mass matrix used in the HMC sampler."""
 
     UNIT = 0  #: :meta hide-value:
     DENSE = 1  #: :meta hide-value:
@@ -490,11 +490,11 @@ class Model:
         num_samples : int, optional
             Number of samples to draw after warmup, by default 1000
         metric : HMCMetric, optional
-            The type of mass matrix to use in the sampler.
+            The type of inverse mass matrix to use in the sampler.
             The options are ``UNIT``, ``DENSE``, and ``DIAGONAL``.
             By default HMCMetric.DIAGONAL
         init_inv_metric : Optional[np.ndarray], optional
-            Initial value for the mass matrix used by the sampler.
+            Initial value for the inverse mass matrix used by the sampler.
             Valid shapes depend on the value of ``metric``. Can have
             a leading dimension of ``num_chains`` to specify different
             initial metrics for each chain.

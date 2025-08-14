@@ -115,8 +115,8 @@ TINYSTAN_PUBLIC char tinystan_separator_char();
  * @param[in] init_radius Radius to initialize unspecified parameters within.
  * @param[in] num_warmup Number of warmup iterations to run.
  * @param[in] num_samples Number of samples to draw after warmup.
- * @param[in] metric_choice The type of mass matrix to use in the sampler.
- * @param[in] init_inv_metric Initial value for the mass matrix used by the
+ * @param[in] metric_choice The type of inverse mass matrix to use in the sampler.
+ * @param[in] init_inv_metric Initial value for the inverse mass matrix used by the
  * sampler. Depending on `metric_choice`, this should be a flattened
  * matrix for a dense metric, or a vector for a diagonal one. If `NULL`, the
  * sampler will use the identity matrix.

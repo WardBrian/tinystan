@@ -60,7 +60,7 @@ export type StanDraws = {
  * `[-init_radius, init_radius]` on the unconstrained scale.
  * @property {number} [num_warmup=1000] The number of warmup iterations to run
  * @property {number} [num_samples=1000] The number of samples to draw after warmup
- * @property {HMCMetric} [metric=HMCMetric.DENSE] The type of mass matrix to use in the sampler
+ * @property {HMCMetric} [metric=HMCMetric.DENSE] The type of inverse mass matrix to use in the sampler
  * @property {boolean} [save_inv_metric=false] Whether to report the final inverse mass matrix
  * @property {number[] | number[][] | number[][][] | null} [init_inv_metric]
  * The initial inverse metric to use. Currently, this argument is unused.

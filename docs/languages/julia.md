@@ -160,7 +160,7 @@ Returns StanOutput object with the draws, parameter names, and adapted stepsizes
 
 
 
-Choices for the structure of the mass matrix used in the HMC sampler.
+Choices for the structure of the inverse mass matrix used in the HMC sampler.
 
 Either `UNIT`, `DENSE`, or `DIAGONAL`.
 

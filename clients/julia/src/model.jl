@@ -1,7 +1,7 @@
 using Base.Libc.Libdl: dlsym, dlopen, dllist
 
 """
-Choices for the structure of the mass matrix used in the HMC sampler.
+Choices for the structure of the inverse mass matrix used in the HMC sampler.
 
 Either `UNIT`, `DENSE`, or `DIAGONAL`.
 """
