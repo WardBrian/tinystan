@@ -9,7 +9,7 @@ export const HMC_SAMPLER_VARIABLES = [
   "divergent__",
   "energy__",
 ];
-export const PATHFINDER_VARIABLES = ["lp_approx__", "lp__"];
+export const PATHFINDER_VARIABLES = ["lp_approx__", "lp__", "path__"];
 
 // NULL can be any pointer type
 const NULL = 0 as any;

@@ -50,10 +50,10 @@ test_that("seed works", {
     out1 <- pathfinder(bernoulli_model, BERNOULLI_DATA, seed = 123)
     out2 <- pathfinder(bernoulli_model, BERNOULLI_DATA, seed = 123)
 
-    expect_equal(out1$draws$theta, out2$draws$theta)
+    expect_equal(sort(posterior::draws_of(out1$draws$theta)), sort(posterior::draws_of(out2$draws$theta)))
 
     out3 <- pathfinder(bernoulli_model, BERNOULLI_DATA, seed = 456)
-    expect_error(expect_equal(out1$draws$theta, out3$draws$theta))
+    expect_error(expect_equal(sort(posterior::draws_of(out1$draws$theta)), sort(posterior::draws_of(out3$draws$theta))))
 
 })
 test_that("inits work", {

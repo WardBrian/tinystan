@@ -32,7 +32,7 @@ const HMC_SAMPLER_VARIABLES = [
     "energy__",
 ]
 
-const PATHFINDER_VARIABLES = ["lp_approx__", "lp__"]
+const PATHFINDER_VARIABLES = ["lp_approx__", "lp__", "path__"]
 
 const OPTIMIZE_VARIABLES = ["lp__"]
 
