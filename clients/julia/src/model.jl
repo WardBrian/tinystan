@@ -545,6 +545,25 @@ function laplace_sample(
     end
 
     with_model(model, data, seed) do model_ptr
+        required_params =  @ccall $(dlsym(model.lib, :tinystan_model_num_constrained_params_for_unconstraining))(
+            model_ptr::Ptr{Cvoid},
+        )::Cint
+
+        if mode isa String
+            mode_json = mode
+            mode_array = C_NULL
+        else
+            mode_json = C_NULL
+            mode_array = mode
+
+            if length(mode_array) < required_params
+                error(
+                    "Mode array has incorrect length. Expected at least $required_params" *
+                    " but got $(length(mode_array))",
+                )
+            end
+        end
+
         param_names = cat(LAPLACE_VARIABLES, get_names(model, model_ptr), dims = 1)
         num_params = length(param_names)
         out = zeros(Float64, num_params, num_draws)
@@ -556,20 +575,6 @@ function laplace_sample(
             hessian_out = C_NULL
         end
 
-        if mode isa String
-            mode_json = mode
-            mode_array = C_NULL
-        else
-            mode_json = C_NULL
-            mode_array = mode
-
-            if length(mode_array) != (num_params - length(LAPLACE_VARIABLES))
-                error(
-                    "Mode array has incorrect length. Expected $num_params" *
-                    " but got $(length(mode_array))",
-                )
-            end
-        end
 
         err = Ref{Ptr{Cvoid}}()
         return_code = @ccall $(dlsym(model.lib, :tinystan_laplace_sample))(

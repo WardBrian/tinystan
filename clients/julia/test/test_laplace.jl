@@ -130,11 +130,11 @@
             BERNOULLI_DATA,
         )
 
-        mode2 = [0.5, 0.5]
+        mode2 = [1.0]
         @test_throws "incorrect length" laplace_sample(
-            bernoulli_model,
+            gaussian_model,
             mode2,
-            BERNOULLI_DATA,
+            "{\"N\": 4 }",
         )
     end
 

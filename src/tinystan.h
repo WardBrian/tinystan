@@ -90,6 +90,17 @@ TINYSTAN_PUBLIC size_t
 tinystan_model_num_free_params(const TinyStanModel *model);
 
 /**
+ * Get the number of constrained parameters, excluding tparams and
+ * generated quantities. This is e.g. the length that the mode vector
+ * passed to laplace_sample must be.
+ * @param[in] model The model.
+ * @return The number of required constrained parameters.
+ */
+TINYSTAN_PUBLIC
+size_t tinystan_model_num_constrained_params_for_unconstraining(
+    const TinyStanModel *model);
+
+/**
  * Returns the separator character which must be used
  * to provide multiple initialization files or json strings.
  *
@@ -115,7 +126,8 @@ TINYSTAN_PUBLIC char tinystan_separator_char();
  * @param[in] init_radius Radius to initialize unspecified parameters within.
  * @param[in] num_warmup Number of warmup iterations to run.
  * @param[in] num_samples Number of samples to draw after warmup.
- * @param[in] metric_choice The type of inverse mass matrix to use in the sampler.
+ * @param[in] metric_choice The type of inverse mass matrix to use in the
+ * sampler.
  * @param[in] init_inv_metric Initial value for the inverse mass matrix used
  * by the sampler. Depending on `metric_choice`, this should be a flattened
  * matrix for a dense metric, or a vector for a diagonal one. If `NULL`, the
@@ -286,8 +298,10 @@ TINYSTAN_PUBLIC int tinystan_optimize(
  * @param[in] tmodel The TinyStanModel to use for the sampling.
  * @param[in] theta_hat_constr The mode to center the Laplace approximation on.
  * This should be a pointer to an array of doubles on the constrained scale,
- * like the one returned by tinystan_optimize(). At most one of
- * `theta_hat_constr` and `theta_hat_json` should be non-NULL.
+ * like the one returned by tinystan_optimize(). It must have at least the
+ * length given by
+ * `tinystan_model_num_constrained_params_for_unconstraining()`.
+ * At most one of `theta_hat_constr` and `theta_hat_json` should be non-NULL.
  * @param[in] theta_hat_json A path to a JSON file or JSON string representing
  * the mode on the constrained scale. At most one of `theta_hat_constr` and
  * `theta_hat_json` should be non-NULL.

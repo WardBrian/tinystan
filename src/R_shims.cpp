@@ -32,6 +32,13 @@ TINYSTAN_PUBLIC void tinystan_model_num_free_params_R(TinyStanModel** model,
   *n = tinystan_model_num_free_params(*model);
 }
 
+/// see \link tinystan_model_num_constrained_params_for_unconstraining()
+/// \endlink for details
+TINYSTAN_PUBLIC void tinystan_model_num_constrained_params_for_unconstraining_R(
+    TinyStanModel** model, int* n) {
+  *n = tinystan_model_num_constrained_params_for_unconstraining(*model);
+}
+
 /// see \link tinystan_separator_char() \endlink for details
 TINYSTAN_PUBLIC void tinystan_separator_char_R(char* sep) {
   *sep = tinystan_separator_char();

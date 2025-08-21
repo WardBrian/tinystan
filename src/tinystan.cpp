@@ -50,6 +50,11 @@ const char *tinystan_model_param_names(const TinyStanModel *model) {
   return model->param_names.c_str();
 }
 
+size_t tinystan_model_num_constrained_params_for_unconstraining(
+    const TinyStanModel *model) {
+  return model->num_req_constrained_params;
+}
+
 size_t tinystan_model_num_free_params(const TinyStanModel *model) {
   return model->num_free_params;
 }

@@ -86,8 +86,8 @@ test_that("bad mode array handled properly", {
     mode1 = c(2)
     expect_error(laplace_sampler(bernoulli_model, mode1, BERNOULLI_DATA), "Bounded variable is 2")
 
-    mode2 = c(0.5, 0.5)
-    expect_error(laplace_sampler(bernoulli_model, mode2, BERNOULLI_DATA), "incorrect length")
+    mode2 = c(1.0)
+    expect_error(laplace_sampler(gaussian_model, mode2, "{\"N\": 4 }"), "incorrect length")
 })
 
 test_that("bad mode json handled properly", {

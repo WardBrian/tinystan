@@ -40,6 +40,10 @@ struct TinyStanModel {
     model->constrained_param_names(names, true, true);
     param_names = tinystan::util::to_csv(names);
     num_params = names.size();
+
+    names.clear();
+    model->constrained_param_names(names, false, false);
+    num_req_constrained_params = names.size();
   }
 
   /*
@@ -70,6 +74,7 @@ struct TinyStanModel {
   size_t num_free_params;
   std::string param_names;
   size_t num_params;
+  size_t num_req_constrained_params;
 };
 
 namespace tinystan {

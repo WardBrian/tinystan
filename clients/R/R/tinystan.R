@@ -351,19 +351,12 @@ laplace_sampler.tinystan_model = function(model, mode, data = "", num_draws = 10
     }
 
     with_model(model, data, seed, {
-        params <- c(LAPLACE_VARIABLES, get_parameter_names(model, model_ptr))
-        num_params <- length(params)
-        free_params <- get_free_params(model, model_ptr)
-
-        if (save_hessian) {
-            hessian_size <- free_params * free_params
-        } else {
-            hessian_size <- 1
-        }
+        req_params <- .C("tinystan_model_num_constrained_params_for_unconstraining_R", as.raw(model_ptr), params = as.integer(0),
+            PACKAGE = model$lib_name)$params
 
         if (is.numeric(mode)) {
-            if (length(mode) != num_params - length(LAPLACE_VARIABLES)) {
-                stop("Mode array has incorrect length.")
+            if (length(mode) < req_params) {
+                stop(paste0("Mode array has incorrect length.", " Expected at least ", req_params, " elements."))
             }
             mode_array <- as.double(mode)
             mode_json <- as.character("")
@@ -372,6 +365,16 @@ laplace_sampler.tinystan_model = function(model, mode, data = "", num_draws = 10
             mode_array <- as.double(0)
             mode_json <- as.character(mode)
             use_array <- FALSE
+        }
+
+        params <- c(LAPLACE_VARIABLES, get_parameter_names(model, model_ptr))
+        num_params <- length(params)
+        free_params <- get_free_params(model, model_ptr)
+
+        if (save_hessian) {
+            hessian_size <- free_params * free_params
+        } else {
+            hessian_size <- 1
         }
 
         vars <- .C("tinystan_laplace_sample_R", return_code = as.integer(0), as.raw(model_ptr),
