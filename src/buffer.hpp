@@ -1,6 +1,16 @@
 #ifndef TINYSTAN_BUFFER_HPP
 #define TINYSTAN_BUFFER_HPP
 
+/**
+ * \file buffer.hpp
+ * \brief Contains adapters for using C-style buffers with various Stan classes.
+ *
+ * In many ways, this is the main contribution of TinyStan as a codebase. Given
+ * these implementations of the Stan `writer`, `structured_writer`, and
+ * `var_context` classes, most of the rest of the code is error handling and
+ * calling the Stan services functions.
+ */
+
 #include <stan/math/prim/fun/Eigen.hpp>
 #include <stan/callbacks/writer.hpp>
 #include <stan/callbacks/structured_writer.hpp>
@@ -117,6 +127,7 @@ class filtered_writer : public stan::callbacks::structured_writer {
     }
   }
 
+  // other write methods are currently unused by anything we need
   using stan::callbacks::structured_writer::write;
 
  private:
@@ -190,6 +201,10 @@ inline var_ctx_ptr default_metric(size_t num_params,
   }
 }
 
+/**
+ * Returns a vector containing metric initializations for each chain.
+ * If the supplied buffer is null, this uses the default in Stan (identity)
+ */
 inline std::vector<var_ctx_ptr> make_metric_inits(
     size_t num_chains, const double *buf, size_t num_params,
     TinyStanMetric metric_choice) {
