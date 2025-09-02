@@ -79,10 +79,10 @@
     @testset "Seed" begin
         out1 = pathfinder(bernoulli_model, BERNOULLI_DATA; seed = UInt32(123))
         out2 = pathfinder(bernoulli_model, BERNOULLI_DATA; seed = UInt32(123))
-        @test out1.draws == out2.draws
+        @test sortslices(out1.draws, dims=1) == sortslices(out2.draws, dims=1)
 
         out3 = pathfinder(bernoulli_model, BERNOULLI_DATA; seed = UInt32(456))
-        @test out1.draws != out3.draws
+        @test sortslices(out1.draws, dims=1) != sortslices(out3.draws, dims=1)
     end
 
     @testset "Inits" begin

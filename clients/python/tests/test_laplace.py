@@ -77,7 +77,7 @@ def test_seed(bernoulli_model):
         seed=123,
     )
 
-    np.testing.assert_equal(out1["theta"], out2["theta"])
+    np.testing.assert_equal(out1.data, out2.data)
 
     out3 = bernoulli_model.laplace_sample(
         BERNOULLI_MODE,
@@ -114,7 +114,7 @@ def test_bad_mode_stanoutput(bernoulli_model):
 
 
 def test_bad_mode_array(bernoulli_model):
-    mode1 = np.array([2.0])
+    mode1 = np.array([2.0, 1.0])
     with pytest.raises(RuntimeError, match="Bounded variable is 2"):
         bernoulli_model.laplace_sample(mode1, BERNOULLI_DATA)
 

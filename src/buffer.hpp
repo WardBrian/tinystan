@@ -51,7 +51,8 @@ class buffer_writer : public stan::callbacks::writer {
     const auto v_size = v.size();
 #ifndef TINYSTAN_NO_BOUNDS_CHECK
     if (pos + v_size > size) {
-      throw std::runtime_error("Buffer overflow. Please report a bug!");
+      throw std::runtime_error(
+          "Buffer overflow writing vector. Please report a bug!");
     }
 #endif
     std::memcpy(buf + pos, v.data(), sizeof(double) * v_size);
@@ -61,16 +62,43 @@ class buffer_writer : public stan::callbacks::writer {
   /**
    * Used by Pathfinder which writes draws all at once
    */
-  void operator()(const Eigen::Ref<Eigen::Matrix<double, -1, -1>> &m) override {
+  void operator()(const Eigen::MatrixXd &m) override {
 #ifndef TINYSTAN_NO_BOUNDS_CHECK
     if (pos + m.size() > size) {
-      throw std::runtime_error("Buffer overflow. Please report a bug!");
+      throw std::runtime_error(
+          "Buffer overflow writing eigen mat. Please report a bug!");
     }
 #endif
     // copy into buffer
     Eigen::Map<Eigen::MatrixXd>(buf + pos, m.cols(), m.rows()) = m.transpose();
     pos += m.size();
   }
+
+  void operator()(const Eigen::VectorXd &v) override {
+#ifndef TINYSTAN_NO_BOUNDS_CHECK
+    if (pos + v.size() > size) {
+      throw std::runtime_error(
+          "Buffer overflow writing eigen vec. Please report a bug!");
+    }
+#endif
+    // copy into buffer
+    Eigen::Map<Eigen::RowVectorXd>(buf + pos, v.rows()) = v.transpose();
+    pos += v.size();
+  }
+
+  void operator()(const Eigen::RowVectorXd &v) override {
+#ifndef TINYSTAN_NO_BOUNDS_CHECK
+    if (pos + v.size() > size) {
+      throw std::runtime_error(
+          "Buffer overflow writing eigen row vec. Please report a bug!");
+    }
+#endif
+    // copy into buffer
+    Eigen::Map<Eigen::RowVectorXd>(buf + pos, v.cols()) = v;
+    pos += v.size();
+  }
+
+  bool is_valid() const noexcept override { return buf != nullptr; }
 
   using stan::callbacks::writer::operator();
 

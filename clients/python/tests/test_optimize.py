@@ -56,7 +56,7 @@ def test_seed(bernoulli_model):
         seed=123,
     )
 
-    np.testing.assert_equal(out1["theta"], out2["theta"])
+    np.testing.assert_equal(out1.data, out2.data)
 
     out3 = bernoulli_model.optimize(
         BERNOULLI_DATA,
