@@ -4,8 +4,13 @@ import {
   PATHFINDER_VARIABLES,
   internalConstants,
 } from "./constants";
-const { NULL, PTR_SIZE, defaultSamplerParams, defaultPathfinderParams } =
-  internalConstants;
+const {
+  NULL,
+  PTR_SIZE,
+  defaultSamplerParams,
+  defaultPathfinderParams,
+  defaultWalnutsParams,
+} = internalConstants;
 
 import { HMCMetric } from "./types";
 import type {
@@ -15,6 +20,7 @@ import type {
   PrintCallback,
   StanDraws,
   internalTypes,
+  WalnutsParams,
 } from "./types";
 type WasmModule = internalTypes["WasmModule"];
 type ptr = internalTypes["ptr"];
@@ -316,6 +322,162 @@ export default class StanModel {
             );
           }
         }
+      }
+
+      return {
+        paramNames,
+        draws,
+        inv_metric: inv_metric_array,
+        stepsize: stepsizes,
+      };
+    });
+  }
+
+  public walnuts(p: Partial<WalnutsParams>): StanDraws {
+    const {
+      data,
+      num_chains,
+      inits,
+      seed,
+      id,
+      init_radius,
+      num_warmup,
+      num_samples,
+      save_inv_metric,
+      max_nuts_depth,
+      max_step_depth,
+      max_error,
+      init_count,
+      mass_iteration_offset,
+      additive_smoothing,
+      step_size_init,
+      accept_rate_target,
+      step_iteration_offset,
+      learning_rate,
+      decay_rate,
+      save_warmup,
+      refresh,
+      num_threads,
+    } = { ...defaultWalnutsParams, ...p };
+
+    if (num_chains < 1) {
+      throw new Error("num_chains must be at least 1");
+    }
+    if (num_warmup < 0) {
+      throw new Error("num_warmup must be non-negative");
+    }
+    if (num_samples < 1) {
+      throw new Error("num_samples must be at least 1");
+    }
+
+    const seed_ = seed ?? Math.floor(Math.random() * Math.pow(2, 32));
+
+    return this.withModel(data, seed_, (model, deferredFree) => {
+      // Get the parameter names
+      const rawParamNames = this.m.UTF8ToString(
+        this.m._tinystan_model_param_names(model),
+      );
+      const paramNames = rawParamNames.split(",");
+
+      const n_params = paramNames.length;
+
+      const free_params = this.m._tinystan_model_num_free_params(model);
+
+      // TODO: allow init_inv_metric to be specified
+      const init_inv_metric_ptr = NULL;
+
+      let inv_metric_out = NULL;
+
+      const stepsize_out = this.m._malloc(
+        num_chains * Float64Array.BYTES_PER_ELEMENT,
+      );
+      if (save_inv_metric) {
+        inv_metric_out = this.m._malloc(
+          num_chains * free_params * Float64Array.BYTES_PER_ELEMENT,
+        );
+      }
+      deferredFree(stepsize_out);
+      deferredFree(inv_metric_out);
+
+      const inits_ptr = this.encodeInits(inits);
+      deferredFree(inits_ptr);
+
+      const n_draws =
+        num_chains * (save_warmup ? num_samples + num_warmup : num_samples);
+      const n_out = n_draws * n_params;
+
+      // Allocate memory for the output
+      const out_ptr = this.m._malloc(n_out * Float64Array.BYTES_PER_ELEMENT);
+      deferredFree(out_ptr);
+
+      const err_ptr = this.m._malloc(PTR_SIZE);
+
+      // Sample from the model
+      const result = this.m._tinystan_walnuts(
+        model,
+        num_chains,
+        inits_ptr,
+        seed_,
+        id,
+        init_radius,
+        num_warmup,
+        num_samples,
+        init_inv_metric_ptr,
+        max_nuts_depth,
+        max_step_depth,
+        max_error,
+        init_count,
+        mass_iteration_offset,
+        additive_smoothing,
+        step_size_init,
+        accept_rate_target,
+        step_iteration_offset,
+        learning_rate,
+        decay_rate,
+        save_warmup ? 1 : 0,
+        refresh,
+        num_threads,
+        out_ptr,
+        n_out,
+        stepsize_out,
+        inv_metric_out,
+        err_ptr,
+      );
+
+      this.handleError(result, err_ptr);
+
+      const out_buffer = this.m.HEAPF64.subarray(
+        out_ptr / Float64Array.BYTES_PER_ELEMENT,
+        out_ptr / Float64Array.BYTES_PER_ELEMENT + n_out,
+      );
+
+      // copy out parameters of interest
+      const draws: number[][] = Array.from({ length: n_params }, (_, i) =>
+        Array.from({ length: n_draws }, (_, j) => out_buffer[i + n_params * j]),
+      );
+
+      let stepsizes: number[] | undefined;
+      let inv_metric_array: number[][] | number[][][] | undefined;
+      const stepsize_buffer = this.m.HEAPF64.subarray(
+        stepsize_out / Float64Array.BYTES_PER_ELEMENT,
+        stepsize_out / Float64Array.BYTES_PER_ELEMENT + num_chains,
+      );
+      stepsizes = Array.from(
+        { length: num_chains },
+        (_, i) => stepsize_buffer[i],
+      );
+      if (save_inv_metric) {
+        const inv_metric_buffer = this.m.HEAPF64.subarray(
+          inv_metric_out / Float64Array.BYTES_PER_ELEMENT,
+          inv_metric_out / Float64Array.BYTES_PER_ELEMENT +
+            num_chains * free_params,
+        );
+        inv_metric_array = Array.from({ length: num_chains }, (_, i) =>
+          Array.from(
+            { length: free_params },
+            (_, j) => inv_metric_buffer[i * free_params + j],
+          ),
+        );
       }
 
       return {

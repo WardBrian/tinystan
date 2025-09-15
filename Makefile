@@ -11,7 +11,7 @@ MATH ?= $(STAN)lib/stan_math/
 RAPIDJSON ?= $(STAN)lib/rapidjson_1.1.0/
 
 # required C++ includes
-INC_FIRST ?= -I $(STAN)src -I $(RAPIDJSON)
+INC_FIRST ?= -I $(STAN)src -I $(RAPIDJSON) -I$(TINYSTAN_ROOT)/walnuts/include
 
 # TinyStan wants multithreading support by default
 ifndef TINYSTAN_SERIAL

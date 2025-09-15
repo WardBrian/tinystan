@@ -1,4 +1,9 @@
-import { SamplerParams, PathfinderParams, HMCMetric } from "./types";
+import {
+  SamplerParams,
+  PathfinderParams,
+  HMCMetric,
+  WalnutsParams,
+} from "./types";
 
 export const HMC_SAMPLER_VARIABLES = [
   "lp__",
@@ -42,6 +47,34 @@ const defaultSamplerParams: SamplerParams = {
   refresh: 100,
   num_threads: -1,
 };
+
+const defaultWalnutsParams: WalnutsParams = {
+  data: "",
+  num_chains: 4,
+  inits: "",
+  seed: null,
+  id: 1,
+  init_radius: 2,
+  num_warmup: 1000,
+  num_samples: 1000,
+  save_inv_metric: false,
+  init_inv_metric: null, // currently unused
+  max_nuts_depth: 8,
+  max_step_depth: 8,
+  max_error: 0.5,
+  init_count: 1.1,
+  mass_iteration_offset: 1.1,
+  additive_smoothing: 1e-5,
+  step_size_init: 1.0,
+  accept_rate_target: 0.8,
+  step_iteration_offset: 5.0,
+  learning_rate: 1.5,
+  decay_rate: 0.05,
+  save_warmup: false,
+  refresh: 100,
+  num_threads: -1,
+};
+
 const defaultPathfinderParams: PathfinderParams = {
   data: "",
   num_paths: 4,
@@ -71,4 +104,5 @@ export const internalConstants = {
   PTR_SIZE,
   defaultSamplerParams,
   defaultPathfinderParams,
+  defaultWalnutsParams,
 };

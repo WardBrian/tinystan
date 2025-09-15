@@ -176,68 +176,86 @@ TINYSTAN_PUBLIC int tinystan_sample(
     double *out, size_t out_size, double *stepsize_out, double *inv_metric_out,
     TinyStanError **err);
 
+TINYSTAN_PUBLIC int tinystan_walnuts(
+    const TinyStanModel *tmodel, size_t num_chains, const char *inits,
+    unsigned int seed, unsigned int id, double init_radius, int num_warmup,
+    int num_samples, const double *init_inv_metric, int max_nuts_depth,
+    int max_step_depth, double max_error, double init_count,
+    double mass_iteration_offset, double additive_smoothing,
+    double step_size_init, double accept_rate_target,
+    double step_iteration_offset, double learning_rate, double decay_rate,
+    bool save_warmup, int refresh, int num_threads, double *out,
+    size_t out_size, double *stepsize_out, double *inv_metric_out,
+    TinyStanError **err);
+
 /**
  * @brief Run the Pathfinder algorithm to approximate the posterior.
  *
- * A wrapper around the functions in the `stan::services::pathfinder` namespace.
- * Same-named arguments should be interpreted as having the same meaning as in
- * the Stan documentation.
+ * A wrapper around the functions in the `stan::services::pathfinder`
+ * namespace. Same-named arguments should be interpreted as having the same
+ * meaning as in the Stan documentation.
  *
  * @param[in] model The TinyStanModel to use for the sampling.
- * @param[in] num_paths The number of individual runs of the algorithm to run in
- * parallel.
+ * @param[in] num_paths The number of individual runs of the algorithm to
+ * run in parallel.
  * @param[in] inits Initial parameter values. This should be a path
  * to a JSON file or a JSON string. If `num_paths` is greater than 1,
  * this can be a list of paths or JSON strings separated by the
  * separator character returned by tinystan_separator_char().
  * @param[in] seed The seed to use for the random number generator.
  * @param[in] id ID for the first path.
- * @param[in] init_radius Radius to initialize unspecified parameters within.
+ * @param[in] init_radius Radius to initialize unspecified parameters
+ * within.
  * @param[in] num_draws Number of approximate draws drawn from each of the
  * `num_paths` Pathfinders.
  * @param[in] max_history_size History size used by the internal L-BFGS
  * algorithm to approximate the Hessian.
- * @param[in] init_alpha Initial step size for the internal L-BFGS algorithm.
+ * @param[in] init_alpha Initial step size for the internal L-BFGS
+ * algorithm.
  * @param[in] tol_obj Convergence tolerance for the objective function for
  * the internal L-BFGS algorithm.
  * @param[in] tol_rel_obj Relative convergence tolerance for the objective
  * function for the internal L-BFGS algorithm.
  * @param[in] tol_grad Convergence tolerance for the gradient norm for the
  * internal L-BFGS algorithm.
- * @param[in] tol_rel_grad Relative convergence tolerance for the gradient norm
+ * @param[in] tol_rel_grad Relative convergence tolerance for the gradient
+ * norm for the internal L-BFGS algorithm.
+ * @param[in] tol_param Convergence tolerance for the changes in parameters
  * for the internal L-BFGS algorithm.
- * @param[in] tol_param Convergence tolerance for the changes in parameters for
- * the internal L-BFGS algorithm.
  * @param[in] num_iterations Maximum number of iterations for the internal
  * L-BFGS algorithm.
- * @param[in] num_elbo_draws Number of Monte Carlo draws used to estimate the
- * ELBO.
+ * @param[in] num_elbo_draws Number of Monte Carlo draws used to estimate
+ * the ELBO.
  * @param[in] num_multi_draws Number of draws returned by Multi-Pathfinder.
  * @param[in] calculate_lp Whether to calculate the log probability of the
  * approximate draws.
- * @param[in] psis_resample Whether to use Pareto smoothed importance sampling
- * on the approximate draws.
+ * @param[in] psis_resample Whether to use Pareto smoothed importance
+ * sampling on the approximate draws.
  * @param[in] refresh Number of iterations between progress messages.
  * @param[in] num_threads Number of threads to use for Pathfinder.
  * @param[out] out Buffer to store the samples. The buffer should be large
  * enough to store `num_multi_draws` doubles if psis_resample is true, or
  * `num_paths * num_draws` doubles otherwise.
- * @param[in] out_size Size of the buffer in doubles. Used for bounds checking
- * unless TINYSTAN_NO_BOUNDS_CHECK is defined, in which case it is ignored.
+ * @param[in] out_size Size of the buffer in doubles. Used for bounds
+ * checking unless TINYSTAN_NO_BOUNDS_CHECK is defined, in which case it is
+ * ignored.
  * @param[out] err Error information. Can be `NULL`.
  *
  * @return Zero on success, non-zero on error. If an error occurs, `err`
  * will be set to a non-NULL value which must be freed with
  * tinystan_destroy_error().
  */
-TINYSTAN_PUBLIC int tinystan_pathfinder(
-    const TinyStanModel *model, size_t num_paths, const char *inits,
-    unsigned int seed, unsigned int id, double init_radius, int num_draws,
-    /* tuning params */ int max_history_size, double init_alpha, double tol_obj,
-    double tol_rel_obj, double tol_grad, double tol_rel_grad, double tol_param,
-    int num_iterations, int num_elbo_draws, int num_multi_draws,
-    bool calculate_lp, bool psis_resample, int refresh, int num_threads,
-    double *out, size_t out_size, TinyStanError **err);
+TINYSTAN_PUBLIC
+int tinystan_pathfinder(const TinyStanModel *model, size_t num_paths,
+                        const char *inits, unsigned int seed, unsigned int id,
+                        double init_radius, int num_draws,
+                        /* tuning params */ int max_history_size,
+                        double init_alpha, double tol_obj, double tol_rel_obj,
+                        double tol_grad, double tol_rel_grad, double tol_param,
+                        int num_iterations, int num_elbo_draws,
+                        int num_multi_draws, bool calculate_lp,
+                        bool psis_resample, int refresh, int num_threads,
+                        double *out, size_t out_size, TinyStanError **err);
 
 /**
  * @brief Optimize the model parameters using the specified algorithm.

@@ -285,6 +285,40 @@ class Model:
             err_ptr,
         ]
 
+        self._ffi_walnuts = self._lib.tinystan_walnuts
+        self._ffi_walnuts.restype = ctypes.c_int
+
+        self._ffi_walnuts.argtypes = [
+            ctypes.c_void_p,  # model
+            ctypes.c_size_t,  # num_chains
+            ctypes.c_char_p,  # inits
+            ctypes.c_uint,  # seed
+            ctypes.c_uint,  # id
+            ctypes.c_double,  # init_radius
+            ctypes.c_int,  # num_warmup
+            ctypes.c_int,  # num_samples
+            nullable_double_array,  # metric init in
+            ctypes.c_int,  # max_nuts_depth
+            ctypes.c_int,  # max_step_depth
+            ctypes.c_double,  # max_error
+            ctypes.c_double,  # init_count
+            ctypes.c_double,  # mass_iteration_offset
+            ctypes.c_double,  # additive_smoothing
+            ctypes.c_double,  # step_size_init
+            ctypes.c_double,  # accept_rate_target
+            ctypes.c_double,  # step_iteration_offset
+            ctypes.c_double,  # learning_rate
+            ctypes.c_double,  # decay_rate
+            ctypes.c_bool,  # save_warmup
+            ctypes.c_int,  # refresh
+            ctypes.c_int,  # num_threads
+            double_array,
+            ctypes.c_size_t,  # buffer size
+            nullable_double_array,  # stepsize out
+            nullable_double_array,  # metric out
+            err_ptr,
+        ]
+
         self._ffi_pathfinder = self._lib.tinystan_pathfinder
         self._ffi_pathfinder.restype = ctypes.c_int
         self._ffi_pathfinder.argtypes = [
@@ -623,6 +657,112 @@ class Model:
                 stepsize,
                 stepsize_jitter,
                 max_depth,
+                refresh,
+                num_threads,
+                out,
+                out.size,
+                stepsize_out,
+                inv_metric_out,
+                err,
+            )
+            self._raise_for_error(rc, err)
+
+        output = StanOutput(param_names, out)
+        output.stepsize = stepsize_out
+        output.inv_metric = inv_metric_out
+
+        return output
+
+    def walnuts(
+        self,
+        data: StanData = "",
+        *,
+        num_chains: int = 4,
+        inits: Union[StanData, List[StanData], None] = None,
+        seed: Optional[int] = None,
+        id: int = 1,
+        init_radius: float = 2.0,
+        num_warmup: int = 1000,
+        num_samples: int = 1000,
+        init_inv_metric: Optional[np.ndarray] = None,
+        save_inv_metric: bool = False,
+        max_nuts_depth: int = 8,
+        max_step_depth: int = 8,
+        max_error: float = 0.5,
+        init_count: float = 1.1,
+        mass_iteration_offset: float = 1.1,
+        additive_smoothing: float = 1e-5,
+        step_size_init: float = 1.0,
+        accept_rate_target: float = 0.8,
+        step_iteration_offset: float = 5.0,
+        learning_rate: float = 1.5,
+        decay_rate: float = 0.05,
+        save_warmup: bool = False,
+        refresh: int = 0,
+        num_threads: int = -1,
+    ):
+        # these are checked here because they're sizes for "out"
+        if num_chains < 1:
+            raise ValueError("num_chains must be at least 1")
+        if num_warmup < 0:
+            raise ValueError("num_warmup must be non-negative")
+        if num_samples < 1:
+            raise ValueError("num_samples must be at least 1")
+
+        seed = seed or rand_u32()
+
+        with self._get_model(data, seed) as model:
+            model_params = self._num_free_params(model)
+
+            param_names = self._get_parameter_names(model)
+
+            num_params = len(param_names)
+            num_draws = num_samples + num_warmup * save_warmup
+            out = np.zeros((num_chains, num_draws, num_params), dtype=np.float64)
+
+            metric_size = (model_params,)
+
+            if init_inv_metric is not None:
+                if init_inv_metric.shape == metric_size:
+                    init_inv_metric = np.repeat(
+                        init_inv_metric[np.newaxis], num_chains, axis=0
+                    )
+                elif init_inv_metric.shape == (num_chains, *metric_size):
+                    pass
+                else:
+                    raise ValueError(
+                        f"Invalid initial metric size. Expected a {metric_size} "
+                        f"or {(num_chains, *metric_size)} matrix."
+                    )
+
+            inv_metric_out = None
+            stepsize_out = np.zeros(num_chains, dtype=np.float64)
+            if save_inv_metric:
+                inv_metric_out = np.zeros((num_chains, *metric_size), dtype=np.float64)
+
+            err = ctypes.pointer(ctypes.c_void_p())
+            rc = self._ffi_walnuts(
+                model,
+                num_chains,
+                self._encode_inits(inits, num_chains, seed),
+                seed,
+                id,
+                init_radius,
+                num_warmup,
+                num_samples,
+                init_inv_metric,
+                max_nuts_depth,
+                max_step_depth,
+                max_error,
+                init_count,
+                mass_iteration_offset,
+                additive_smoothing,
+                step_size_init,
+                accept_rate_target,
+                step_iteration_offset,
+                learning_rate,
+                decay_rate,
+                save_warmup,
                 refresh,
                 num_threads,
                 out,
@@ -1011,10 +1151,10 @@ class Model:
         with self._get_model(data, seed) as model:
             req_params = self._num_req_constrained_params(model)
             if mode_array is not None and len(mode_array) < req_params:
-                 raise ValueError(
+                raise ValueError(
                     "Mode array has incorrect length. "
                     f"Expected at least {req_params} but got {len(mode_array)}"
-                 )
+                )
 
             param_names = LAPLACE_VARIABLES + self._get_parameter_names(model)
             num_params = len(param_names)
