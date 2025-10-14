@@ -111,7 +111,7 @@ jobs:
     needs: release
     environment: publishing
     permissions:
-      id-token: write
+      id-token: write # OIDC for pypi, npmjs
       contents: write
     steps:
       - name: Check out github
@@ -141,8 +141,6 @@ jobs:
           mv release-artifacts/clients/typescript/tinystan-js-${{ inputs.new_version }}.tgz clients/typescript
           cd clients/typescript
           yarn publish tinystan-js-${{ inputs.new_version }}.tgz --new-version ${{ inputs.new_version }} --no-git-tag-version
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
 
       # - name: Create JuliaRegistration comment
