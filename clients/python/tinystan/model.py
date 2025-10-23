@@ -1011,10 +1011,10 @@ class Model:
         with self._get_model(data, seed) as model:
             req_params = self._num_req_constrained_params(model)
             if mode_array is not None and len(mode_array) < req_params:
-                 raise ValueError(
+                raise ValueError(
                     "Mode array has incorrect length. "
                     f"Expected at least {req_params} but got {len(mode_array)}"
-                 )
+                )
 
             param_names = LAPLACE_VARIABLES + self._get_parameter_names(model)
             num_params = len(param_names)

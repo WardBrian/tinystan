@@ -8,7 +8,7 @@ on:
   workflow_dispatch: {}
 
 env:
-  CACHE_VERSION: 3
+  CACHE_VERSION: 5
 
 # only run one copy per PR
 concurrency:
@@ -16,12 +16,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check-formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out github
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Set up Julia
+        uses: julia-actions/install-juliaup@v2
+        with:
+          channel: "lts"
+
+      - name: Install Formatters
+        run: |
+          sudo apt install -y clang-format black isort
+          curl --proto '=https' --tlsv1.2 -LsSf https://github.com/posit-dev/air/releases/download/0.8.0/air-installer.sh | sh
+          julia --project=clients/julia -e 'import Pkg; Pkg.add("JuliaFormatter")'
+
+      - name: Run formatting checks
+        run: |
+          make format-check || (echo "::error title=Formatting::Formatting check failed, run \`make format\` locally" && exit 1)
+
   build:
     runs-on: ${{matrix.os}}
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        # windows-2022 is a workaround for a julia issue as of 10/23/2025
+        # https://github.com/JuliaLang/julia/issues/59931
+        os: [windows-2022, ubuntu-latest, macos-latest]
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -55,8 +80,8 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.9", "3.12"]
+        os: [ubuntu-latest, macos-latest, windows-2022]
+        python-version: ["3.9", "3"]
       fail-fast: false
     steps:
       - name: Check out github
@@ -110,7 +135,7 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-2022]
       fail-fast: false
     steps:
       - name: Check out github
@@ -144,7 +169,7 @@ jobs:
           key: ${{ hashFiles('**/*.stan', 'src/*', 'stan/src/stan/version.hpp', 'Makefile') }}-${{ matrix.os }}-v${{ env.CACHE_VERSION }}
 
       - name: Run tests
-        if: matrix.os != 'windows-latest'
+        if: matrix.os != 'windows-2022'
         run: |
           cd clients/R
           Rscript -e "devtools::test(reporter = c(\"summary\", \"fail\"))"
@@ -152,7 +177,7 @@ jobs:
           TINYSTAN: ${{ github.workspace }}
 
       - name: Run tests (windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2022'
         run: |
           cd clients/R
           Rscript -e 'devtools::test(reporter = c("summary", "fail"))'
@@ -165,7 +190,7 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-2022]
         julia-version: ["1"]
       fail-fast: false
     steps:
@@ -175,9 +200,9 @@ jobs:
           submodules: recursive
 
       - name: Set up Julia
-        uses: julia-actions/setup-julia@v2
+        uses: julia-actions/install-juliaup@v2
         with:
-          version: ${{ matrix.julia-version }}
+          channel: ${{ matrix.julia-version }}
 
       - name: Restore Stan
         uses: actions/cache@v4
@@ -201,7 +226,7 @@ jobs:
 
       - name: Run tests
         run: |
-          julia --project=clients/julia -t 2 -e "using Pkg; Pkg.test()"
+          julia --project=clients/julia -t 2 --color yes -e "using Pkg; Pkg.test()"
         env:
           TINYSTAN: ${{ github.workspace }}
 

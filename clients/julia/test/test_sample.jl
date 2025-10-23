@@ -220,8 +220,8 @@
             num_chains = 2,
             inits = [init1, init2],
         )
-        @test all(output2.draws[1, :, output2.names.=="mu", 1] .< 0)
-        @test all(output2.draws[2, :, output2.names.=="mu", 1] .> 0)
+        @test all(output2.draws[1, :, output2.names .== "mu", 1] .< 0)
+        @test all(output2.draws[2, :, output2.names .== "mu", 1] .> 0)
 
         init3 = tempname() * ".json"
         open(init3, "w") do io
@@ -234,8 +234,8 @@
             num_chains = 2,
             inits = [init3, init2],
         )
-        @test all(output3.draws[1, :, output3.names.=="mu", 1] .< 0)
-        @test all(output3.draws[2, :, output3.names.=="mu", 1] .> 0)
+        @test all(output3.draws[1, :, output3.names .== "mu", 1] .< 0)
+        @test all(output3.draws[2, :, output3.names .== "mu", 1] .> 0)
     end
 
 
