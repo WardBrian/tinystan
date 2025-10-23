@@ -41,8 +41,8 @@ namespace io {
  */
 class buffer_writer : public stan::callbacks::writer {
  public:
-  buffer_writer(double *buf, size_t max) : buf(buf), pos(0), size(max) {};
-  virtual ~buffer_writer() {};
+  buffer_writer(double *buf, size_t max) : buf(buf), pos(0), size(max){};
+  virtual ~buffer_writer(){};
 
   /**
    * Primary method used by the Stan algorithms
@@ -117,7 +117,7 @@ class buffer_writer : public stan::callbacks::writer {
 class filtered_writer : public stan::callbacks::structured_writer {
  public:
   filtered_writer() : filters{} {};
-  virtual ~filtered_writer() {};
+  virtual ~filtered_writer(){};
 
   void add_key(const std::string &key_in, double *buf) {
     if (buf != nullptr) {
@@ -172,8 +172,8 @@ class inv_metric_buffer_reader : public stan::io::empty_var_context {
  public:
   inv_metric_buffer_reader(const double *buf, size_t size,
                            TinyStanMetric metric_choice)
-      : buf(buf), size(size), dense(metric_choice == TinyStanMetric::dense) {};
-  virtual ~inv_metric_buffer_reader() {};
+      : buf(buf), size(size), dense(metric_choice == TinyStanMetric::dense){};
+  virtual ~inv_metric_buffer_reader(){};
 
   bool contains_r(const std::string &name) const override {
     return name == "inv_metric";

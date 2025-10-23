@@ -131,11 +131,7 @@
         )
 
         mode2 = [1.0]
-        @test_throws "incorrect length" laplace_sample(
-            gaussian_model,
-            mode2,
-            "{\"N\": 4 }",
-        )
+        @test_throws "incorrect length" laplace_sample(gaussian_model, mode2, "{\"N\": 4 }")
     end
 
     @testset "Bad mode json" begin

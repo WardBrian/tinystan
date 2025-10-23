@@ -545,7 +545,10 @@ function laplace_sample(
     end
 
     with_model(model, data, seed) do model_ptr
-        required_params =  @ccall $(dlsym(model.lib, :tinystan_model_num_constrained_params_for_unconstraining))(
+        required_params = @ccall $(dlsym(
+            model.lib,
+            :tinystan_model_num_constrained_params_for_unconstraining,
+        ))(
             model_ptr::Ptr{Cvoid},
         )::Cint
 
