@@ -8,7 +8,7 @@ on:
   workflow_dispatch: {}
 
 env:
-  CACHE_VERSION: 3
+  CACHE_VERSION: 4
 
 # only run one copy per PR
 concurrency:
@@ -16,6 +16,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check-formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out github
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Set up Julia
+        uses: julia-actions/install-juliaup@v2
+        with:
+          channel: "lts"
+
+      - name: Install Formatters
+        run: |
+          sudo apt install -y clang-format black isort
+          curl --proto '=https' --tlsv1.2 -LsSf https://github.com/posit-dev/air/releases/download/0.8.0/air-installer.sh | sh
+          julia --project=clients/julia -e 'import Pkg; Pkg.add("JuliaFormatter")'
+
+      - name: Run formatting checks
+        run: |
+          make format-check || (echo "::error title=Formatting::Formatting check failed, run \`make format\` locally" && exit 1)
+
   build:
     runs-on: ${{matrix.os}}
     strategy:
@@ -56,7 +79,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.9", "3.12"]
+        python-version: ["3.9", "3"]
       fail-fast: false
     steps:
       - name: Check out github
@@ -175,9 +198,9 @@ jobs:
           submodules: recursive
 
       - name: Set up Julia
-        uses: julia-actions/setup-julia@v2
+        uses: julia-actions/install-juliaup@v2
         with:
-          version: ${{ matrix.julia-version }}
+          channel: ${{ matrix.julia-version }}
 
       - name: Restore Stan
         uses: actions/cache@v4
@@ -201,7 +224,7 @@ jobs:
 
       - name: Run tests
         run: |
-          julia --project=clients/julia -t 2 -e "using Pkg; Pkg.test()"
+          julia --project=clients/julia -t 2 --color yes -e "using Pkg; Pkg.test()"
         env:
           TINYSTAN: ${{ github.workspace }}
 
