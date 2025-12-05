@@ -133,7 +133,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 20
-          registry-url: 'https://registry.npmjs.org'
+          registry-url: 'https://registry.npmjs.com'
           always-auth: true
 
       - name: Upload NPM package
