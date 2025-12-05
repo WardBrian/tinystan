@@ -132,14 +132,14 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 22
           registry-url: "https://registry.npmjs.org"
-          always-auth: true
 
       - name: Upload NPM package
         run: |
           mv release-artifacts/clients/typescript/tinystan-js-${{ inputs.new_version }}.tgz clients/typescript
           cd clients/typescript
+          npm install -g npm@latest
           npm publish tinystan-js-${{ inputs.new_version }}.tgz
 
       # - name: Create JuliaRegistration comment
