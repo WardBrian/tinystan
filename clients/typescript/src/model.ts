@@ -29,13 +29,13 @@ type cstr = internalTypes["cstr"];
  */
 export default class StanModel {
   private m: WasmModule;
-  private printCallback: PrintCallback | null;
+  private printErrorCallback: PrintCallback | null;
   // used to send multiple JSON values in one string
   private sep: string;
 
   private constructor(m: WasmModule, pc: PrintCallback | null) {
     this.m = m;
-    this.printCallback = pc;
+    this.printErrorCallback = pc;
     this.sep = String.fromCharCode(m._tinystan_separator_char());
   }
 
@@ -49,16 +49,18 @@ export default class StanModel {
    * @returns {Promise<StanModel>} A promise that resolves to a `StanModel`
    */
   public static async load(
-    createModule: (proto?: object) => Promise<WasmModule>,
-    printCallback: PrintCallback | null,
+    createModule: (moduleArg?: object) => Promise<object>,
+    printCallback: PrintCallback | null = null,
+    printErrorCallback: PrintCallback | null = null,
   ): Promise<StanModel> {
     // Create the initial object which will have the rest of the WASM
     // functions attached to it
     // See https://emscripten.org/docs/api_reference/module.html
-    const prototype = { print: printCallback };
+    printErrorCallback = printErrorCallback ?? printCallback;
+    const prototype = { print: printCallback, printErr: printErrorCallback };
 
     const module = await createModule(prototype);
-    return new StanModel(module, printCallback);
+    return new StanModel(module as WasmModule, printErrorCallback);
   }
 
   private encodeString(s: string): cstr {
@@ -79,7 +81,7 @@ export default class StanModel {
     const err_msg = "Exception from Stan:\n" + this.m.UTF8ToString(err_msg_ptr);
     this.m._tinystan_destroy_error(err);
     this.m._free(err_ptr);
-    this.printCallback?.(err_msg);
+    this.printErrorCallback?.(err_msg);
     throw new Error(err_msg);
   }
 
