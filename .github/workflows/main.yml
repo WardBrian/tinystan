@@ -8,7 +8,7 @@ on:
   workflow_dispatch: {}
 
 env:
-  CACHE_VERSION: 5
+  CACHE_VERSION: 8
 
 # only run one copy per PR
 concurrency:
@@ -44,9 +44,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # windows-2022 is a workaround for a julia issue as of 10/23/2025
-        # https://github.com/JuliaLang/julia/issues/59931
-        os: [windows-2022, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -80,7 +78,7 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-2022]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ["3.9", "3"]
       fail-fast: false
     steps:
@@ -135,7 +133,7 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-2022]
+        os: [ubuntu-latest, macos-latest, windows-latest]
       fail-fast: false
     steps:
       - name: Check out github
@@ -169,7 +167,7 @@ jobs:
           key: ${{ hashFiles('**/*.stan', 'src/*', 'stan/src/stan/version.hpp', 'Makefile') }}-${{ matrix.os }}-v${{ env.CACHE_VERSION }}
 
       - name: Run tests
-        if: matrix.os != 'windows-2022'
+        if: matrix.os != 'windows-latest'
         run: |
           cd clients/R
           Rscript -e "devtools::test(reporter = c(\"summary\", \"fail\"))"
@@ -177,7 +175,7 @@ jobs:
           TINYSTAN: ${{ github.workspace }}
 
       - name: Run tests (windows)
-        if: matrix.os == 'windows-2022'
+        if: matrix.os == 'windows-latest'
         run: |
           cd clients/R
           Rscript -e 'devtools::test(reporter = c("summary", "fail"))'
@@ -190,7 +188,7 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-2022]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         julia-version: ["1"]
       fail-fast: false
     steps:
