@@ -83,7 +83,7 @@ jobs:
           yarn pack --filename tinystan-js-${{ inputs.new_version }}.tgz
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: release-artifacts
           path: |
