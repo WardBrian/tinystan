@@ -65,14 +65,14 @@
     "@babel/preset-env": "^7.26.0",
     "@babel/preset-typescript": "^7.26.0",
     "@godaddy/dmd": "^1.0.4",
-    "@vitest/coverage-v8": "^3.0.7",
-    "eslint": "^9.4.0",
+    "@vitest/coverage-v8": "^4.1.0",
     "jsdoc-babel": "^0.5.0",
     "jsdoc-to-markdown": "^9.0.5",
     "prettier": "^3.3.1",
     "tsup": "^8.4.0",
-    "typescript": "^5.6.3",
-    "vitest": "^3.0.7"
+    "typescript": "^6.0.2",
+    "vite": "^8.0.0",
+    "vitest": "^4.1.0"
   },
   "publishConfig": {
     "access": "public"
