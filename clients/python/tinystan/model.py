@@ -300,15 +300,17 @@ class Model:
             nullable_double_array,  # metric init in
             ctypes.c_int,  # max_nuts_depth
             ctypes.c_int,  # max_step_depth
+            ctypes.c_int,  # min_micro_steps
             ctypes.c_double,  # max_error
             ctypes.c_double,  # init_count
             ctypes.c_double,  # mass_iteration_offset
             ctypes.c_double,  # additive_smoothing
             ctypes.c_double,  # step_size_init
             ctypes.c_double,  # accept_rate_target
-            ctypes.c_double,  # step_iteration_offset
             ctypes.c_double,  # learning_rate
-            ctypes.c_double,  # decay_rate
+            ctypes.c_double,  # beta1
+            ctypes.c_double,  # beta2
+            ctypes.c_double,  # epsilon
             ctypes.c_bool,  # save_warmup
             ctypes.c_int,  # refresh
             ctypes.c_int,  # num_threads
@@ -688,15 +690,17 @@ class Model:
         save_inv_metric: bool = False,
         max_nuts_depth: int = 8,
         max_step_depth: int = 8,
+        min_micro_steps: int = 1,
         max_error: float = 0.5,
         init_count: float = 1.1,
         mass_iteration_offset: float = 1.1,
         additive_smoothing: float = 1e-5,
         step_size_init: float = 1.0,
         accept_rate_target: float = 0.8,
-        step_iteration_offset: float = 5.0,
         learning_rate: float = 1.5,
-        decay_rate: float = 0.05,
+        beta1: float = 0.3,
+        beta2: float = 0.99,
+        epsilon: float = 1e-4,
         save_warmup: bool = False,
         refresh: int = 0,
         num_threads: int = -1,
@@ -753,15 +757,17 @@ class Model:
                 init_inv_metric,
                 max_nuts_depth,
                 max_step_depth,
+                min_micro_steps,
                 max_error,
                 init_count,
                 mass_iteration_offset,
                 additive_smoothing,
                 step_size_init,
                 accept_rate_target,
-                step_iteration_offset,
                 learning_rate,
-                decay_rate,
+                beta1,
+                beta2,
+                epsilon,
                 save_warmup,
                 refresh,
                 num_threads,

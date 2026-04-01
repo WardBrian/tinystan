@@ -127,20 +127,21 @@ export interface WalnutsParams {
   init_inv_metric: number[] | number[][] | number[][][] | null;
   max_nuts_depth: number;
   max_step_depth: number;
+  min_micro_steps: number;
   max_error: number;
   init_count: number;
   mass_iteration_offset: number;
   additive_smoothing: number;
   step_size_init: number;
   accept_rate_target: number;
-  step_iteration_offset: number;
   learning_rate: number;
-  decay_rate: number;
+  beta1: number;
+  beta2: number;
+  epsilon: number;
   save_warmup: boolean;
   refresh: number;
   num_threads: number;
 }
-
 
 interface LBFGSConfig {
   max_history_size: number;
@@ -244,12 +245,13 @@ interface WasmModule {
     term_buffer: number, window: number, save_warmup: number, stepsize: number, stepsize_jitter: number,
     max_depth: number, refresh: number, num_threads: number, out: ptr, out_size: number, stepsize_out: ptr,
     inv_metric_out: ptr, err_ptr: ptr): number;
+  // prettier-ignore
   _tinystan_walnuts(model: model_ptr, num_chains: number, inits: cstr, seed: number, id: number,
     init_radius: number, num_warmup: number, num_samples: number, init_inv_metric: ptr,
-    max_nuts_depth: number, max_step_depth: number, max_error: number, init_count: number,
-    mass_iteration_offset: number, additive_smoothing: number, step_size_init: number,
-    accept_rate_target: number, step_iteration_offset: number, learning_rate: number,
-    decay_rate: number, save_warmup: number, refresh: number, num_threads: number,
+    max_nuts_depth: number, max_step_depth: number, min_micro_steps:number, max_error: number,
+    init_count: number, mass_iteration_offset: number, additive_smoothing: number,
+    step_size_init: number, accept_rate_target: number, learning_rate: number, beta1: number,
+    beta2: number, epsilon: number, save_warmup: number, refresh: number, num_threads: number,
     out: ptr, out_size: number, stepsize_out: ptr, inv_metric_out: ptr, err_ptr: ptr): number;
   // prettier-ignore
   _tinystan_pathfinder(model: model_ptr, num_paths: number, inits: cstr, seed: number, id: number,

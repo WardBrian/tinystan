@@ -207,14 +207,14 @@ int tinystan_walnuts(const TinyStanModel *tmodel, size_t num_chains,
                      const char *inits, unsigned int seed, unsigned int id,
                      double init_radius, int num_warmup, int num_samples,
                      const double *init_inv_metric, int max_nuts_depth,
-                     int max_step_depth, double max_error, double init_count,
-                     double mass_iteration_offset, double additive_smoothing,
-                     double step_size_init, double accept_rate_target,
-                     double step_iteration_offset, double learning_rate,
-                     double decay_rate, bool save_warmup, int refresh,
-                     int num_threads, double *out, size_t out_size,
-                     double *stepsize_out, double *inv_metric_out,
-                     TinyStanError **err) {
+                     int max_step_depth, int min_micro_steps, double max_error,
+                     double init_count, double mass_iteration_offset,
+                     double additive_smoothing, double step_size_init,
+                     double accept_rate_target, double learning_rate,
+                     double beta1, double beta2, double epsilon,
+                     bool save_warmup, int refresh, int num_threads,
+                     double *out, size_t out_size, double *stepsize_out,
+                     double *inv_metric_out, TinyStanError **err) {
   return error::catch_exceptions(err, [&]() {
     error::check_positive("num_chains", num_chains);
     error::check_positive("id", id);
@@ -223,6 +223,7 @@ int tinystan_walnuts(const TinyStanModel *tmodel, size_t num_chains,
     error::check_positive("num_samples", num_samples);
     error::check_positive("max_nuts_depth", max_nuts_depth);
     error::check_positive("max_step_depth", max_step_depth);
+    error::check_positive("min_micro_steps", min_micro_steps);
     error::check_positive("max_error", max_error);
     error::check_between("init_count", init_count, 1,
                          (std::numeric_limits<double>::max)());
@@ -232,10 +233,12 @@ int tinystan_walnuts(const TinyStanModel *tmodel, size_t num_chains,
     error::check_positive("step_size_init", step_size_init);
     error::check_between("accept_rate_target", accept_rate_target,
                          (std::numeric_limits<double>::min)(), 1);
-    error::check_between("step_iteration_offset", step_iteration_offset, 1,
-                         (std::numeric_limits<double>::max)());
+    error::check_between("beta1", beta1, (std::numeric_limits<double>::min)(),
+                         1);
+    error::check_between("beta2", beta2, (std::numeric_limits<double>::min)(),
+                         1);
+    error::check_positive("epsilon", epsilon);
     error::check_positive("learning_rate", learning_rate);
-    error::check_positive("decay_rate", decay_rate);
 
     util::init_threading(num_threads);
 
@@ -263,7 +266,7 @@ int tinystan_walnuts(const TinyStanModel *tmodel, size_t num_chains,
     std::vector<Eigen::VectorXd> theta_inits(num_chains);
     std::vector<nuts::MassAdaptConfig<double>> mass_cfgs;
     mass_cfgs.reserve(num_chains);
-    std::vector<nuts::StepAdaptConfig<double>> step_cfgs;
+    std::vector<nuts::AdamConfig<double>> step_cfgs;
     step_cfgs.reserve(num_chains);
     std::vector<nuts::WalnutsConfig<double>> walnuts_cfgs;
     walnuts_cfgs.reserve(num_chains);
@@ -282,9 +285,11 @@ int tinystan_walnuts(const TinyStanModel *tmodel, size_t num_chains,
 
       mass_cfgs.emplace_back(mass_init, init_count, mass_iteration_offset,
                              additive_smoothing);
-      step_cfgs.emplace_back(step_size_init, accept_rate_target,
-                             step_iteration_offset, learning_rate, decay_rate);
-      walnuts_cfgs.emplace_back(max_error, max_nuts_depth, max_step_depth);
+
+      step_cfgs.emplace_back(step_size_init, accept_rate_target, learning_rate,
+                             beta1, beta2, epsilon);
+      walnuts_cfgs.emplace_back(max_error, max_nuts_depth, max_step_depth,
+                                min_micro_steps);
     }
 
     auto logp
@@ -347,7 +352,6 @@ int tinystan_walnuts(const TinyStanModel *tmodel, size_t num_chains,
                 interrupt();
                 if (refresh > 0
                     && (w + 1 == finish || w == 0 || (w + 1) % refresh == 0)) {
-
                   std::stringstream message;
                   message << "Chain [" << id + i << "] ";
                   message << "Iteration: ";
