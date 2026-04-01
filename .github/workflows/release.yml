@@ -22,12 +22,12 @@ jobs:
       contents: write
     steps:
       - name: Check out github
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.12
 
@@ -35,7 +35,7 @@ jobs:
         uses: julia-actions/setup-julia@v2
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: "yarn"
@@ -83,7 +83,7 @@ jobs:
           yarn pack --filename tinystan-js-${{ inputs.new_version }}.tgz
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-artifacts
           path: |
@@ -111,39 +111,36 @@ jobs:
     needs: release
     environment: publishing
     permissions:
-      id-token: write
+      id-token: write # OIDC for pypi, npmjs
       contents: write
     steps:
       - name: Check out github
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download release artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: release-artifacts
           path: release-artifacts
 
       - name: Upload PyPI wheels
-        uses: pypa/gh-action-pypi-publish@v1.12.4
+        uses: pypa/gh-action-pypi-publish@v1.13.0
         with:
           packages-dir: release-artifacts/clients/python/dist/
           skip-existing: true
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 20
-          registry-url: 'https://registry.npmjs.org'
-          always-auth: true
+          node-version: 22
+          registry-url: "https://registry.npmjs.org"
 
       - name: Upload NPM package
         run: |
           mv release-artifacts/clients/typescript/tinystan-js-${{ inputs.new_version }}.tgz clients/typescript
           cd clients/typescript
-          yarn publish tinystan-js-${{ inputs.new_version }}.tgz --new-version ${{ inputs.new_version }} --no-git-tag-version
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
+          npm install -g npm@latest
+          npm publish tinystan-js-${{ inputs.new_version }}.tgz
 
       # - name: Create JuliaRegistration comment
       #   uses: peter-evans/commit-comment@v3

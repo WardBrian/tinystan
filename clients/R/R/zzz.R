@@ -1,5 +1,12 @@
-HMC_SAMPLER_VARIABLES = c("lp__", "accept_stat__", "stepsize__", "treedepth__", "n_leapfrog__",
-    "divergent__", "energy__")
+HMC_SAMPLER_VARIABLES = c(
+  "lp__",
+  "accept_stat__",
+  "stepsize__",
+  "treedepth__",
+  "n_leapfrog__",
+  "divergent__",
+  "energy__"
+)
 
 PATHFINDER_VARIABLES = c("lp_approx__", "lp__", "path__")
 

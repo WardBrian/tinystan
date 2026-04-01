@@ -7,133 +7,197 @@
 #' fit = sampler(model = mod, data = data_file)
 #' fit
 #'
-tinystan_model = function(lib, stanc_args = NULL, make_args = NULL, warn = TRUE) {
-    if (tools::file_ext(lib) == "stan") {
-        # FIXME: This is a hack to get the code from the stan file
-        stan_code <- lib
-        lib <- compile_model(lib, stanc_args, make_args)
-        code <- paste0(readLines(stan_code), collapse = "\n")
-        built_with_so <- FALSE
-    } else {
-        build_with_so <- TRUE
-        code <- "Built with .so object. No code available for printing"
-    }
-    if (.Platform$OS.type == "windows") {
-        lib_old <- lib
-        lib <- paste0(tools::file_path_sans_ext(lib), ".dll")
-        file.copy(from = lib_old, to = lib)
-        windows_dll_path_setup()
-    }
-    lib <- tools::file_path_as_absolute(lib)
-    lib_name <- tools::file_path_sans_ext(basename(lib))
-    if (warn && is.loaded("tinystan_create_model_R", PACKAGE = lib_name)) {
-        warning(paste0("Loading a shared object '", lib, "' which is already loaded.\n",
-            "If the file has changed since the last time it was loaded, this load may not update the library!"))
-    }
-    dyn.load(lib, PACKAGE = lib_name)
-    sep <- .C("tinystan_separator_char_R", sep = raw(1), PACKAGE = lib_name)$sep
-    sep <- rawToChar(sep)
+tinystan_model = function(
+  lib,
+  stanc_args = NULL,
+  make_args = NULL,
+  warn = TRUE
+) {
+  if (tools::file_ext(lib) == "stan") {
+    # FIXME: This is a hack to get the code from the stan file
+    stan_code <- lib
+    lib <- compile_model(lib, stanc_args, make_args)
+    code <- paste0(readLines(stan_code), collapse = "\n")
+    built_with_so <- FALSE
+  } else {
+    build_with_so <- TRUE
+    code <- "Built with .so object. No code available for printing"
+  }
+  if (.Platform$OS.type == "windows") {
+    lib_old <- lib
+    lib <- paste0(tools::file_path_sans_ext(lib), ".dll")
+    file.copy(from = lib_old, to = lib)
+    windows_dll_path_setup()
+  }
+  lib <- tools::file_path_as_absolute(lib)
+  lib_name <- tools::file_path_sans_ext(basename(lib))
+  if (warn && is.loaded("tinystan_create_model_R", PACKAGE = lib_name)) {
+    warning(paste0(
+      "Loading a shared object '",
+      lib,
+      "' which is already loaded.\n",
+      "If the file has changed since the last time it was loaded, this load may not update the library!"
+    ))
+  }
+  dyn.load(lib, PACKAGE = lib_name)
+  sep <- .C("tinystan_separator_char_R", sep = raw(1), PACKAGE = lib_name)$sep
+  sep <- rawToChar(sep)
 
-    api_ver = .C("tinystan_api_version", major = integer(1), minor = integer(1),
-        patch = integer(1), PACKAGE = lib_name)
+  api_ver = .C(
+    "tinystan_api_version",
+    major = integer(1),
+    minor = integer(1),
+    patch = integer(1),
+    PACKAGE = lib_name
+  )
 
-    if (api_ver$major != current_version_list$major) {
-        msg = paste0("Incompatible TinyStan API version. Expected ", paste(current_version_list,
-            collapse = "."), " but found ", paste(api_ver, collapse = "."), ".\nYou need to re-compile your model.")
-        stop(msg)
-    } else if (api_ver$minor != current_version_list$minor || api_ver$patch != current_version_list$patch) {
-        msg = paste0("TinyStan API version mismatch. Expected ", paste(current_version_list,
-            collapse = "."), " but found ", paste(api_ver, collapse = "."), ".\nYou may need to re-compile your model.")
-        warning(msg)
-    }
+  if (api_ver$major != current_version_list$major) {
+    msg = paste0(
+      "Incompatible TinyStan API version. Expected ",
+      paste(current_version_list, collapse = "."),
+      " but found ",
+      paste(api_ver, collapse = "."),
+      ".\nYou need to re-compile your model."
+    )
+    stop(msg)
+  } else if (
+    api_ver$minor != current_version_list$minor ||
+      api_ver$patch != current_version_list$patch
+  ) {
+    msg = paste0(
+      "TinyStan API version mismatch. Expected ",
+      paste(current_version_list, collapse = "."),
+      " but found ",
+      paste(api_ver, collapse = "."),
+      ".\nYou may need to re-compile your model."
+    )
+    warning(msg)
+  }
 
-    ret <- list(lib = lib, lib_name = lib_name, sep = sep, code = code, built_with_so = built_with_so)
-    class(ret) <- c("tinystan_model", class(ret))
-    return(ret)
+  ret <- list(
+    lib = lib,
+    lib_name = lib_name,
+    sep = sep,
+    code = code,
+    built_with_so = built_with_so
+  )
+  class(ret) <- c("tinystan_model", class(ret))
+  return(ret)
 }
 
 #' @export
 print.tinystan_model <- function(model, ...) {
-    cat(model$code, ...)
-    if (model$built_with_so) {
-        cat("Library: ", model$lib, "\n")
-    }
+  cat(model$code, ...)
+  if (model$built_with_so) {
+    cat("Library: ", model$lib, "\n")
+  }
 }
 
 #'@export
 api_version = function(stan_model) {
-    .C("tinystan_api_version", major = integer(1), minor = integer(1), patch = integer(1),
-        PACKAGE = stan_model$lib_name)
+  .C(
+    "tinystan_api_version",
+    major = integer(1),
+    minor = integer(1),
+    patch = integer(1),
+    PACKAGE = stan_model$lib_name
+  )
 }
 
 #'@export
 stan_version = function(stan_model) {
-    .C("tinystan_stan_version", major = integer(1), minor = integer(1), patch = integer(1),
-        PACKAGE = stan_model$lib_name)
+  .C(
+    "tinystan_stan_version",
+    major = integer(1),
+    minor = integer(1),
+    patch = integer(1),
+    PACKAGE = stan_model$lib_name
+  )
 }
 
 #' @noRd
 with_model = function(model, data, seed, block) {
-    ffi_ret <- .C("tinystan_create_model_R", model_ptr = raw(8), as.character(data),
-        as.integer(seed), err = raw(8), NAOK = TRUE, PACKAGE = model$lib_name)
-    handle_error(all(ffi_ret$model_ptr == 0), model$lib_name, ffi_ret$err)
-    tryCatch({
-        # this is the equivalent of base R's `with` function
-        eval(substitute(block), ffi_ret, enclos = parent.frame())
-    }, finally = {
-        .C("tinystan_destroy_model_R", as.raw(ffi_ret$model_ptr), PACKAGE = model$lib_name)
-    })
+  ffi_ret <- .C(
+    "tinystan_create_model_R",
+    model_ptr = raw(8),
+    as.character(data),
+    as.integer(seed),
+    err = raw(8),
+    NAOK = TRUE,
+    PACKAGE = model$lib_name
+  )
+  handle_error(all(ffi_ret$model_ptr == 0), model$lib_name, ffi_ret$err)
+  tryCatch(
+    {
+      # this is the equivalent of base R's `with` function
+      eval(substitute(block), ffi_ret, enclos = parent.frame())
+    },
+    finally = {
+      .C(
+        "tinystan_destroy_model_R",
+        as.raw(ffi_ret$model_ptr),
+        PACKAGE = model$lib_name
+      )
+    }
+  )
 }
 
 #' @noRd
 get_parameter_names <- function(...) {
-    UseMethod("get_parameter_names")
+  UseMethod("get_parameter_names")
 }
 
 #' @noRd
 get_parameter_names.tinystan_model = function(model, model_ptr) {
-    param_names_raw <- .C("tinystan_model_param_names_R", as.raw(model_ptr), names = as.character(""),
-        PACKAGE = model$lib_name)$names
-    if (param_names_raw == "") {
-        return(c())
-    }
-    strsplit(param_names_raw, ",")[[1]]
-
+  param_names_raw <- .C(
+    "tinystan_model_param_names_R",
+    as.raw(model_ptr),
+    names = as.character(""),
+    PACKAGE = model$lib_name
+  )$names
+  if (param_names_raw == "") {
+    return(c())
+  }
+  strsplit(param_names_raw, ",")[[1]]
 }
 
 #' @noRd
 get_free_params <- function(...) {
-    UseMethod("get_free_params")
+  UseMethod("get_free_params")
 }
 
 
 #' @noRd
 get_free_params.tinystan_model = function(model, model_ptr) {
-    .C("tinystan_model_num_free_params_R", as.raw(model_ptr), params = as.integer(0),
-        PACKAGE = model$lib_name)$params
+  .C(
+    "tinystan_model_num_free_params_R",
+    as.raw(model_ptr),
+    params = as.integer(0),
+    PACKAGE = model$lib_name
+  )$params
 }
 
 #' @noRd
 encode_inits = function(model, inits) {
-    if (is.null(inits)) {
-        return(as.character(""))
+  if (is.null(inits)) {
+    return(as.character(""))
+  }
+  if (is.character(inits)) {
+    if (length(inits) == 1) {
+      return(as.character(inits))
+    } else {
+      return(as.character(paste0(inits, collapse = model$sep)))
     }
-    if (is.character(inits)) {
-        if (length(inits) == 1) {
-            return(as.character(inits))
-        } else {
-            return(as.character(paste0(inits, collapse = model$sep)))
-        }
-    }
-    if (is.list(inits)) {
-        return(as.character(paste0(inits, collapse = model$sep)))
-    }
-    stop("inits must be a character vector or a list")
+  }
+  if (is.list(inits)) {
+    return(as.character(paste0(inits, collapse = model$sep)))
+  }
+  stop("inits must be a character vector or a list")
 }
 
 #' @export
 sampler <- function(...) {
-    UseMethod("sampler")
+  UseMethod("sampler")
 }
 
 #' @title Generic function `sampler`
@@ -144,278 +208,459 @@ sampler <- function(...) {
 #' mod <- tinystan_model(system.file('bernoulli.stan', package = 'tinystan'))
 #' fit = sampler(model = mod, data = data_file)
 #' fit
-sampler.tinystan_model = function(model, data = "", num_chains = 4, inits = NULL,
-    seed = NULL, id = 1, init_radius = 2, num_warmup = 1000, num_samples = 1000,
-    metric = HMCMetric$DIAGONAL, init_inv_metric = NULL, save_inv_metric = FALSE,
-    adapt = TRUE, delta = 0.8, gamma = 0.05, kappa = 0.75, t0 = 10, init_buffer = 75,
-    term_buffer = 50, window = 25, save_warmup = FALSE, stepsize = 1, stepsize_jitter = 0,
-    max_depth = 10, refresh = 0, num_threads = -1) {
+sampler.tinystan_model = function(
+  model,
+  data = "",
+  num_chains = 4,
+  inits = NULL,
+  seed = NULL,
+  id = 1,
+  init_radius = 2,
+  num_warmup = 1000,
+  num_samples = 1000,
+  metric = HMCMetric$DIAGONAL,
+  init_inv_metric = NULL,
+  save_inv_metric = FALSE,
+  adapt = TRUE,
+  delta = 0.8,
+  gamma = 0.05,
+  kappa = 0.75,
+  t0 = 10,
+  init_buffer = 75,
+  term_buffer = 50,
+  window = 25,
+  save_warmup = FALSE,
+  stepsize = 1,
+  stepsize_jitter = 0,
+  max_depth = 10,
+  refresh = 0,
+  num_threads = -1
+) {
+  if (num_chains < 1) {
+    stop("num_chains must be at least 1")
+  }
+  if (save_warmup && num_warmup < 0) {
+    stop("num_warmup must be non-negative")
+  }
+  if (num_samples < 1) {
+    stop("num_samples must be at least 1")
+  }
 
-    if (num_chains < 1) {
-        stop("num_chains must be at least 1")
+  if (is.null(seed)) {
+    seed <- as.integer(runif(1, min = 0, max = (2^31)))
+  }
+
+  with_model(model, data, seed, {
+    free_params <- get_free_params(model, model_ptr)
+
+    params <- c(HMC_SAMPLER_VARIABLES, get_parameter_names(model, model_ptr))
+    num_params <- length(params)
+    num_draws <- as.integer(save_warmup) * num_warmup + num_samples
+    output_size <- num_params * num_chains * num_draws
+
+    if (metric == HMCMetric$DENSE) {
+      metric_shape <- rep(free_params, 2)
+    } else {
+      metric_shape <- free_params
     }
-    if (save_warmup && num_warmup < 0) {
-        stop("num_warmup must be non-negative")
+
+    if (is.null(init_inv_metric)) {
+      metric_has_init <- FALSE
+      inv_metric_init <- 0
+    } else {
+      metric_has_init <- TRUE
+      metric_dims <- dim(init_inv_metric)
+
+      if (
+        length(metric_dims) == length(metric_shape) &&
+          all(metric_dims == metric_shape)
+      ) {
+        inv_metric_init <- replicate(num_chains, init_inv_metric)
+      } else if (
+        length(metric_dims) == (length(metric_shape) + 1) &&
+          all(metric_dims == c(metric_shape, num_chains))
+      ) {
+        inv_metric_init <- init_inv_metric
+      } else {
+        stop(
+          "Invalid initial metric size. Expected a ",
+          paste(metric_shape, collapse = " x "),
+          " or ",
+          paste(c(metric_shape, num_chains), collapse = " x "),
+          " matrix"
+        )
+      }
     }
-    if (num_samples < 1) {
-        stop("num_samples must be at least 1")
+    metric_size <- 1
+    stepsizes_size <- 1
+    if (adapt) {
+      stepsizes_size <- num_chains
+      if (save_inv_metric) {
+        metric_size <- num_chains * prod(metric_shape)
+      }
     }
 
-    if (is.null(seed)) {
-        seed <- as.integer(runif(1, min = 0, max = (2^31)))
-    }
+    vars <- .C(
+      "tinystan_sample_R",
+      return_code = as.integer(0),
+      as.raw(model_ptr),
+      as.integer(num_chains),
+      encode_inits(model, inits),
+      as.integer(seed),
+      as.integer(id),
+      as.double(init_radius),
+      as.integer(num_warmup),
+      as.integer(num_samples),
+      as.integer(metric),
+      as.logical(metric_has_init),
+      as.double(inv_metric_init),
+      as.logical(adapt),
+      as.double(delta),
+      as.double(gamma),
+      as.double(kappa),
+      as.double(t0),
+      as.integer(init_buffer),
+      as.integer(term_buffer),
+      as.integer(window),
+      as.logical(save_warmup),
+      as.double(stepsize),
+      as.double(stepsize_jitter),
+      as.integer(max_depth),
+      as.integer(refresh),
+      as.integer(num_threads),
+      out = double(output_size),
+      as.integer(output_size),
+      save_stepsizes = as.logical(adapt),
+      stepsize_out = double(stepsizes_size),
+      save_inv_metric = as.logical(
+        adapt &&
+          save_inv_metric
+      ),
+      inv_metric = double(metric_size),
+      err = raw(8),
+      PACKAGE = model$lib_name
+    )
+    handle_error(vars$return_code, model$lib_name, vars$err)
+    # reshape the output matrix
+    out <- output_as_rvars(params, num_draws, num_chains, vars$out)
 
-    with_model(model, data, seed, {
-        free_params <- get_free_params(model, model_ptr)
-
-        params <- c(HMC_SAMPLER_VARIABLES, get_parameter_names(model, model_ptr))
-        num_params <- length(params)
-        num_draws <- as.integer(save_warmup) * num_warmup + num_samples
-        output_size <- num_params * num_chains * num_draws
-
+    if (adapt) {
+      if (save_inv_metric) {
         if (metric == HMCMetric$DENSE) {
-            metric_shape <- rep(free_params, 2)
+          inv_metric <- aperm(
+            array(
+              vars$inv_metric,
+              dim = c(free_params, free_params, num_chains)
+            ),
+            c(3, 2, 1)
+          )
         } else {
-            metric_shape <- free_params
+          inv_metric <- aperm(
+            array(vars$inv_metric, dim = c(free_params, num_chains)),
+            c(2, 1)
+          )
         }
-
-        if (is.null(init_inv_metric)) {
-            metric_has_init <- FALSE
-            inv_metric_init <- 0
-        } else {
-            metric_has_init <- TRUE
-            metric_dims <- dim(init_inv_metric)
-
-            if (length(metric_dims) == length(metric_shape) && all(metric_dims ==
-                metric_shape)) {
-                inv_metric_init <- replicate(num_chains, init_inv_metric)
-            } else if (length(metric_dims) == (length(metric_shape) + 1) && all(metric_dims ==
-                c(metric_shape, num_chains))) {
-                inv_metric_init <- init_inv_metric
-            } else {
-                stop("Invalid initial metric size. Expected a ", paste(metric_shape,
-                  collapse = " x "), " or ", paste(c(metric_shape, num_chains), collapse = " x "),
-                  " matrix")
-            }
-        }
-        metric_size <- 1
-        stepsizes_size <- 1
-        if (adapt) {
-            stepsizes_size <- num_chains
-            if (save_inv_metric) {
-                metric_size <- num_chains * prod(metric_shape)
-            }
-        }
-
-        vars <- .C("tinystan_sample_R", return_code = as.integer(0), as.raw(model_ptr),
-            as.integer(num_chains), encode_inits(model, inits), as.integer(seed),
-            as.integer(id), as.double(init_radius), as.integer(num_warmup), as.integer(num_samples),
-            as.integer(metric), as.logical(metric_has_init), as.double(inv_metric_init),
-            as.logical(adapt), as.double(delta), as.double(gamma), as.double(kappa),
-            as.double(t0), as.integer(init_buffer), as.integer(term_buffer), as.integer(window),
-            as.logical(save_warmup), as.double(stepsize), as.double(stepsize_jitter),
-            as.integer(max_depth), as.integer(refresh), as.integer(num_threads),
-            out = double(output_size), as.integer(output_size), save_stepsizes = as.logical(adapt),
-            stepsize_out = double(stepsizes_size), save_inv_metric = as.logical(adapt &&
-                save_inv_metric), inv_metric = double(metric_size), err = raw(8),
-            PACKAGE = model$lib_name)
-        handle_error(vars$return_code, model$lib_name, vars$err)
-        # reshape the output matrix
-        out <- output_as_rvars(params, num_draws, num_chains, vars$out)
-
-        if (adapt) {
-            if (save_inv_metric) {
-                if (metric == HMCMetric$DENSE) {
-                  inv_metric <- aperm(array(vars$inv_metric, dim = c(free_params,
-                    free_params, num_chains)), c(3, 2, 1))
-                } else {
-                  inv_metric <- aperm(array(vars$inv_metric, dim = c(free_params,
-                    num_chains)), c(2, 1))
-                }
-                return(list(draws = out, stepsize = vars$stepsize_out, inv_metric = inv_metric))
-            }
-            return(list(draws = out, stepsize = vars$stepsize_out))
-        }
-        list(draws = out)
-    })
+        return(list(
+          draws = out,
+          stepsize = vars$stepsize_out,
+          inv_metric = inv_metric
+        ))
+      }
+      return(list(draws = out, stepsize = vars$stepsize_out))
+    }
+    list(draws = out)
+  })
 }
 
 #' @export
 pathfinder <- function(...) {
-    UseMethod("pathfinder")
+  UseMethod("pathfinder")
 }
 
 #' @title Generic function `pathfinder`
 #' @description Run Stan's pathfinder algorithm
 #' @export
-pathfinder.tinystan_model = function(model, data = "", num_paths = 4, inits = NULL,
-    seed = NULL, id = 1, init_radius = 2, num_draws = 1000, max_history_size = 5,
-    init_alpha = 0.001, tol_obj = 1e-12, tol_rel_obj = 10000, tol_grad = 1e-08, tol_rel_grad = 1e+07,
-    tol_param = 1e-08, num_iterations = 1000, num_elbo_draws = 25, num_multi_draws = 1000,
-    calculate_lp = TRUE, psis_resample = TRUE, refresh = 0, num_threads = -1) {
-    if (num_draws < 1) {
-        stop("num_draws must be at least 1")
-    }
-    if (num_paths < 1) {
-        stop("num_paths must be at least 1")
-    }
-    if (num_multi_draws < 1) {
-        stop("num_multi_draws must be at least 1")
+pathfinder.tinystan_model = function(
+  model,
+  data = "",
+  num_paths = 4,
+  inits = NULL,
+  seed = NULL,
+  id = 1,
+  init_radius = 2,
+  num_draws = 1000,
+  max_history_size = 5,
+  init_alpha = 0.001,
+  tol_obj = 1e-12,
+  tol_rel_obj = 10000,
+  tol_grad = 1e-08,
+  tol_rel_grad = 1e+07,
+  tol_param = 1e-08,
+  num_iterations = 1000,
+  num_elbo_draws = 25,
+  num_multi_draws = 1000,
+  calculate_lp = TRUE,
+  psis_resample = TRUE,
+  refresh = 0,
+  num_threads = -1
+) {
+  if (num_draws < 1) {
+    stop("num_draws must be at least 1")
+  }
+  if (num_paths < 1) {
+    stop("num_paths must be at least 1")
+  }
+  if (num_multi_draws < 1) {
+    stop("num_multi_draws must be at least 1")
+  }
+
+  if (calculate_lp && psis_resample) {
+    num_output <- num_multi_draws
+  } else {
+    num_output <- num_draws * num_paths
+  }
+  if (is.null(seed)) {
+    seed <- as.integer(runif(1, min = 0, max = (2^31)))
+  }
+
+  with_model(model, data, seed, {
+    free_params <- get_free_params(model, model_ptr)
+    if (free_params == 0) {
+      stop("Model has no parameters")
     }
 
-    if (calculate_lp && psis_resample) {
-        num_output <- num_multi_draws
-    } else {
-        num_output <- num_draws * num_paths
-    }
-    if (is.null(seed)) {
-        seed <- as.integer(runif(1, min = 0, max = (2^31)))
-    }
+    params <- c(PATHFINDER_VARIABLES, get_parameter_names(model, model_ptr))
+    num_params <- length(params)
+    output_size <- num_params * num_output
 
-    with_model(model, data, seed, {
-        free_params <- get_free_params(model, model_ptr)
-        if (free_params == 0) {
-            stop("Model has no parameters")
-        }
+    vars <- .C(
+      "tinystan_pathfinder_R",
+      return_code = as.integer(0),
+      as.raw(model_ptr),
+      as.integer(num_paths),
+      encode_inits(model, inits),
+      as.integer(seed),
+      as.integer(id),
+      as.double(init_radius),
+      as.integer(num_draws),
+      as.integer(max_history_size),
+      as.double(init_alpha),
+      as.double(tol_obj),
+      as.double(tol_rel_obj),
+      as.double(tol_grad),
+      as.double(tol_rel_grad),
+      as.double(tol_param),
+      as.integer(num_iterations),
+      as.integer(num_elbo_draws),
+      as.integer(num_multi_draws),
+      as.integer(calculate_lp),
+      as.integer(psis_resample),
+      as.integer(refresh),
+      as.integer(num_threads),
+      out = double(output_size),
+      as.integer(output_size),
+      err = raw(8),
+      PACKAGE = model$lib_name
+    )
+    handle_error(vars$return_code, model$lib_name, vars$err)
 
-        params <- c(PATHFINDER_VARIABLES, get_parameter_names(model, model_ptr))
-        num_params <- length(params)
-        output_size <- num_params * num_output
-
-        vars <- .C("tinystan_pathfinder_R", return_code = as.integer(0), as.raw(model_ptr),
-            as.integer(num_paths), encode_inits(model, inits), as.integer(seed),
-            as.integer(id), as.double(init_radius), as.integer(num_draws), as.integer(max_history_size),
-            as.double(init_alpha), as.double(tol_obj), as.double(tol_rel_obj), as.double(tol_grad),
-            as.double(tol_rel_grad), as.double(tol_param), as.integer(num_iterations),
-            as.integer(num_elbo_draws), as.integer(num_multi_draws), as.integer(calculate_lp),
-            as.integer(psis_resample), as.integer(refresh), as.integer(num_threads),
-            out = double(output_size), as.integer(output_size), err = raw(8), PACKAGE = model$lib_name)
-        handle_error(vars$return_code, model$lib_name, vars$err)
-
-        list(draws = output_as_rvars(params, num_output, 1, vars$out))
-    })
+    list(draws = output_as_rvars(params, num_output, 1, vars$out))
+  })
 }
 
 #' @export
 optimizer <- function(...) {
-    UseMethod("optimizer")
+  UseMethod("optimizer")
 }
 
 #' @title Generic function `optimizer`
 #' @description Run Stan's Optimization algorithms
 #' @export
-optimizer.tinystan_model = function(model, data = "", init = NULL, seed = NULL, id = 1,
-    init_radius = 2, algorithm = OptimizationAlgorithm$LBFGS, jacobian = FALSE, num_iterations = 2000,
-    max_history_size = 5, init_alpha = 0.001, tol_obj = 1e-12, tol_rel_obj = 10000,
-    tol_grad = 1e-08, tol_rel_grad = 1e+07, tol_param = 1e-08, refresh = 0, num_threads = -1) {
+optimizer.tinystan_model = function(
+  model,
+  data = "",
+  init = NULL,
+  seed = NULL,
+  id = 1,
+  init_radius = 2,
+  algorithm = OptimizationAlgorithm$LBFGS,
+  jacobian = FALSE,
+  num_iterations = 2000,
+  max_history_size = 5,
+  init_alpha = 0.001,
+  tol_obj = 1e-12,
+  tol_rel_obj = 10000,
+  tol_grad = 1e-08,
+  tol_rel_grad = 1e+07,
+  tol_param = 1e-08,
+  refresh = 0,
+  num_threads = -1
+) {
+  if (is.null(seed)) {
+    seed <- as.integer(runif(1, min = 0, max = (2^31)))
+  }
 
-    if (is.null(seed)) {
-        seed <- as.integer(runif(1, min = 0, max = (2^31)))
-    }
+  with_model(model, data, seed, {
+    params <- c(OPTIMIZATION_VARIABLES, get_parameter_names(model, model_ptr))
+    num_params <- length(params)
+    output_size <- num_params
 
-    with_model(model, data, seed, {
-        params <- c(OPTIMIZATION_VARIABLES, get_parameter_names(model, model_ptr))
-        num_params <- length(params)
-        output_size <- num_params
+    vars <- .C(
+      "tinystan_optimize_R",
+      return_code = as.integer(0),
+      as.raw(model_ptr),
+      encode_inits(model, init),
+      as.integer(seed),
+      as.integer(id),
+      as.double(init_radius),
+      as.integer(algorithm),
+      as.integer(num_iterations),
+      as.logical(jacobian),
+      as.integer(max_history_size),
+      as.double(init_alpha),
+      as.double(tol_obj),
+      as.double(tol_rel_obj),
+      as.double(tol_grad),
+      as.double(tol_rel_grad),
+      as.double(tol_param),
+      as.integer(refresh),
+      as.integer(num_threads),
+      out = double(output_size),
+      as.integer(output_size),
+      err = raw(8),
+      PACKAGE = model$lib_name
+    )
+    handle_error(vars$return_code, model$lib_name, vars$err)
 
-        vars <- .C("tinystan_optimize_R", return_code = as.integer(0), as.raw(model_ptr),
-            encode_inits(model, init), as.integer(seed), as.integer(id), as.double(init_radius),
-            as.integer(algorithm), as.integer(num_iterations), as.logical(jacobian),
-            as.integer(max_history_size), as.double(init_alpha), as.double(tol_obj),
-            as.double(tol_rel_obj), as.double(tol_grad), as.double(tol_rel_grad),
-            as.double(tol_param), as.integer(refresh), as.integer(num_threads), out = double(output_size),
-            as.integer(output_size), err = raw(8), PACKAGE = model$lib_name)
-        handle_error(vars$return_code, model$lib_name, vars$err)
-
-        list(draws = output_as_rvars(params, 1, 1, vars$out))
-    })
+    list(draws = output_as_rvars(params, 1, 1, vars$out))
+  })
 }
 
 #' @export
 laplace_sampler <- function(...) {
-    UseMethod("laplace_sampler")
+  UseMethod("laplace_sampler")
 }
 
 #' @title Generic function `laplace_sampler`
 #' @description Run Stan's Laplace approximation algorithm
 #' @export
-laplace_sampler.tinystan_model = function(model, mode, data = "", num_draws = 1000,
-    jacobian = TRUE, calculate_lp = TRUE, save_hessian = FALSE, seed = NULL, refresh = 0,
-    num_threads = -1) {
+laplace_sampler.tinystan_model = function(
+  model,
+  mode,
+  data = "",
+  num_draws = 1000,
+  jacobian = TRUE,
+  calculate_lp = TRUE,
+  save_hessian = FALSE,
+  seed = NULL,
+  refresh = 0,
+  num_threads = -1
+) {
+  if (num_draws < 1) {
+    stop("num_draws must be at least 1")
+  }
+  if (is.null(seed)) {
+    seed <- as.integer(runif(1, min = 0, max = (2^31)))
+  }
 
-    if (num_draws < 1) {
-        stop("num_draws must be at least 1")
+  with_model(model, data, seed, {
+    req_params <- .C(
+      "tinystan_model_num_constrained_params_for_unconstraining_R",
+      as.raw(model_ptr),
+      params = as.integer(0),
+      PACKAGE = model$lib_name
+    )$params
+
+    if (is.numeric(mode)) {
+      if (length(mode) < req_params) {
+        stop(paste0(
+          "Mode array has incorrect length.",
+          " Expected at least ",
+          req_params,
+          " elements."
+        ))
+      }
+      mode_array <- as.double(mode)
+      mode_json <- as.character("")
+      use_array <- TRUE
+    } else {
+      mode_array <- as.double(0)
+      mode_json <- as.character(mode)
+      use_array <- FALSE
     }
-    if (is.null(seed)) {
-        seed <- as.integer(runif(1, min = 0, max = (2^31)))
+
+    params <- c(LAPLACE_VARIABLES, get_parameter_names(model, model_ptr))
+    num_params <- length(params)
+    free_params <- get_free_params(model, model_ptr)
+
+    if (save_hessian) {
+      hessian_size <- free_params * free_params
+    } else {
+      hessian_size <- 1
     }
 
-    with_model(model, data, seed, {
-        req_params <- .C("tinystan_model_num_constrained_params_for_unconstraining_R", as.raw(model_ptr), params = as.integer(0),
-            PACKAGE = model$lib_name)$params
+    vars <- .C(
+      "tinystan_laplace_sample_R",
+      return_code = as.integer(0),
+      as.raw(model_ptr),
+      as.logical(use_array),
+      mode_array,
+      mode_json,
+      as.integer(seed),
+      as.integer(num_draws),
+      as.logical(jacobian),
+      as.logical(calculate_lp),
+      as.integer(refresh),
+      as.integer(num_threads),
+      out = double(num_params * num_draws),
+      as.integer(
+        num_params *
+          num_draws
+      ),
+      as.logical(save_hessian),
+      hessian = double(hessian_size),
+      err = raw(8),
+      PACKAGE = model$lib_name
+    )
+    handle_error(vars$return_code, model$lib_name, vars$err)
 
-        if (is.numeric(mode)) {
-            if (length(mode) < req_params) {
-                stop(paste0("Mode array has incorrect length.", " Expected at least ", req_params, " elements."))
-            }
-            mode_array <- as.double(mode)
-            mode_json <- as.character("")
-            use_array <- TRUE
-        } else {
-            mode_array <- as.double(0)
-            mode_json <- as.character(mode)
-            use_array <- FALSE
-        }
-
-        params <- c(LAPLACE_VARIABLES, get_parameter_names(model, model_ptr))
-        num_params <- length(params)
-        free_params <- get_free_params(model, model_ptr)
-
-        if (save_hessian) {
-            hessian_size <- free_params * free_params
-        } else {
-            hessian_size <- 1
-        }
-
-        vars <- .C("tinystan_laplace_sample_R", return_code = as.integer(0), as.raw(model_ptr),
-            as.logical(use_array), mode_array, mode_json, as.integer(seed), as.integer(num_draws),
-            as.logical(jacobian), as.logical(calculate_lp), as.integer(refresh),
-            as.integer(num_threads), out = double(num_params * num_draws), as.integer(num_params *
-                num_draws), as.logical(save_hessian), hessian = double(hessian_size),
-            err = raw(8), PACKAGE = model$lib_name)
-        handle_error(vars$return_code, model$lib_name, vars$err)
-
-        out <- output_as_rvars(params, num_draws, 1, vars$out)
-        if (save_hessian) {
-            hessian <- array(vars$hessian, dim = c(free_params, free_params))
-            return(list(draws = out, hessian = hessian))
-        }
-        list(draws = out)
-    })
-
+    out <- output_as_rvars(params, num_draws, 1, vars$out)
+    if (save_hessian) {
+      hessian <- array(vars$hessian, dim = c(free_params, free_params))
+      return(list(draws = out, hessian = hessian))
+    }
+    list(draws = out)
+  })
 }
-
 
 
 #' Get and free the error message stored at the C++ pointer
 #' @noRd
 #' @keywords internal
 handle_error <- function(return_code, lib_name, err_ptr) {
-    if (return_code != 0) {
-        if (all(err_ptr == 0)) {
-            stop(paste("Unknown error, function returned code", return_code))
-        }
-        msg <- .C("tinystan_get_error_message_R", as.raw(err_ptr), err_msg = as.character(""),
-            PACKAGE = lib_name)$err_msg
-        type <- .C("tinystan_get_error_type_R", as.raw(err_ptr), err_type = as.integer(0),
-            PACKAGE = lib_name)$err_type
-        .C("tinystan_destroy_error_R", as.raw(err_ptr), PACKAGE = lib_name)
-        if (type == 3) {
-            if (requireNamespace("rlang", quietly = TRUE)) {
-                rlang::interrupt()
-            }
-            msg <- "User interrupt"
-        }
-        stop(msg)
+  if (return_code != 0) {
+    if (all(err_ptr == 0)) {
+      stop(paste("Unknown error, function returned code", return_code))
     }
+    msg <- .C(
+      "tinystan_get_error_message_R",
+      as.raw(err_ptr),
+      err_msg = as.character(""),
+      PACKAGE = lib_name
+    )$err_msg
+    type <- .C(
+      "tinystan_get_error_type_R",
+      as.raw(err_ptr),
+      err_type = as.integer(0),
+      PACKAGE = lib_name
+    )$err_type
+    .C("tinystan_destroy_error_R", as.raw(err_ptr), PACKAGE = lib_name)
+    if (type == 3) {
+      if (requireNamespace("rlang", quietly = TRUE)) {
+        rlang::interrupt()
+      }
+      msg <- "User interrupt"
+    }
+    stop(msg)
+  }
 }
