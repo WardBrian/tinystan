@@ -45,7 +45,7 @@
         @testset for jacobian in [true, false]
             out_opt =
                 optimize(simple_jacobian_model; jacobian = jacobian, seed = UInt32(12345))
-            mode_array = out_opt.draws[2:end]
+            mode_array = out_opt.draws[3:end]
             out = laplace_sample(
                 simple_jacobian_model,
                 mode_array;
