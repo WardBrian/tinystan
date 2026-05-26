@@ -107,7 +107,7 @@ def test_bad_init(bernoulli_model):
 
 def test_model_no_params(empty_model):
     out = empty_model.optimize()
-    assert len(out.parameters) == 1  # lp
+    assert len(out.parameters) == 2  # lp, converged
 
 
 @pytest.mark.parametrize(

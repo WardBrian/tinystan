@@ -114,7 +114,7 @@ def preprocess_laplace_inputs(
     if isinstance(mode, StanOutput):
         # handle case of passing optimization output directly
         if len(mode.data.shape) == 1:
-            mode = mode.data[1:]
+            mode = mode.data[len(OPTIMIZE_VARIABLES) :]
         else:
             raise ValueError("Laplace can only be used with Optimization output")
             # mode = mode.create_inits(chains=1, seed=seed)
