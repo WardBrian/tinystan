@@ -48,6 +48,7 @@
       "cjs",
       "esm"
     ],
+    "attw": { "profile": "node16", "ignoreRules":["false-export-default"] },
     "dts": true,
     "sourcemap": true,
     "clean": true
