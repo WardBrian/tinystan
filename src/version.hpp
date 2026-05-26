@@ -3,6 +3,6 @@
 
 #define TINYSTAN_MAJOR 0
 #define TINYSTAN_MINOR 3
-#define TINYSTAN_PATCH 2
+#define TINYSTAN_PATCH 3
 
 #endif
