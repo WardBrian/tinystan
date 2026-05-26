@@ -10,7 +10,7 @@ HMC_SAMPLER_VARIABLES = c(
 
 PATHFINDER_VARIABLES = c("lp_approx__", "lp__", "path__")
 
-OPTIMIZATION_VARIABLES = c("lp__")
+OPTIMIZATION_VARIABLES = c("lp__", "converged__")
 
 LAPLACE_VARIABLES = c("log_p__", "log_g__")
 

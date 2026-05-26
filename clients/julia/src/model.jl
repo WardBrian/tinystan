@@ -34,7 +34,7 @@ const HMC_SAMPLER_VARIABLES = [
 
 const PATHFINDER_VARIABLES = ["lp_approx__", "lp__", "path__"]
 
-const OPTIMIZE_VARIABLES = ["lp__"]
+const OPTIMIZE_VARIABLES = ["lp__", "converged__"]
 
 const LAPLACE_VARIABLES = ["log_p__", "log_q__"]
 

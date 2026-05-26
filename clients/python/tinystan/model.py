@@ -66,19 +66,11 @@ HMC_SAMPLER_VARIABLES = [
 
 PATHFINDER_VARIABLES = ["lp_approx__", "lp__", "path__"]
 
-OPTIMIZE_VARIABLES = [
-    "lp__",
-]
+OPTIMIZE_VARIABLES = ["lp__", "converged__"]
 
-LAPLACE_VARIABLES = [
-    "log_p__",
-    "log_q__",
-]
+LAPLACE_VARIABLES = ["log_p__", "log_q__"]
 
-FIXED_SAMPLER_VARIABLES = [
-    "lp__",
-    "accept_stat__",
-]
+FIXED_SAMPLER_VARIABLES = ["lp__", "accept_stat__"]
 
 
 class HMCMetric(Enum):
