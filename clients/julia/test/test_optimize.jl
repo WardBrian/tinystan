@@ -96,7 +96,7 @@
 
     @testset "Model without parameters" begin
         out = optimize(empty_model)
-        @test length(out.names) == 1 # lp
+        @test length(out.names) == 2 # lp, converged
     end
 
 

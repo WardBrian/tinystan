@@ -32,12 +32,12 @@ jobs:
           python-version: 3.12
 
       - name: Set up Julia
-        uses: julia-actions/setup-julia@v2
+        uses: julia-actions/setup-julia@v3
 
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
           cache: "yarn"
           cache-dependency-path: clients/typescript/yarn.lock
 
@@ -124,7 +124,7 @@ jobs:
           path: release-artifacts
 
       - name: Upload PyPI wheels
-        uses: pypa/gh-action-pypi-publish@v1.13.0
+        uses: pypa/gh-action-pypi-publish@v1.14.0
         with:
           packages-dir: release-artifacts/clients/python/dist/
           skip-existing: true

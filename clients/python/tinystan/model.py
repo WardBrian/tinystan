@@ -66,19 +66,11 @@ HMC_SAMPLER_VARIABLES = [
 
 PATHFINDER_VARIABLES = ["lp_approx__", "lp__", "path__"]
 
-OPTIMIZE_VARIABLES = [
-    "lp__",
-]
+OPTIMIZE_VARIABLES = ["lp__", "converged__"]
 
-LAPLACE_VARIABLES = [
-    "log_p__",
-    "log_q__",
-]
+LAPLACE_VARIABLES = ["log_p__", "log_q__"]
 
-FIXED_SAMPLER_VARIABLES = [
-    "lp__",
-    "accept_stat__",
-]
+FIXED_SAMPLER_VARIABLES = ["lp__", "accept_stat__"]
 
 
 class HMCMetric(Enum):
@@ -122,7 +114,7 @@ def preprocess_laplace_inputs(
     if isinstance(mode, StanOutput):
         # handle case of passing optimization output directly
         if len(mode.data.shape) == 1:
-            mode = mode.data[1:]
+            mode = mode.data[len(OPTIMIZE_VARIABLES) :]
         else:
             raise ValueError("Laplace can only be used with Optimization output")
             # mode = mode.create_inits(chains=1, seed=seed)

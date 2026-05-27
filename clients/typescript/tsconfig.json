@@ -23,7 +23,9 @@
     "noUnusedParameters": true /* Raise an error when a function parameter isn't read. */,
     "noFallthroughCasesInSwitch": true /* Enable error reporting for fallthrough cases in switch statements. */,
     /* Completeness */
-    "skipLibCheck": true /* Skip type checking all .d.ts files. */
+    "skipLibCheck": true /* Skip type checking all .d.ts files. */,
+    // https://github.com/egoist/tsup/issues/1389
+    "ignoreDeprecations": "6.0"
   },
   "include": ["src", "test"]
 }
