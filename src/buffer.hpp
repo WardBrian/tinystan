@@ -13,6 +13,7 @@
 
 #include <stan/math/prim/fun/Eigen.hpp>
 #include <stan/callbacks/writer.hpp>
+#include <stan/callbacks/logger.hpp>
 #include <stan/callbacks/structured_writer.hpp>
 
 #include <stan/services/util/create_unit_e_dense_inv_metric.hpp>
@@ -27,6 +28,7 @@
 #include <string>
 
 #include "tinystan_types.h"
+#include "model.hpp"
 
 namespace tinystan {
 namespace io {
@@ -41,8 +43,8 @@ namespace io {
  */
 class buffer_writer : public stan::callbacks::writer {
  public:
-  buffer_writer(double *buf, size_t max) : buf(buf), pos(0), size(max){};
-  virtual ~buffer_writer(){};
+  buffer_writer(double *buf, size_t max) : buf(buf), pos(0), size(max) {};
+  virtual ~buffer_writer() {};
 
   /**
    * Primary method used by the Stan algorithms
@@ -117,7 +119,7 @@ class buffer_writer : public stan::callbacks::writer {
 class filtered_writer : public stan::callbacks::structured_writer {
  public:
   filtered_writer() : filters{} {};
-  virtual ~filtered_writer(){};
+  virtual ~filtered_writer() {};
 
   void add_key(const std::string &key_in, double *buf) {
     if (buf != nullptr) {
@@ -172,8 +174,8 @@ class inv_metric_buffer_reader : public stan::io::empty_var_context {
  public:
   inv_metric_buffer_reader(const double *buf, size_t size,
                            TinyStanMetric metric_choice)
-      : buf(buf), size(size), dense(metric_choice == TinyStanMetric::dense){};
-  virtual ~inv_metric_buffer_reader(){};
+      : buf(buf), size(size), dense(metric_choice == TinyStanMetric::dense) {};
+  virtual ~inv_metric_buffer_reader() {};
 
   bool contains_r(const std::string &name) const override {
     return name == "inv_metric";
@@ -253,6 +255,78 @@ inline std::vector<var_ctx_ptr> make_metric_inits(
   }
   return metrics;
 }
+
+template <typename RNG>
+class BufferHandler {
+ public:
+  BufferHandler(const TinyStanModel *model, stan::callbacks::logger &logger,
+                RNG &rng, std::size_t i, double *out, double *stepsize_out,
+                double *inv_metric_out, std::size_t num_warmup,
+                std::size_t num_samples, bool save_warmup)
+      : model_(model),
+        logger_(logger),
+        rng_(rng),
+        i(i),
+        save_warmup_(save_warmup),
+        output_index_(model->num_params
+                      * (num_samples + num_warmup * save_warmup) * i),
+        out(out),
+        stepsize_out(stepsize_out),
+        inv_metric_out(inv_metric_out) {}
+
+  void on_sample(const Eigen::VectorXd &position, double lp) {
+    constrain(position);
+  }
+
+  void on_warmup(const Eigen::VectorXd &position, double lp, double step_size,
+                 const Eigen::VectorXd &diag_inv_mass) {
+    if (!save_warmup_) {
+      return;
+    }
+    constrain(position);
+  }
+
+  void on_warmup_complete(double step_size, const Eigen::VectorXd &inv_metric) {
+    if (stepsize_out != nullptr) {
+      stepsize_out[i] = step_size;
+    }
+    if (inv_metric_out != nullptr) {
+      std::copy(inv_metric.data(), inv_metric.data() + inv_metric.size(),
+                inv_metric_out + i * inv_metric.size());
+    }
+  }
+
+ private:
+  void constrain(auto &&in) {
+    std::stringstream msg;
+    auto output
+        = Eigen::Map<Eigen::VectorXd>(out + output_index_, model_->num_params);
+    try {
+      Eigen::VectorXd params;
+      model_->model->write_array(rng_, const_cast<Eigen::VectorXd &>(in),
+                                 params, true, true, &msg);
+      output = params;
+      if (!msg.str().empty()) {
+        logger_.info(msg.str());
+      }
+    } catch (...) {
+      if (!msg.str().empty()) {
+        logger_.info(msg.str());
+      }
+      logger_.error("Error in constrain_draw: exception caught");
+      output.array() = std::numeric_limits<double>::quiet_NaN();
+    }
+    output_index_ += model_->num_params;
+  }
+
+  const TinyStanModel *model_;
+  stan::callbacks::logger &logger_;
+  RNG &rng_;
+  std::size_t i;
+  bool save_warmup_;
+  std::size_t output_index_;
+  double *out, *stepsize_out, *inv_metric_out;
+};
 
 }  // namespace io
 }  // namespace tinystan

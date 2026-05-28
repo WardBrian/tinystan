@@ -179,11 +179,14 @@ TINYSTAN_PUBLIC int tinystan_sample(
 TINYSTAN_PUBLIC int tinystan_walnuts(
     const TinyStanModel *tmodel, size_t num_chains, const char *inits,
     unsigned int seed, unsigned int id, double init_radius, int num_warmup,
-    int num_samples, const double *init_inv_metric, int max_nuts_depth,
-    int max_step_depth, int min_micro_steps, double max_error,
-    double init_count, double mass_iteration_offset, double additive_smoothing,
-    double step_size_init, double accept_rate_target, double learning_rate,
-    double beta1, double beta2, double epsilon, bool save_warmup, int refresh,
+    int num_samples, const double *init_inv_metric,
+    int max_trajectory_doublings, int max_step_halvings, int min_micro_steps,
+    double max_hamiltonian_error, double mass_init_count,
+    double mass_additive_smoothing, double max_macro_steps_target,
+    double step_size_init, double step_accept_rate_target,
+    double step_learning_rate, double step_gradient_decay,
+    double step_sq_gradient_decay, double step_stabilization,
+    double step_learn_rate_decay, bool save_warmup, int refresh,
     int num_threads, double *out, size_t out_size, double *stepsize_out,
     double *inv_metric_out, TinyStanError **err);
 

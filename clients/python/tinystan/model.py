@@ -290,19 +290,20 @@ class Model:
             ctypes.c_int,  # num_warmup
             ctypes.c_int,  # num_samples
             nullable_double_array,  # metric init in
-            ctypes.c_int,  # max_nuts_depth
-            ctypes.c_int,  # max_step_depth
+            ctypes.c_int,  # max_trajectory_doublings
+            ctypes.c_int,  # max_step_halvings
             ctypes.c_int,  # min_micro_steps
-            ctypes.c_double,  # max_error
-            ctypes.c_double,  # init_count
-            ctypes.c_double,  # mass_iteration_offset
-            ctypes.c_double,  # additive_smoothing
+            ctypes.c_double,  # max_hamiltonian_error
+            ctypes.c_double,  # mass_init_count
+            ctypes.c_double,  # mass_additive_smoothing
+            ctypes.c_double,  # max_macro_steps_target
             ctypes.c_double,  # step_size_init
-            ctypes.c_double,  # accept_rate_target
-            ctypes.c_double,  # learning_rate
-            ctypes.c_double,  # beta1
-            ctypes.c_double,  # beta2
-            ctypes.c_double,  # epsilon
+            ctypes.c_double,  # step_accept_rate_target
+            ctypes.c_double,  # step_learning_rate
+            ctypes.c_double,  # step_gradient_decay
+            ctypes.c_double,  # step_sq_gradient_decay
+            ctypes.c_double,  # step_stabilization
+            ctypes.c_double,  # step_learn_rate_decay
             ctypes.c_bool,  # save_warmup
             ctypes.c_int,  # refresh
             ctypes.c_int,  # num_threads
@@ -676,23 +677,24 @@ class Model:
         seed: Optional[int] = None,
         id: int = 1,
         init_radius: float = 2.0,
-        num_warmup: int = 1000,
-        num_samples: int = 1000,
+        num_warmup: int = 500,
+        num_samples: int = 500,
         init_inv_metric: Optional[np.ndarray] = None,
         save_inv_metric: bool = False,
-        max_nuts_depth: int = 8,
-        max_step_depth: int = 8,
+        max_trajectory_doublings: int = 5,
+        max_step_halvings: int = 5,
         min_micro_steps: int = 1,
-        max_error: float = 0.5,
-        init_count: float = 1.1,
-        mass_iteration_offset: float = 1.1,
-        additive_smoothing: float = 1e-5,
+        max_hamiltonian_error: float = 0.5,
+        mass_init_count: float = 4.0,
+        mass_additive_smoothing: float = 1e-5,
+        max_macro_steps_target: float = 15.0,
         step_size_init: float = 1.0,
-        accept_rate_target: float = 0.8,
-        learning_rate: float = 1.5,
-        beta1: float = 0.3,
-        beta2: float = 0.99,
-        epsilon: float = 1e-4,
+        step_accept_rate_target: float = 0.8,
+        step_learning_rate: float = 0.05,
+        step_gradient_decay: float = 0.8,
+        step_sq_gradient_decay: float = 0.9,
+        step_stabilization: float = 1e-4,
+        step_learn_rate_decay: float = 0.5,
         save_warmup: bool = False,
         refresh: int = 0,
         num_threads: int = -1,
@@ -747,19 +749,20 @@ class Model:
                 num_warmup,
                 num_samples,
                 init_inv_metric,
-                max_nuts_depth,
-                max_step_depth,
+                max_trajectory_doublings,
+                max_step_halvings,
                 min_micro_steps,
-                max_error,
-                init_count,
-                mass_iteration_offset,
-                additive_smoothing,
+                max_hamiltonian_error,
+                mass_init_count,
+                mass_additive_smoothing,
+                max_macro_steps_target,
                 step_size_init,
-                accept_rate_target,
-                learning_rate,
-                beta1,
-                beta2,
-                epsilon,
+                step_accept_rate_target,
+                step_learning_rate,
+                step_gradient_decay,
+                step_sq_gradient_decay,
+                step_stabilization,
+                step_learn_rate_decay,
                 save_warmup,
                 refresh,
                 num_threads,

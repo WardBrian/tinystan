@@ -20,7 +20,7 @@
 #include <stan/services/util/initialize.hpp>
 #include <stan/services/util/read_diag_inv_metric.hpp>
 
-#include <walnuts/adaptive_walnuts.hpp>
+#include <walnuts.hpp>
 
 #include <sstream>
 #include <stdexcept>
@@ -206,12 +206,14 @@ int tinystan_sample(const TinyStanModel *tmodel, size_t num_chains,
 int tinystan_walnuts(const TinyStanModel *tmodel, size_t num_chains,
                      const char *inits, unsigned int seed, unsigned int id,
                      double init_radius, int num_warmup, int num_samples,
-                     const double *init_inv_metric, int max_nuts_depth,
-                     int max_step_depth, int min_micro_steps, double max_error,
-                     double init_count, double mass_iteration_offset,
-                     double additive_smoothing, double step_size_init,
-                     double accept_rate_target, double learning_rate,
-                     double beta1, double beta2, double epsilon,
+                     const double *init_inv_metric,
+                     int max_trajectory_doublings, int max_step_halvings,
+                     int min_micro_steps, double max_hamiltonian_error,
+                     double mass_init_count, double mass_additive_smoothing,
+                     double max_macro_steps_target, double step_size_init,
+                     double step_accept_rate_target, double step_learning_rate,
+                     double step_gradient_decay, double step_sq_gradient_decay,
+                     double step_stabilization, double step_learn_rate_decay,
                      bool save_warmup, int refresh, int num_threads,
                      double *out, size_t out_size, double *stepsize_out,
                      double *inv_metric_out, TinyStanError **err) {
@@ -221,24 +223,25 @@ int tinystan_walnuts(const TinyStanModel *tmodel, size_t num_chains,
     error::check_nonnegative("init_radius", init_radius);
     error::check_nonnegative("num_warmup", num_warmup);
     error::check_positive("num_samples", num_samples);
-    error::check_positive("max_nuts_depth", max_nuts_depth);
-    error::check_positive("max_step_depth", max_step_depth);
+    error::check_positive("max_trajectory_doublings", max_trajectory_doublings);
+    error::check_positive("max_step_halvings", max_step_halvings);
     error::check_positive("min_micro_steps", min_micro_steps);
-    error::check_positive("max_error", max_error);
-    error::check_between("init_count", init_count, 1,
+    error::check_positive("max_hamiltonian_error", max_hamiltonian_error);
+    error::check_between("mass_init_count", mass_init_count, 1,
                          (std::numeric_limits<double>::max)());
-    error::check_between("mass_iteration_offset", mass_iteration_offset, 1,
-                         (std::numeric_limits<double>::max)());
-    error::check_positive("additive_smoothing", additive_smoothing);
+    error::check_positive("mass_additive_smoothing", max_macro_steps_target);
+    error::check_positive("mass_additive_smoothing", mass_additive_smoothing);
     error::check_positive("step_size_init", step_size_init);
-    error::check_between("accept_rate_target", accept_rate_target,
+    error::check_between("step_accept_rate_target", step_accept_rate_target,
                          (std::numeric_limits<double>::min)(), 1);
-    error::check_between("beta1", beta1, (std::numeric_limits<double>::min)(),
-                         1);
-    error::check_between("beta2", beta2, (std::numeric_limits<double>::min)(),
-                         1);
-    error::check_positive("epsilon", epsilon);
-    error::check_positive("learning_rate", learning_rate);
+    error::check_positive("step_learning_rate", step_learning_rate);
+    error::check_between("step_gradient_decay", step_gradient_decay,
+                         (std::numeric_limits<double>::min)(), 1);
+    error::check_between("step_sq_gradient_decay", step_sq_gradient_decay,
+                         (std::numeric_limits<double>::min)(), 1);
+    error::check_positive("step_stabilization", step_stabilization);
+    error::check_between("step_learn_rate_decay", step_learn_rate_decay,
+                         (std::numeric_limits<double>::min)(), 1);
 
     util::init_threading(num_threads);
 
@@ -259,18 +262,30 @@ int tinystan_walnuts(const TinyStanModel *tmodel, size_t num_chains,
 
     stan::callbacks::writer null_writer;
 
-    auto initial_metrics = io::make_metric_inits(num_chains, init_inv_metric,
-                                                 tmodel->num_free_params,
-                                                 TinyStanMetric::diagonal);
+    walnuts::WarmupConfig warmup_cfg
+        = walnuts::WarmupConfigBuilder()
+              .mass_init_count(mass_init_count)
+              .mass_additive_smoothing(mass_additive_smoothing)
+              .max_macro_steps_target(max_macro_steps_target)
+              .step_accept_rate_target(step_accept_rate_target)
+              .step_learning_rate(step_learning_rate)
+              .step_gradient_decay(step_gradient_decay)
+              .step_sq_gradient_decay(step_sq_gradient_decay)
+              .step_stabilization(step_stabilization)
+              .step_learn_rate_decay(step_learn_rate_decay)
+              .build();
+
+    walnuts::SamplingConfig sample_cfg
+        = walnuts::SamplingConfigBuilder()
+              .max_trajectory_doublings(max_trajectory_doublings)
+              .max_step_halvings(max_step_halvings)
+              .max_hamiltonian_error(max_hamiltonian_error)
+              .min_micro_steps(min_micro_steps)
+              .build();
+
+    std::vector<io::BufferHandler<stan::rng_t>> storage;
 
     std::vector<Eigen::VectorXd> theta_inits(num_chains);
-    std::vector<nuts::MassAdaptConfig<double>> mass_cfgs;
-    mass_cfgs.reserve(num_chains);
-    std::vector<nuts::AdamConfig<double>> step_cfgs;
-    step_cfgs.reserve(num_chains);
-    std::vector<nuts::WalnutsConfig<double>> walnuts_cfgs;
-    walnuts_cfgs.reserve(num_chains);
-
     for (size_t i = 0; i < num_chains; ++i) {
       rngs[i] = stan::services::util::create_rng(seed, id + i);
 
@@ -280,16 +295,9 @@ int tinystan_walnuts(const TinyStanModel *tmodel, size_t num_chains,
 
       theta_inits[i] = Eigen::Map<Eigen::VectorXd>(theta.data(), theta.size());
 
-      Eigen::VectorXd mass_init = stan::services::util::read_diag_inv_metric(
-          *initial_metrics[i], tmodel->num_free_params, logger);
-
-      mass_cfgs.emplace_back(mass_init, init_count, mass_iteration_offset,
-                             additive_smoothing);
-
-      step_cfgs.emplace_back(step_size_init, accept_rate_target, learning_rate,
-                             beta1, beta2, epsilon);
-      walnuts_cfgs.emplace_back(max_error, max_nuts_depth, max_step_depth,
-                                min_micro_steps);
+      storage.emplace_back(tmodel, logger, rngs[i], i, out, stepsize_out,
+                           inv_metric_out, num_warmup, num_samples,
+                           save_warmup);
     }
 
     auto logp
@@ -304,125 +312,50 @@ int tinystan_walnuts(const TinyStanModel *tmodel, size_t num_chains,
             }
           };
 
-    auto constrain
-        = [&model = tmodel->model, &logger](auto &rng, auto &&in, auto &&out) {
-            std::stringstream msg;
-            try {
-              Eigen::VectorXd params;
-              model->write_array(rng, const_cast<Eigen::VectorXd &>(in), params,
-                                 true, true, &msg);
-              out = params;
-              if (!msg.str().empty()) {
-                logger.info(msg.str());
-              }
-            } catch (...) {
-              if (!msg.str().empty()) {
-                logger.info(msg.str());
-              }
-              logger.error("Error in constrain_draw: exception caught");
-              out.array() = std::numeric_limits<double>::quiet_NaN();
-            }
-          };
+    auto init_cfg_builder
+        = walnuts::InitConfigBuilder{num_chains, static_cast<std::size_t>(
+                                                     theta_inits[0].size())}
+              .step_sizes(step_size_init)
+              .positions(theta_inits);
+
+    if (init_inv_metric != nullptr) {
+      auto initial_metrics = io::make_metric_inits(num_chains, init_inv_metric,
+                                                   tmodel->num_free_params,
+                                                   TinyStanMetric::diagonal);
+      std::vector<Eigen::VectorXd> mass_inits(num_chains);
+      for (size_t i = 0; i < num_chains; ++i) {
+        mass_inits[i] = stan::services::util::read_diag_inv_metric(
+            *initial_metrics[i], tmodel->num_free_params, logger);
+      }
+      init_cfg_builder.masses(mass_inits);
+    } else {
+      init_cfg_builder.masses(logp, mass_additive_smoothing);
+    }
+
+    auto init_cfg = init_cfg_builder
+
+                        .build();
 
     logger.info("Starting " + std::to_string(num_chains) + " chains");
 
     tbb::parallel_for(
         tbb::blocked_range<size_t>(0, num_chains, 1),
-        [num_warmup, draws_offset, num_samples, id, refresh, save_warmup,
-         num_params = tmodel->num_params, &rngs, &theta_inits, &mass_cfgs,
-         &step_cfgs, &walnuts_cfgs, logp, constrain, &out, &stepsize_out,
-         &interrupt, &inv_metric_out,
+        [num_warmup, num_samples, id, refresh, &rngs, &init_cfg, &warmup_cfg,
+         &storage, &sample_cfg, logp,
          &logger](const tbb::blocked_range<size_t> &r) {
           for (size_t i = r.begin(); i != r.end(); ++i) {
             size_t finish = num_warmup + num_samples;
-            int it_print_width
-                = std::ceil(std::log10(static_cast<double>(finish)));
 
-            nuts::AdaptiveWalnuts walnuts(rngs[i], logp, theta_inits[i],
-                                          mass_cfgs[i], step_cfgs[i],
-                                          walnuts_cfgs[i]);
+            walnuts::AdaptiveWalnuts walnuts(rngs[i], storage[i], logp,
+                                             init_cfg.init_chain_config(i),
+                                             warmup_cfg, sample_cfg);
 
-            size_t output_index = i * draws_offset;
-            if (save_warmup) {
-              for (auto w = 0; w < num_warmup; ++w) {
-                constrain(rngs[i], walnuts(),
-                          Eigen::Map<Eigen::VectorXd>(out + output_index,
-                                                      num_params));
-                output_index += num_params;
-                interrupt();
-                if (refresh > 0
-                    && (w + 1 == finish || w == 0 || (w + 1) % refresh == 0)) {
-                  std::stringstream message;
-                  message << "Chain [" << id + i << "] ";
-                  message << "Iteration: ";
-                  message << std::setw(it_print_width) << w + 1 << " / "
-                          << finish;
-                  message << " [" << std::setw(3)
-                          << static_cast<int>((100.0 * (w + 1)) / finish)
-                          << "%] ";
-                  message << " (Warmup)";
-
-                  logger.info(message);
-                }
-              }
-            } else {
-              for (auto w = 0; w < num_warmup; ++w) {
-                walnuts();
-                interrupt();
-
-                if (refresh > 0
-                    && (w + 1 == finish || w == 0 || (w + 1) % refresh == 0)) {
-                  std::stringstream message;
-                  message << "Chain [" << id + i << "] ";
-                  message << "Iteration: ";
-                  message << std::setw(it_print_width) << w + 1 << " / "
-                          << finish;
-                  message << " [" << std::setw(3)
-                          << static_cast<int>((100.0 * (w + 1)) / finish)
-                          << "%] ";
-                  message << " (Warmup)";
-
-                  logger.info(message);
-                }
-              }
-            }
+            util::run_progress(walnuts, num_warmup, finish, 0, refresh, id + i,
+                               "Warmup", logger);
 
             auto sampler = walnuts.sampler();
-            if (stepsize_out != nullptr) {
-              stepsize_out[i] = sampler.macro_step_size();
-            }
-            if (inv_metric_out != nullptr) {
-              Eigen::VectorXd inv_metric
-                  = sampler.inverse_mass_matrix_diagonal();
-              std::copy(inv_metric.data(),
-                        inv_metric.data() + inv_metric.size(),
-                        inv_metric_out + i * inv_metric.size());
-            }
-
-            for (auto n = 0; n < num_samples; ++n) {
-              constrain(
-                  rngs[i], sampler(),
-                  Eigen::Map<Eigen::VectorXd>(out + output_index, num_params));
-              output_index += num_params;
-              interrupt();
-
-              if (refresh > 0
-                  && (num_warmup + n + 1 == finish || n == 0
-                      || (n + 1) % refresh == 0)) {
-                std::stringstream message;
-                message << "Chain [" << id + i << "] ";
-                message << "Iteration: ";
-                message << std::setw(it_print_width) << n + 1 + num_warmup
-                        << " / " << finish;
-                message << " [" << std::setw(3)
-                        << static_cast<int>((100.0 * (n + 1 + num_warmup))
-                                            / finish)
-                        << "%] ";
-                message << " (Sampling)";
-
-                logger.info(message);
-              }
-            }
+            util::run_progress(sampler, num_samples, finish, num_warmup,
+                               refresh, id + i, "Sampling", logger);
           }
         },
         tbb::simple_partitioner());

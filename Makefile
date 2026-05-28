@@ -23,7 +23,7 @@ endif
 
 # We can bump to C++17, even if Stan hasn't yet
 STAN_HAS_CXX17 ?= true
-CXXFLAGS_LANG ?= -std=c++17
+CXXFLAGS_LANG ?= -std=c++20
 
 # makefiles needed for math library
 include $(MATH)make/compiler_flags
