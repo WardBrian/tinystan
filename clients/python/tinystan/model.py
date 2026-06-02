@@ -941,12 +941,11 @@ class Model:
             self._raise_for_error(rc, err)
 
         outputs = []
-        print(lengths_out)
         for i in range(num_chains):
             out_chain = out[i, 0 : lengths_out[i], :]
             output_chain = StanOutput(param_names, out_chain)
             output_chain.stepsize = stepsize_out[i]
-            if inv_metric_out:
+            if inv_metric_out is not None:
                 output_chain.inv_metric = inv_metric_out[i]
             else:
                 output_chain.inv_metric = None
