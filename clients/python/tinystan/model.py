@@ -4,7 +4,7 @@ import sys
 import warnings
 from enum import Enum
 from os import PathLike, fspath
-from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
+from typing import Any, List, Mapping, Optional, Tuple, Union
 
 import dllist
 import numpy as np
@@ -37,6 +37,7 @@ def wrapped_ndptr(*args, **kwargs):
 
 
 double_array = ndpointer(dtype=ctypes.c_double, flags=("C_CONTIGUOUS"))
+int_array = ndpointer(dtype=ctypes.c_int, flags=("C_CONTIGUOUS"))
 nullable_double_array = wrapped_ndptr(dtype=ctypes.c_double, flags=("C_CONTIGUOUS"))
 err_ptr = ctypes.POINTER(ctypes.c_void_p)
 print_callback_type = ctypes.CFUNCTYPE(
@@ -309,6 +310,48 @@ class Model:
             ctypes.c_int,  # num_threads
             double_array,
             ctypes.c_size_t,  # buffer size
+            nullable_double_array,  # stepsize out
+            nullable_double_array,  # metric out
+            err_ptr,
+        ]
+
+        self._ffi_autowalnuts = self._lib.tinystan_autowalnuts
+        self._ffi_autowalnuts.restype = ctypes.c_int
+
+        self._ffi_autowalnuts.argtypes = [
+            ctypes.c_void_p,  # model
+            ctypes.c_size_t,  # num_chains
+            ctypes.c_char_p,  # inits
+            ctypes.c_uint,  # seed
+            ctypes.c_uint,  # id
+            ctypes.c_double,  # init_radius
+            nullable_double_array,  # metric init in
+            ctypes.c_int,  # min_warmup_iter
+            ctypes.c_int,  # max_warmup_iter
+            ctypes.c_int,  # min_sampling_iter
+            ctypes.c_int,  # max_sampling_iter
+            ctypes.c_int,  # max_trajectory_doublings
+            ctypes.c_int,  # max_step_halvings
+            ctypes.c_int,  # min_micro_steps
+            ctypes.c_double,  # max_hamiltonian_error
+            ctypes.c_double,  # step_size_converge_tol
+            ctypes.c_double,  # mass_converge_tol
+            ctypes.c_double,  # rhat_converge_tol
+            ctypes.c_double,  # mass_init_count
+            ctypes.c_double,  # mass_additive_smoothing
+            ctypes.c_double,  # max_macro_steps_target
+            ctypes.c_double,  # step_size_init
+            ctypes.c_double,  # step_accept_rate_target
+            ctypes.c_double,  # step_learning_rate
+            ctypes.c_double,  # step_gradient_decay
+            ctypes.c_double,  # step_sq_gradient_decay
+            ctypes.c_double,  # step_stabilization
+            ctypes.c_double,  # step_learn_rate_decay
+            ctypes.c_bool,  # save_warmup
+            ctypes.c_int,  # refresh
+            double_array,
+            ctypes.c_size_t,  # buffer size
+            int_array,  # final lengths
             nullable_double_array,  # stepsize out
             nullable_double_array,  # metric out
             err_ptr,
@@ -779,6 +822,137 @@ class Model:
         output.inv_metric = inv_metric_out
 
         return output
+
+    def autowalnuts(
+        self,
+        data: StanData = "",
+        *,
+        num_chains: int = 4,
+        inits: Union[StanData, List[StanData], None] = None,
+        seed: Optional[int] = None,
+        id: int = 1,
+        init_radius: float = 2.0,
+        init_inv_metric: Optional[np.ndarray] = None,
+        save_inv_metric: bool = False,
+        min_warmup_iter: int = 50,
+        max_warmup_iter: int = 1000,
+        min_sampling_iter: int = 50,
+        max_sampling_iter: int = 1000,
+        max_trajectory_doublings: int = 5,
+        max_step_halvings: int = 5,
+        min_micro_steps: int = 1,
+        max_hamiltonian_error: float = 0.5,
+        step_size_converge_tol: float = 0.1,
+        mass_converge_tol: float = 1.0,
+        rhat_converge_tol: float = 1.01,
+        mass_init_count: float = 4.0,
+        mass_additive_smoothing: float = 1e-5,
+        max_macro_steps_target: float = 15.0,
+        step_size_init: float = 1.0,
+        step_accept_rate_target: float = 0.8,
+        step_learning_rate: float = 0.05,
+        step_gradient_decay: float = 0.8,
+        step_sq_gradient_decay: float = 0.9,
+        step_stabilization: float = 1e-4,
+        step_learn_rate_decay: float = 0.5,
+        save_warmup: bool = False,
+        refresh: int = 0,
+    ):
+        # these are checked here because they're sizes for "out"
+        if num_chains < 1:
+            raise ValueError("num_chains must be at least 1")
+        if max_warmup_iter < 0:
+            raise ValueError("max_warmup_iter must be non-negative")
+        if max_sampling_iter < 1:
+            raise ValueError("max_sampling_iter must be at least 1")
+
+        seed = seed or rand_u32()
+
+        with self._get_model(data, seed) as model:
+            model_params = self._num_free_params(model)
+
+            param_names = self._get_parameter_names(model)
+
+            num_params = len(param_names)
+            num_draws = max_sampling_iter + max_warmup_iter * save_warmup * 2
+            out = np.zeros((num_chains, num_draws, num_params), dtype=np.float64)
+
+            metric_size = (model_params,)
+
+            if init_inv_metric is not None:
+                if init_inv_metric.shape == metric_size:
+                    init_inv_metric = np.repeat(
+                        init_inv_metric[np.newaxis], num_chains, axis=0
+                    )
+                elif init_inv_metric.shape == (num_chains, *metric_size):
+                    pass
+                else:
+                    raise ValueError(
+                        f"Invalid initial metric size. Expected a {metric_size} "
+                        f"or {(num_chains, *metric_size)} matrix."
+                    )
+
+            inv_metric_out = None
+            stepsize_out = np.zeros(num_chains, dtype=np.float64)
+            if save_inv_metric:
+                inv_metric_out = np.zeros((num_chains, *metric_size), dtype=np.float64)
+
+            lengths_out = np.zeros((num_chains,), dtype=np.int32)
+
+            err = ctypes.pointer(ctypes.c_void_p())
+            rc = self._ffi_autowalnuts(
+                model,
+                num_chains,
+                self._encode_inits(inits, num_chains, seed),
+                seed,
+                id,
+                init_radius,
+                init_inv_metric,
+                min_warmup_iter,
+                max_warmup_iter,
+                min_sampling_iter,
+                max_sampling_iter,
+                max_trajectory_doublings,
+                max_step_halvings,
+                min_micro_steps,
+                max_hamiltonian_error,
+                step_size_converge_tol,
+                mass_converge_tol,
+                rhat_converge_tol,
+                mass_init_count,
+                mass_additive_smoothing,
+                max_macro_steps_target,
+                step_size_init,
+                step_accept_rate_target,
+                step_learning_rate,
+                step_gradient_decay,
+                step_sq_gradient_decay,
+                step_stabilization,
+                step_learn_rate_decay,
+                save_warmup,
+                refresh,
+                out,
+                out.size,
+                lengths_out,
+                stepsize_out,
+                inv_metric_out,
+                err,
+            )
+            self._raise_for_error(rc, err)
+
+        outputs = []
+        print(lengths_out)
+        for i in range(num_chains):
+            out_chain = out[i, 0 : lengths_out[i], :]
+            output_chain = StanOutput(param_names, out_chain)
+            output_chain.stepsize = stepsize_out[i]
+            if inv_metric_out:
+                output_chain.inv_metric = inv_metric_out[i]
+            else:
+                output_chain.inv_metric = None
+            outputs.append(output_chain)
+
+        return outputs
 
     def pathfinder(
         self,

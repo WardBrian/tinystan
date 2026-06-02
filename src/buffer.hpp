@@ -43,8 +43,8 @@ namespace io {
  */
 class buffer_writer : public stan::callbacks::writer {
  public:
-  buffer_writer(double *buf, size_t max) : buf(buf), pos(0), size(max) {};
-  virtual ~buffer_writer() {};
+  buffer_writer(double *buf, size_t max) : buf(buf), pos(0), size(max){};
+  virtual ~buffer_writer(){};
 
   /**
    * Primary method used by the Stan algorithms
@@ -119,7 +119,7 @@ class buffer_writer : public stan::callbacks::writer {
 class filtered_writer : public stan::callbacks::structured_writer {
  public:
   filtered_writer() : filters{} {};
-  virtual ~filtered_writer() {};
+  virtual ~filtered_writer(){};
 
   void add_key(const std::string &key_in, double *buf) {
     if (buf != nullptr) {
@@ -174,8 +174,8 @@ class inv_metric_buffer_reader : public stan::io::empty_var_context {
  public:
   inv_metric_buffer_reader(const double *buf, size_t size,
                            TinyStanMetric metric_choice)
-      : buf(buf), size(size), dense(metric_choice == TinyStanMetric::dense) {};
-  virtual ~inv_metric_buffer_reader() {};
+      : buf(buf), size(size), dense(metric_choice == TinyStanMetric::dense){};
+  virtual ~inv_metric_buffer_reader(){};
 
   bool contains_r(const std::string &name) const override {
     return name == "inv_metric";
@@ -260,16 +260,14 @@ template <typename RNG>
 class BufferHandler {
  public:
   BufferHandler(const TinyStanModel *model, stan::callbacks::logger &logger,
-                RNG &rng, std::size_t i, double *out, double *stepsize_out,
-                double *inv_metric_out, std::size_t num_warmup,
-                std::size_t num_samples, bool save_warmup)
+                RNG &rng, std::size_t id, double *out, double *stepsize_out,
+                double *inv_metric_out, bool save_warmup)
       : model_(model),
         logger_(logger),
         rng_(rng),
-        i(i),
+        id(id),
         save_warmup_(save_warmup),
-        output_index_(model->num_params
-                      * (num_samples + num_warmup * save_warmup) * i),
+        n_(0),
         out(out),
         stepsize_out(stepsize_out),
         inv_metric_out(inv_metric_out) {}
@@ -287,20 +285,25 @@ class BufferHandler {
   }
 
   void on_warmup_complete(double step_size, const Eigen::VectorXd &inv_metric) {
+    std::stringstream msg;
+    msg << "Chain " << id << " finished warmup";
+    logger_.info(msg);
     if (stepsize_out != nullptr) {
-      stepsize_out[i] = step_size;
+      *stepsize_out = step_size;
     }
     if (inv_metric_out != nullptr) {
       std::copy(inv_metric.data(), inv_metric.data() + inv_metric.size(),
-                inv_metric_out + i * inv_metric.size());
+                inv_metric_out);
     }
   }
+
+  int written() const { return n_; }
 
  private:
   void constrain(auto &&in) {
     std::stringstream msg;
-    auto output
-        = Eigen::Map<Eigen::VectorXd>(out + output_index_, model_->num_params);
+    auto output = Eigen::Map<Eigen::VectorXd>(out + n_ * model_->num_params,
+                                              model_->num_params);
     try {
       Eigen::VectorXd params;
       model_->model->write_array(rng_, const_cast<Eigen::VectorXd &>(in),
@@ -316,16 +319,21 @@ class BufferHandler {
       logger_.error("Error in constrain_draw: exception caught");
       output.array() = std::numeric_limits<double>::quiet_NaN();
     }
-    output_index_ += model_->num_params;
+    n_++;
   }
 
   const TinyStanModel *model_;
   stan::callbacks::logger &logger_;
   RNG &rng_;
-  std::size_t i;
+  std::size_t id;
   bool save_warmup_;
-  std::size_t output_index_;
+  std::size_t n_;
   double *out, *stepsize_out, *inv_metric_out;
+};
+
+class DummyGlobalHandler {
+ public:
+  void on_r_hat(double) {}
 };
 
 }  // namespace io

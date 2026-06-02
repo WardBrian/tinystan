@@ -92,6 +92,12 @@ class tinystan_interrupt_handler : public stan::callbacks::interrupt {
     }
   }
 
+  void throw_if_interrupted() const {
+    if (interrupted) {
+      throw tinystan::error::interrupt_exception();
+    }
+  }
+
   tinystan_interrupt_handler(const tinystan_interrupt_handler &) = delete;
   tinystan_interrupt_handler(tinystan_interrupt_handler &&) = delete;
   tinystan_interrupt_handler operator=(const tinystan_interrupt_handler &)

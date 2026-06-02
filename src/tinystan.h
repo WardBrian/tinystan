@@ -190,6 +190,22 @@ TINYSTAN_PUBLIC int tinystan_walnuts(
     int num_threads, double *out, size_t out_size, double *stepsize_out,
     double *inv_metric_out, TinyStanError **err);
 
+TINYSTAN_PUBLIC int tinystan_autowalnuts(
+    const TinyStanModel *tmodel, size_t num_chains, const char *inits,
+    unsigned int seed, unsigned int id, double init_radius,
+    const double *init_inv_metric, int min_warmup_iter, int max_warmup_iter,
+    int min_sampling_iter, int max_sampling_iter, int max_trajectory_doublings,
+    int max_step_halvings, int min_micro_steps, double max_hamiltonian_error,
+    double step_size_converge_tol, double mass_converge_tol,
+    double rhat_converge_tol, double mass_init_count,
+    double mass_additive_smoothing, double max_macro_steps_target,
+    double step_size_init, double step_accept_rate_target,
+    double step_learning_rate, double step_gradient_decay,
+    double step_sq_gradient_decay, double step_stabilization,
+    double step_learn_rate_decay, bool save_warmup, int refresh, double *out,
+    size_t out_size, int *final_lengths, double *stepsize_out,
+    double *inv_metric_out, TinyStanError **err);
+
 /**
  * @brief Run the Pathfinder algorithm to approximate the posterior.
  *
@@ -276,19 +292,21 @@ int tinystan_pathfinder(const TinyStanModel *model, size_t num_paths,
  * following arguments may be ignored depending on the algorithm.
  * @param[in] num_iterations Maximum number of iterations to run the
  * optimization.
- * @param[in] jacobian Whether to apply the Jacobian change of variables to the
- * log density. If False, the algorithm will find the MLE.
- * If True, the algorithm will find the MAP estimate.
+ * @param[in] jacobian Whether to apply the Jacobian change of variables to
+ * the log density. If False, the algorithm will find the MLE. If True, the
+ * algorithm will find the MAP estimate.
  * @param[in] max_history_size History size used to approximate the Hessian.
  * @param[in] init_alpha Initial step size.
  * @param[in] tol_obj Convergence tolerance for the objective function.
  * @param[in] tol_rel_obj Relative convergence tolerance for the objective
  * function.
  * @param[in] tol_grad Convergence tolerance for the gradient norm.
- * @param[in] tol_rel_grad Relative convergence tolerance for the gradient norm.
+ * @param[in] tol_rel_grad Relative convergence tolerance for the gradient
+ * norm.
  * @param[in] tol_param Convergence tolerance for the changes in parameters.
  * @param[in] refresh Number of iterations between progress messages.
- * @param[in] num_threads Number of threads to use for log density evaluations.
+ * @param[in] num_threads Number of threads to use for log density
+ * evaluations.
  * @param[out] out Buffer to store the samples. The buffer should be large
  * enough to store `num_params` doubles.
  * @param[in] out_size Size of the buffer in doubles. Used for bounds checking
@@ -309,17 +327,17 @@ TINYSTAN_PUBLIC int tinystan_optimize(
     TinyStanError **err);
 
 /**
- * @brief Sample from the Laplace approximation of the posterior centered at the
- * provided mode.
+ * @brief Sample from the Laplace approximation of the posterior centered at
+ * the provided mode.
  *
  * A wrapper around the functions in the `stan::services::laplace_sample`
  * namespace.
  *
  * @param[in] tmodel The TinyStanModel to use for the sampling.
- * @param[in] theta_hat_constr The mode to center the Laplace approximation on.
- * This should be a pointer to an array of doubles on the constrained scale,
- * like the one returned by tinystan_optimize(). It must have at least the
- * length given by
+ * @param[in] theta_hat_constr The mode to center the Laplace approximation
+ * on. This should be a pointer to an array of doubles on the constrained
+ * scale, like the one returned by tinystan_optimize(). It must have at least
+ * the length given by
  * `tinystan_model_num_constrained_params_for_unconstraining()`.
  * At most one of `theta_hat_constr` and `theta_hat_json` should be non-NULL.
  * @param[in] theta_hat_json A path to a JSON file or JSON string representing
@@ -327,23 +345,25 @@ TINYSTAN_PUBLIC int tinystan_optimize(
  * `theta_hat_json` should be non-NULL.
  * @param[in] seed The seed to use for the random number generator.
  * @param[in] num_draws Number of draws.
- * @param[in] jacobian Whether to apply the Jacobian change of variables to the
- * log density.
+ * @param[in] jacobian Whether to apply the Jacobian change of variables to
+ * the log density.
  * **Note:** This should match the value used when the mode was calculated.
  * @param[in] calculate_lp Whether to calculate the log probability of the
  * samples.
  * @param[in] refresh Number of iterations between progress messages.
- * @param[in] num_threads Number of threads to use for log density evaluations.
+ * @param[in] num_threads Number of threads to use for log density
+ * evaluations.
  * @param[out] out Buffer to store the samples. The buffer should be large
  * enough to store `num_draws * num_params` doubles.
  * @param[in] out_size Size of the buffer in doubles. Used for bounds checking
  * unless TINYSTAN_NO_BOUNDS_CHECK is defined, in which case it is ignored.
- * @param[out] hessian_out Buffer to store the Hessian matrix calculated at the
- * mode. Can be `NULL`.
+ * @param[out] hessian_out Buffer to store the Hessian matrix calculated at
+ * the mode. Can be `NULL`.
  * @param[out] err Error information. Can be `NULL`.
  *
- * @return Zero on success, non-zero on error. If an error occurs, `err` will be
- * set to a non-NULL value which must be freed with tinystan_destroy_error().
+ * @return Zero on success, non-zero on error. If an error occurs, `err` will
+ * be set to a non-NULL value which must be freed with
+ * tinystan_destroy_error().
  */
 TINYSTAN_PUBLIC
 int tinystan_laplace_sample(const TinyStanModel *tmodel,
@@ -368,10 +388,10 @@ TINYSTAN_PUBLIC const char *tinystan_get_error_message(
  * Get the type of error.
  *
  * @param[in] err The error object.
- * @return The type of error. This is intended to provide more information about
- * the kind of error, allowing for more specific handling. For example, the
- * `interrupt` value can be used to distinguish between a user interrupt and a
- * generic error.
+ * @return The type of error. This is intended to provide more information
+ * about the kind of error, allowing for more specific handling. For example,
+ * the `interrupt` value can be used to distinguish between a user interrupt
+ * and a generic error.
  */
 TINYSTAN_PUBLIC TinyStanErrorType
 tinystan_get_error_type(const TinyStanError *err);

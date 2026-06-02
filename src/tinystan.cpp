@@ -295,8 +295,11 @@ int tinystan_walnuts(const TinyStanModel *tmodel, size_t num_chains,
 
       theta_inits[i] = Eigen::Map<Eigen::VectorXd>(theta.data(), theta.size());
 
-      storage.emplace_back(tmodel, logger, rngs[i], i, out, stepsize_out,
-                           inv_metric_out, num_warmup, num_samples,
+      storage.emplace_back(tmodel, logger, rngs[i], i, out + draws_offset * i,
+                           stepsize_out != nullptr ? stepsize_out + i : nullptr,
+                           inv_metric_out != nullptr
+                               ? inv_metric_out + i * theta.size()
+                               : nullptr,
                            save_warmup);
     }
 
@@ -359,6 +362,171 @@ int tinystan_walnuts(const TinyStanModel *tmodel, size_t num_chains,
           }
         },
         tbb::simple_partitioner());
+
+    return 0;
+  });
+}
+
+int tinystan_autowalnuts(
+    const TinyStanModel *tmodel, size_t num_chains, const char *inits,
+    unsigned int seed, unsigned int id, double init_radius,
+    const double *init_inv_metric, int min_warmup_iter, int max_warmup_iter,
+    int min_sampling_iter, int max_sampling_iter, int max_trajectory_doublings,
+    int max_step_halvings, int min_micro_steps, double max_hamiltonian_error,
+    double step_size_converge_tol, double mass_converge_tol,
+    double rhat_converge_tol, double mass_init_count,
+    double mass_additive_smoothing, double max_macro_steps_target,
+    double step_size_init, double step_accept_rate_target,
+    double step_learning_rate, double step_gradient_decay,
+    double step_sq_gradient_decay, double step_stabilization,
+    double step_learn_rate_decay, bool save_warmup, int refresh, double *out,
+    size_t out_size, int *final_lengths, double *stepsize_out,
+    double *inv_metric_out, TinyStanError **err) {
+  return error::catch_exceptions(err, [&]() {
+    error::check_positive("num_chains", num_chains);
+    error::check_positive("id", id);
+    error::check_nonnegative("init_radius", init_radius);
+
+    error::check_nonnegative("min_warmup_iter", min_warmup_iter);
+    error::check_nonnegative("max_warmup_iter", max_warmup_iter);
+
+    error::check_nonnegative("min_sampling_iter", min_sampling_iter);
+    error::check_nonnegative("max_sampling_iter", max_sampling_iter);
+
+    error::check_positive("max_trajectory_doublings", max_trajectory_doublings);
+    error::check_positive("max_step_halvings", max_step_halvings);
+    error::check_positive("min_micro_steps", min_micro_steps);
+    error::check_positive("max_hamiltonian_error", max_hamiltonian_error);
+
+    error::check_positive("step_size_converge_tol", step_size_converge_tol);
+    error::check_positive("mass_converge_tol", mass_converge_tol);
+    error::check_between("rhat_converge_tol", rhat_converge_tol, 1,
+                         (std::numeric_limits<double>::max)());
+
+    error::check_between("mass_init_count", mass_init_count, 1,
+                         (std::numeric_limits<double>::max)());
+    error::check_positive("mass_additive_smoothing", max_macro_steps_target);
+    error::check_positive("mass_additive_smoothing", mass_additive_smoothing);
+    error::check_positive("step_size_init", step_size_init);
+    error::check_between("step_accept_rate_target", step_accept_rate_target,
+                         (std::numeric_limits<double>::min)(), 1);
+    error::check_positive("step_learning_rate", step_learning_rate);
+    error::check_between("step_gradient_decay", step_gradient_decay,
+                         (std::numeric_limits<double>::min)(), 1);
+    error::check_between("step_sq_gradient_decay", step_sq_gradient_decay,
+                         (std::numeric_limits<double>::min)(), 1);
+    error::check_positive("step_stabilization", step_stabilization);
+    error::check_between("step_learn_rate_decay", step_learn_rate_decay,
+                         (std::numeric_limits<double>::min)(), 1);
+
+    int draws_offset = tmodel->num_params
+                       * (max_sampling_iter + max_warmup_iter * save_warmup);
+    if (out_size < num_chains * draws_offset) {
+      std::stringstream ss;
+      ss << "Output buffer too small. Expected at least " << num_chains
+         << " chains of " << draws_offset << " doubles, got " << out_size;
+      throw std::runtime_error(ss.str());
+    }
+
+    std::vector<stan::rng_t> rngs(num_chains);
+
+    auto json_inits = io::load_inits(num_chains, inits);
+    error::error_logger logger(*tmodel, refresh != 0);
+    interrupt::tinystan_interrupt_handler interrupt;
+
+    stan::callbacks::writer null_writer;
+
+    walnuts::WarmupConfig warmup_cfg
+        = walnuts::WarmupConfigBuilder()
+              .min_max_iter(min_warmup_iter, max_warmup_iter)
+              .step_size_converge_tol(step_size_converge_tol)
+              .mass_converge_tol(mass_converge_tol)
+              // .publish_stride(publish_stride)
+              // .yield_period(yield_period)
+              .mass_init_count(mass_init_count)
+              .mass_additive_smoothing(mass_additive_smoothing)
+              .max_macro_steps_target(max_macro_steps_target)
+              .step_accept_rate_target(step_accept_rate_target)
+              .step_learning_rate(step_learning_rate)
+              .step_gradient_decay(step_gradient_decay)
+              .step_sq_gradient_decay(step_sq_gradient_decay)
+              .step_stabilization(step_stabilization)
+              .step_learn_rate_decay(step_learn_rate_decay)
+              .build();
+
+    walnuts::SamplingConfig sample_cfg
+        = walnuts::SamplingConfigBuilder()
+              .min_max_iter(min_sampling_iter, max_sampling_iter)
+              .rhat_converge_tol(rhat_converge_tol)
+              .max_trajectory_doublings(max_trajectory_doublings)
+              .max_step_halvings(max_step_halvings)
+              .max_hamiltonian_error(max_hamiltonian_error)
+              .min_micro_steps(min_micro_steps)
+              .build();
+
+    std::vector<io::BufferHandler<stan::rng_t>> storage;
+
+    std::vector<Eigen::VectorXd> theta_inits(num_chains);
+    for (size_t i = 0; i < num_chains; ++i) {
+      rngs[i] = stan::services::util::create_rng(seed, id + i);
+
+      std::vector<double> theta = stan::services::util::initialize(
+          *tmodel->model, *json_inits[i], rngs[i], init_radius, true, logger,
+          null_writer);
+
+      theta_inits[i] = Eigen::Map<Eigen::VectorXd>(theta.data(), theta.size());
+      storage.emplace_back(tmodel, logger, rngs[i], i, out + draws_offset * i,
+                           stepsize_out != nullptr ? stepsize_out + i : nullptr,
+                           inv_metric_out != nullptr
+                               ? inv_metric_out + i * theta.size()
+                               : nullptr,
+                           save_warmup);
+    }
+
+    auto logp
+        = [&model = tmodel->model, &logger](const Eigen::VectorXd &x,
+                                            double &lp, Eigen::VectorXd &grad) {
+            static thread_local stan::math::ChainableStack thread_instance;
+            grad.resizeLike(x);
+            std::stringstream msg;
+            lp = stan::model::log_prob_grad<true, true>(
+                *model, const_cast<Eigen::VectorXd &>(x), grad, &msg);
+            if (!msg.str().empty()) {
+              logger.info(msg.str());
+            }
+          };
+
+    auto init_cfg_builder
+        = walnuts::InitConfigBuilder{num_chains, static_cast<std::size_t>(
+                                                     theta_inits[0].size())}
+              .step_sizes(step_size_init)
+              .positions(theta_inits);
+
+    if (init_inv_metric != nullptr) {
+      auto initial_metrics = io::make_metric_inits(num_chains, init_inv_metric,
+                                                   tmodel->num_free_params,
+                                                   TinyStanMetric::diagonal);
+      std::vector<Eigen::VectorXd> mass_inits(num_chains);
+      for (size_t i = 0; i < num_chains; ++i) {
+        mass_inits[i] = stan::services::util::read_diag_inv_metric(
+            *initial_metrics[i], tmodel->num_free_params, logger);
+      }
+      init_cfg_builder.masses(mass_inits);
+    } else {
+      init_cfg_builder.masses(logp, mass_additive_smoothing);
+    }
+
+    logger.info("Running Walnuts");
+    walnuts::WalnutsConfig walnuts_cfg{
+        init_cfg_builder.build(), std::move(warmup_cfg), std::move(sample_cfg)};
+
+    tinystan::io::DummyGlobalHandler global;
+    walnuts::walnuts<stan::rng_t>(seed + id + num_chains, storage, global,
+                                  interrupt, logp, walnuts_cfg);
+
+    for (size_t i = 0; i < num_chains; ++i) {
+      final_lengths[i] = storage[i].written();
+    }
 
     return 0;
   });
