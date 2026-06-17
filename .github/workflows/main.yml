@@ -8,7 +8,7 @@ on:
   workflow_dispatch: {}
 
 env:
-  CACHE_VERSION: 0
+  CACHE_VERSION: 1
 
 # only run one copy per PR
 concurrency:
@@ -89,15 +89,11 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-
       - name: Restore Stan
         uses: actions/cache@v5
         id: stan-cache
         with:
+          fail-on-cache-miss: true
           path: ./stan/
           key: ${{ matrix.os }}-stan-${{ hashFiles('stan/src/stan/version.hpp') }}-v${{ env.CACHE_VERSION }}
 
@@ -105,8 +101,14 @@ jobs:
         uses: actions/cache@v5
         id: test-models
         with:
+          fail-on-cache-miss: true
           path: ./test_models/
           key: ${{ hashFiles('**/*.stan', 'src/*', 'stan/src/stan/version.hpp', 'Makefile') }}-${{ matrix.os }}-v${{ env.CACHE_VERSION }}
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
 
       - name: Install package
         run: |
@@ -143,6 +145,22 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Restore Stan
+        uses: actions/cache@v5
+        id: stan-cache
+        with:
+          fail-on-cache-miss: true
+          path: ./stan/
+          key: ${{ matrix.os }}-stan-${{ hashFiles('stan/src/stan/version.hpp') }}-v${{ env.CACHE_VERSION }}
+
+      - name: Restore built models
+        uses: actions/cache@v5
+        id: test-models
+        with:
+          fail-on-cache-miss: true
+          path: ./test_models/
+          key: ${{ hashFiles('**/*.stan', 'src/*', 'stan/src/stan/version.hpp', 'Makefile') }}-${{ matrix.os }}-v${{ env.CACHE_VERSION }}
+
       - name: Install R
         uses: r-lib/actions/setup-r@v2.12.0
 
@@ -154,19 +172,6 @@ jobs:
             any::testthat
             any::devtools
             any::posterior
-
-      - name: Restore Stan
-        uses: actions/cache@v5
-        with:
-          path: ./stan/
-          key: ${{ matrix.os }}-stan-${{ hashFiles('stan/src/stan/version.hpp') }}-v${{ env.CACHE_VERSION }}
-
-      - name: Restore built models
-        uses: actions/cache@v5
-        id: test-models
-        with:
-          path: ./test_models/
-          key: ${{ hashFiles('**/*.stan', 'src/*', 'stan/src/stan/version.hpp', 'Makefile') }}-${{ matrix.os }}-v${{ env.CACHE_VERSION }}
 
       - name: Run tests
         if: matrix.os != 'windows-2022'
@@ -199,15 +204,11 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Set up Julia
-        uses: julia-actions/install-juliaup@v3
-        with:
-          channel: ${{ matrix.julia-version }}
-
       - name: Restore Stan
         uses: actions/cache@v5
         id: stan-cache
         with:
+          fail-on-cache-miss: true
           path: ./stan/
           key: ${{ matrix.os }}-stan-${{ hashFiles('stan/src/stan/version.hpp') }}-v${{ env.CACHE_VERSION }}
 
@@ -215,8 +216,14 @@ jobs:
         uses: actions/cache@v5
         id: test-models
         with:
+          fail-on-cache-miss: true
           path: ./test_models/
           key: ${{ hashFiles('**/*.stan', 'src/*', 'stan/src/stan/version.hpp', 'Makefile') }}-${{ matrix.os }}-v${{ env.CACHE_VERSION }}
+
+      - name: Set up Julia
+        uses: julia-actions/install-juliaup@v3
+        with:
+          channel: ${{ matrix.julia-version }}
 
       - name: Check import
         run: |
