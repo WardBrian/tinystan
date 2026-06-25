@@ -35,6 +35,18 @@ inline void init_threading(int num_threads) {
 #endif
   if (num_threads > 0) {
     stan::math::init_threadpool_tbb(num_threads);
+    int num_threads = tbb::this_task_arena::max_concurrency();
+    std::atomic<int> barrier{num_threads};
+    tbb::parallel_for(
+        0, num_threads,
+        [&barrier](int) {
+          barrier--;
+          while (barrier > 0) {
+            // Send browser thread to event loop
+            std::this_thread::yield();
+          }
+        },
+        tbb::static_partitioner{});
   } else {
     throw std::invalid_argument(
         "Number of threads requested must be a positive integer or -1"
