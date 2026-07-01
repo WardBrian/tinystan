@@ -22,7 +22,7 @@ jobs:
       contents: write
     steps:
       - name: Check out github
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
@@ -115,7 +115,7 @@ jobs:
       contents: write
     steps:
       - name: Check out github
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Download release artifacts
         uses: actions/download-artifact@v8
