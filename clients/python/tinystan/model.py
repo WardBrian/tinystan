@@ -165,8 +165,6 @@ class Model:
             If ``False``, the warning about re-loading the same shared object
             is suppressed.
         """
-        windows_dll_path_setup()
-
         model = fspath(model)
         if model.endswith(".stan"):
             self.lib_path = fspath(
@@ -174,6 +172,8 @@ class Model:
             )
         else:
             self.lib_path = model
+
+        windows_dll_path_setup()
 
         self.capture_stan_prints = capture_stan_prints
         if warn and hasattr(dllist, "dllist") and self.lib_path in dllist.dllist():
