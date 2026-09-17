@@ -103,15 +103,15 @@ endif
 %.hpp : %.stan $(STANC)
 	@echo ''
 	@echo '--- Translating Stan model to C++ code ---'
-	$(STANC) $(STANCFLAGS) --o=$(subst  \,/,$@) $(subst  \,/,$<)
+	$(STANC) $(STANCFLAGS) --o="$(subst \,/,$@)" "$(subst \,/,$<)"
 
 %.o : %.hpp $(USER_HEADER) $(PRECOMPILED_MODEL_HEADER)
 	@echo '--- Compiling C++ code ---'
-	$(COMPILE.cpp) $(PRECOMPILED_HEADER_INCLUDE) $(USER_INCLUDE) -x c++ -o $(subst  \,/,$*).o $(subst \,/,$<)
+	$(COMPILE.cpp) $(PRECOMPILED_HEADER_INCLUDE) $(USER_INCLUDE) -x c++ -o "$(subst \\,/,$*).o" "$(subst \\,/,$<)"
 
 %_model.so : %.o $(TINYSTAN_O) $(SUNDIALS_TARGETS) $(MPI_TARGETS) $(TBB_TARGETS)
 	@echo '--- Linking C++ code ---'
-	$(LINK.cpp) -shared -lm -o $(patsubst %.o, %_model.so, $(subst \,/,$<)) $(subst \,/,$*.o) $(TINYSTAN_O) $(LDLIBS) $(SUNDIALS_TARGETS) $(MPI_TARGETS) $(TBB_TARGETS)
+	$(LINK.cpp) -shared -lm -o "$(patsubst %.o,%_model.so,$(subst \\,/,$<))" "$(subst \,/,$*.o)" $(TINYSTAN_O) $(LDLIBS) $(SUNDIALS_TARGETS) $(MPI_TARGETS) $(TBB_TARGETS)
 
 # build all test models at once
 ALL_TEST_MODEL_NAMES = $(patsubst $(TINYSTAN_ROOT)/test_models/%/, %, $(sort $(dir $(wildcard $(TINYSTAN_ROOT)/test_models/*/))))
@@ -169,7 +169,7 @@ print-%  : ; @echo $* = $($*) ;
 STANC_DL_RETRY = 5
 STANC_DL_DELAY = 10
 STANC3_TEST_BIN_URL ?=
-STANC3_VERSION ?= v2.39.0
+STANC3_VERSION ?= v2.40.0
 
 ifeq ($(OS),Windows_NT)
  OS_TAG := windows

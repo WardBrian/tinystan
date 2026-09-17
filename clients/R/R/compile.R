@@ -105,10 +105,10 @@ compile_model <- function(stan_file, stanc_args = NULL, make_args = NULL) {
   stancflags <- paste("--include-paths=.", paste(stanc_args, collapse = " "))
 
   flags <- c(
-    paste("-C", get_tinystan_path()),
+    paste("-C", shQuote(get_tinystan_path()),
     make_args,
-    paste0("STANCFLAGS=\"", stancflags, "\""),
-    output
+    paste0("STANCFLAGS=", shQuote(stancflags)),
+    shQuote(output)
   )
 
   suppressWarnings({
