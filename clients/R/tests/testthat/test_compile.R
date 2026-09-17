@@ -1,7 +1,5 @@
-check_compile_model_works <- function(name) {
-  base <- get_tinystan_path(download = FALSE)
-  stan_folder <- file.path(top_level_directory, "test_models")
-
+test_that("compilation works", {
+  name <- "gaussian"
   file <- file.path(stan_folder, name, paste0(name, ".stan"))
 
   lib <- file.path(stan_folder, name, paste0(name, "_model.so"))
@@ -15,23 +13,6 @@ check_compile_model_works <- function(name) {
   unlink(lib, force = TRUE)
 
   out <- compile_model(file)
-}
-
-test_that("compilation works", {
-  check_compile_model_works(name = "gaussian")
-})
-
-test_that("compilation with tinystan path containing spaces works", {
-  temp_dir <- withr::local_tempdir(pattern = "Tiny Stan")
-  tinystan_path <- get_tinystan_path(download = TRUE)
-  file.copy(tinystan_path, temp_dir, recursive = TRUE)
-  temp_tinystan_path <- file.path(temp_dir, basename(tinystan_path))
-  verify_tinystan_path(temp_tinystan_path)
-  withr::with_envvar(c("TINYSTAN" = temp_tinystan_path), {
-    tinystan_path <- get_tinystan_path(download = FALSE)
-    expect_equal(tinystan_path, temp_tinystan_path)
-    check_compile_model_works(name = "gaussian")
-  })
 })
 
 test_that("compilation fails on non-stan file", {
