@@ -51,10 +51,10 @@ inline std::vector<var_ctx_ptr> load_inits(int num_chains,
     }
     return json_inits;
   }
+
   std::string inits(inits_char);
-  std::vector<std::string> init_files;
-  boost::algorithm::split(init_files, inits,
-                          [](char c) { return c == SEPARATOR; });
+  std::vector<std::string> init_files
+      = stan::io::split(inits, std::string_view(&SEPARATOR, 1));
   if (init_files.size() != num_chains) {
     throw std::invalid_argument(
         "Number of parameter initializations provided must be 0, 1, or match "
