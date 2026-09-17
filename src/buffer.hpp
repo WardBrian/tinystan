@@ -155,6 +155,10 @@ class filtered_writer : public stan::callbacks::structured_writer {
     }
   }
 
+  // workaround for
+  // https://github.com/stan-dev/stan/pull/3406#issuecomment-5716227487
+  void write(const std::string &, unsigned long) {}
+
   // other write methods are currently unused by anything we need
   using stan::callbacks::structured_writer::write;
 

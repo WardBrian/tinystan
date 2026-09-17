@@ -70,14 +70,14 @@
     "@babel/preset-env": "^7.26.0",
     "@babel/preset-typescript": "^7.26.0",
     "@godaddy/dmd": "^1.0.4",
-    "@vitest/coverage-v8": "^4.1.0",
+    "@vitest/coverage-v8": "^5.0.1",
     "jsdoc-babel": "^0.5.0",
     "jsdoc-to-markdown": "^9.0.5",
     "prettier": "^3.3.1",
     "tsdown": "^0.22.0",
     "typescript": "^6.0.2",
     "vite": "^8.0.0",
-    "vitest": "^4.1.0"
+    "vitest": "^5.0.1"
   },
   "publishConfig": {
     "access": "public"

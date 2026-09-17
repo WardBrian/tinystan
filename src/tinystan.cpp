@@ -232,7 +232,7 @@ int tinystan_pathfinder(const TinyStanModel *tmodel, size_t num_paths,
     error::error_logger logger(*tmodel, refresh != 0);
 
     interrupt::tinystan_interrupt_handler interrupt;
-    stan::callbacks::structured_writer dummy_json_writer;
+    io::filtered_writer dummy_json_writer;
 
     bool save_iterations = false;
 
@@ -248,8 +248,7 @@ int tinystan_pathfinder(const TinyStanModel *tmodel, size_t num_paths,
           calculate_lp);
     } else {
       std::vector<stan::callbacks::writer> null_writers(num_paths);
-      std::vector<stan::callbacks::structured_writer> null_structured_writers(
-          num_paths);
+      std::vector<io::filtered_writer> null_structured_writers(num_paths);
       return_code = stan::services::pathfinder::pathfinder_lbfgs_multi(
           model, json_inits, seed, id, init_radius, max_history_size,
           init_alpha, tol_obj, tol_rel_obj, tol_grad, tol_rel_grad, tol_param,
