@@ -107,7 +107,7 @@ endif
 
 %.o : %.hpp $(USER_HEADER) $(PRECOMPILED_MODEL_HEADER)
 	@echo '--- Compiling C++ code ---'
-	$(COMPILE.cpp) $(PRECOMPILED_HEADER_INCLUDE) $(USER_INCLUDE) -x c++ -o "$(subst \,/,$*).o" "$(subst \,/,$<)"
+	$(COMPILE.cpp) $(PRECOMPILED_HEADER_INCLUDE) "$(subst \,/,$(USER_INCLUDE))" -x c++ -o "$(subst \,/,$*).o" "$(subst \,/,$<)"
 
 %_model.so : %.o $(TINYSTAN_O) $(SUNDIALS_TARGETS) $(MPI_TARGETS) $(TBB_TARGETS)
 	@echo '--- Linking C++ code ---'
